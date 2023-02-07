@@ -8,11 +8,10 @@ import torch.utils.data as data
 import torch
 from pytorchvideo.data.encoded_video import EncodedVideo
 
-sys.path.append(join(os.path.abspath('..'), 'main'))
-sys.path.append(join(os.path.abspath('..'), 'processing'))
+sys.path.append(join(dirname(os.getcwd())))
 
-from videoTransform import transform_video, transform_audio
-from configuration import cf
+from memory_perceiver.processing.videoTransform import transform_video, transform_audio
+from memory_perceiver.main.configuration import cf
 from pickle_sequence import read_seq
 
 class Streamer(data.Dataset):

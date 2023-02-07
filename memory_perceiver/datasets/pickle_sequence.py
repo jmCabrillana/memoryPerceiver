@@ -1,11 +1,12 @@
 import sys
 import os
-from os.path import join
+from os.path import join, dirname
 import pickle
 
-sys.path.append(join(os.path.abspath('..'), 'main'))
 
-from configuration import cf
+sys.path.append(join(dirname(os.getcwd())))
+
+from memory_perceiver.main.configuration import cf
 
 
 def write_seq(dict, dst):

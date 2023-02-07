@@ -1,6 +1,6 @@
 
 import os
-from os.path import join
+from os.path import join, dirname
 import sys
 import numpy as np
 import torch
@@ -24,14 +24,14 @@ from einops import rearrange, repeat
 #     PointLights
 # )
 
-sys.path.append(join(join(os.path.abspath('..'), 'hand4whole'),'main'))
-from config import cfg
+sys.path.append(join(dirname(os.getcwd())))
 
-sys.path.append(join(join(os.path.abspath('...'), 'hand4whole'),'common'))
-from utils.human_models import smpl_x
+
+from hand4whole.main.config import cfg
+from hand4whole.common.utils.human_models import smpl_x
 
 sys.path.append(join(os.path.abspath('..'), 'main'))
-from configuration import cf
+from memory_perceiver.main.configuration import cf
 
 
 def render_silhouettes(img, mesh, faces, cam_params, device, hd=False):

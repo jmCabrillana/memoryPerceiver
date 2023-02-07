@@ -1,6 +1,6 @@
 from tqdm import tqdm
 import os
-from os.path import join
+from os.path import join, dirname
 import gc
 import sys
 import time
@@ -18,7 +18,6 @@ import torch.nn.functional as F
 from torch.nn.parallel.data_parallel import DataParallel
 import torch_xla
 import torch_xla.core.xla_model as xm
-import torch_xla.utils.serialization as xser
 import torch_xla.distributed.parallel_loader as pl
 import torch_xla.distributed.xla_multiprocessing as xmp
 import torchaudio
@@ -33,24 +32,18 @@ from einops import rearrange, repeat
 # %load_ext autoreload
 # %autoreload 2
 
-sys.path.append(join(os.path.dirname(os.path.abspath('..')), 'hand4whole'))
-sys.path.append(join(join(os.path.dirname(os.path.abspath('..')), 'hand4whole'),'main'))
-sys.path.append(join(join(os.path.dirname(os.path.abspath('..')), 'hand4whole'),'common'))
 
-from model import get_model
+sys.path.append(join(dirname(os.getcwd())))
 
-sys.path.append(join(os.path.abspath('..'), 'datasets'))
-sys.path.append(join(os.path.abspath('..'), 'processing'))
-sys.path.append(join(os.path.abspath('..'), 'core'))
-sys.path.append(join(os.path.abspath('..'), 'rendering'))
+from hand4whole.main.model import get_model
 
 from configuration import cf
-from stream_data import Streamer
-from my_sampler import MyDistributedBatchSampler
-from renderer import video_masking, write_output
-from model_net import PerceiverIO
-from miscellaneous import batch_dictionary, batch_dictionary_to_list
-from vectorize import input_to_tensor, fourier_encode
+from memory_perceiver.datasets.stream_data import Streamer
+from memory_perceiver.datasets.my_sampler import MyDistributedBatchSampler
+from memory_perceiver.processing.vectorize import input_to_tensor, fourier_encode
+from memory_perceiver.rendering.renderer import video_masking, write_output
+from memory_perceiver.core.model_net import PerceiverIO
+from memory_perceiver.core.miscellaneous import batch_dictionary
 
 class FLAGS:
 
