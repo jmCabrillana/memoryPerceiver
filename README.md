@@ -44,6 +44,8 @@ Using a sufficiently long input sequence, the model is able to imitate human beh
 
 ![](https://github.com/jmCabrillana/memoryPerceiver/blob/main/ezgif.com-video-to-gif.gif)
 
+https://giphy.com/gifs/mySDfU3cx4mPTEJ6ka
+
 
 ## Citations
 
