@@ -1,0 +1,3 @@
+[submodule "hand4whole"]
+	path = hand4whole
+	url = https://github.com/jmCabrillana/hand4whole.git
