@@ -42,7 +42,9 @@ Distributed training is performed with pytorch on google cloud with 8 TPU cores.
 Using a sufficiently long input sequence, the model is able to imitate human behavior:
 
 
-https://user-images.githubusercontent.com/56579396/217150645-30049aef-e827-4e17-9c36-304682678f15.mp4
+![](https://github.com/jmCabrillana/memoryPerceiver/blob/main/ezgif.com-video-to-gif.gif)
+
+ezgif.com-video-to-gif.gif
 
 
 ## Citations
