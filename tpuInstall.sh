@@ -11,6 +11,7 @@ chmod +x install.sh
 cd ..
 pip install -r requirements.txt
 jupyter nbextension enable --py widgetsnbextension
+#gcloud storage cp --recursive  gs://karagoz_persistence_1/data_test .
 # gcloud storage cp gs://karagoz_persistence_1/Test_names.txt memory_perceiver/data_test/hist
 # git clone https://github.com/facebookresearch/pytorch3d.git
 # cd pytorch3d && pip install -e .

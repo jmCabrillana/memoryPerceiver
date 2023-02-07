@@ -130,6 +130,7 @@ data/
 hand4whole
 model/snapshot_6.pth.tar
 model/tmp/
+memory_perceiver/data_test
 memory_perceiver/main/pretrained_models
 memory_perceiver/main/monitor
 memory_perceiver/main/weights
