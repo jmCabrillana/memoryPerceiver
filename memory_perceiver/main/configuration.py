@@ -16,6 +16,7 @@ class Config:
     body_parts_extended = {'smplx_root_pose':3, 'smplx_body_pose':63, 'smplx_lhand_pose':45, 'smplx_rhand_pose':45, 'smplx_jaw_pose':3, 
               'smplx_expr':10, 'cam_trans':3, 'bbox':4, 'smplx_shape':10}
     seq_byte_size = 19012
+    reward_byte_size = 21
 
     # Model dim configuration
 

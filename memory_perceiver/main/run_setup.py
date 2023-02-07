@@ -318,7 +318,7 @@ def _mp_fn(index, flags):
         xm.master_print('##########')
 
         if( epoch % FLAGS.print_step == 0 ):
-            xm.save(model.state_dict(), 'weights.pt')
+            xm.save(model.state_dict(), 'weights/weights.pt')
             xm.master_print(torch_xla.debug.metrics.metrics_report())
             if xm.is_master_ordinal():
                 write_output(target_display['video'], target_display['audio'], target_display, pose_shapes[0], epoch, device, model_smplx, 'target')
