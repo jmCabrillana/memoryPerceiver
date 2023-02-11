@@ -24,8 +24,7 @@ from einops import rearrange, repeat
 #     PointLights
 # )
 
-sys.path.append(join(dirname(os.getcwd())))
-
+sys.path.append(join(dirname(dirname(os.getcwd()))))
 
 from hand4whole.main.config import cfg
 from hand4whole.common.utils.human_models import smpl_x

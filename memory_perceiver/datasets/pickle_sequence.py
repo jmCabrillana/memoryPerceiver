@@ -3,8 +3,7 @@ import os
 from os.path import join, dirname
 import pickle
 
-
-sys.path.append(join(dirname(os.getcwd())))
+sys.path.append(join(dirname(dirname(os.getcwd()))))
 
 from memory_perceiver.main.configuration import cf
 

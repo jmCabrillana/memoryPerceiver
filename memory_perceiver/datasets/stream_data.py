@@ -8,7 +8,7 @@ import torch.utils.data as data
 import torch
 from pytorchvideo.data.encoded_video import EncodedVideo
 
-sys.path.append(join(dirname(os.getcwd())))
+sys.path.append(join(dirname(dirname(os.getcwd()))))
 
 from memory_perceiver.processing.videoTransform import transform_video, transform_audio
 from memory_perceiver.main.configuration import cf
