@@ -16,16 +16,18 @@ from pickle_sequence import read_seq
 
 class Streamer(data.Dataset):
 
-    def __init__(self, path, input_duration, target_duration, total_duration, batch_size):
+    def __init__(self, path, input_duration, target_duration, total_duration, batch_size, clean_audio=False):
         self.input_duration = input_duration
         self.total_duration = total_duration
         self.target_duration = target_duration
         self.len_stream = int( (total_duration-input_duration)/target_duration )
         self.batch_size = batch_size
+        self.clean_audio = clean_audio
 
         # data paths
 
         self.pathes = [join(path, f) for f in listdir(path) if isfile(join(path, f))]
+        self.pathes = self.pathes[ : 8*int(len(self.pathes)/8)]
 
         # Randomly cut clips
 
@@ -62,8 +64,10 @@ class Streamer(data.Dataset):
         # Load pose amd clean audio as binary
 
         seq_path = dirname(path) + '/seq/' + basename(path)[:-4] + '.bin'
-        input = read_seq(seq_path, start, stop_input)
-        target = read_seq(seq_path, stop_input, stop_input + self.target_duration)
+        input = read_seq(seq_path, start, stop_input, 
+                        cf.seq_byte_size, clean_audio=self.clean_audio)
+        target = read_seq(seq_path, stop_input, stop_input + self.target_duration, 
+                        cf.seq_byte_size, clean_audio=self.clean_audio)
 
         # Load media
 

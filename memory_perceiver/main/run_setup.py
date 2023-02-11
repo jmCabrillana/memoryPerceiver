@@ -80,7 +80,8 @@ def create_dataloader( flags):
 
     # Dataloader
 
-    dataset = Streamer(join(os.path.dirname(os.getcwd()),'data_test'), duration, duration_future, duration_total,batch_size)
+    dataset = Streamer(join(os.path.dirname(os.getcwd()),'data_test'), duration, duration_future, 
+                        duration_total, batch_size, clean_audio=True)
 
     sampler = None
     if (xm.xrt_world_size() > 1):
