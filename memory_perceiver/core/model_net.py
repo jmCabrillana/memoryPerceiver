@@ -249,6 +249,7 @@ class PerceiverIO(nn.Module):
             )
 
         self.decoder_cross_attn = PreNormContext(queries_dim, Attention(queries_dim, latent_dim, heads = cross_heads, dim_head = cross_dim_head), context_dim = latent_dim)
+        self.queries=None
 
         # Projection to return modalities, enhancement
 
