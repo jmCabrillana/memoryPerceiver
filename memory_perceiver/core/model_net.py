@@ -260,7 +260,7 @@ class PerceiverIO(nn.Module):
         for part, params in projection_parameters.items():
             self.projections[part] = nn.Linear(queries_dim, params, device=device)
 
-    def forward(self, data, mask = None, queries = None):
+    def forward(self, data, mask = None, queries = None, update_mem=True):
 
         # init data
 
@@ -276,7 +276,8 @@ class PerceiverIO(nn.Module):
                                                 cmem = self.cross_cmem[:b, ...].clone().detach(), 
                                                 mask = mask, 
                                                 special_compression = self.special_compression)
-        self.cross_cmem[:b, ...] = new_cmem.clone().detach()
+        if update_mem:
+            self.cross_cmem[:b, ...] = new_cmem.clone().detach()
         x = attn + x
         x = self.cross_ff(x) + x
         sum_aux_loss= sum_aux_loss + aux_loss
@@ -291,7 +292,8 @@ class PerceiverIO(nn.Module):
                                                                         mem = self.layers_mem[i//2][:b, ...].clone().detach(), 
                                                                         cmem = self.layers_cmem[i//2][:b, ...].clone().detach(),
                                                                         nb_compressed = int(self.latents.shape[1]/self.compression_ratio))
-                self.layers_mem[i//2][:b, ...], self.layers_cmem[i//2][:b, ...] = new_mem.clone().detach(), new_cmem.clone().detach()
+                if update_mem:
+                    self.layers_mem[i//2][:b, ...], self.layers_cmem[i//2][:b, ...] = new_mem.clone().detach(), new_cmem.clone().detach()
                 sum_aux_loss= sum_aux_loss + aux_loss
             x = attn + x
             x = self.ff_layers[i](x) + x
@@ -313,17 +315,29 @@ class PerceiverIO(nn.Module):
 
         return output, sum_aux_loss
 
-    def reset_memories(self):
+    def reset_memories(self, indexes=None):
 
         # Reset memory for new lifelong learning
 
         device =  self.cross_mem.device
         max_batch_size, mem_size, queries_dim = self.cross_mem.shape
         _, cmem_size, _ = self.cross_cmem.shape
-        self.cross_mem = torch.zeros(max_batch_size, mem_size, queries_dim, device=device)
-        self.cross_cmem = torch.zeros(max_batch_size, cmem_size, queries_dim, device=device)
+        if indexes is None:
+            indexes=torch.arange(max_batch_size)
+        self.cross_mem[indexes] = torch.zeros(len(indexes), mem_size, queries_dim, device=device)
+        self.cross_cmem[indexes] = torch.zeros(len(indexes), cmem_size, queries_dim, device=device)
         for i in range(self.depth):
             if ( i % 2 == 1):
-                self.layers_mem[i//2] = torch.zeros(max_batch_size, mem_size, queries_dim, device=device)
-                self.layers_cmem[i//2] = torch.zeros(max_batch_size, cmem_size, queries_dim, device=device)
+                self.layers_mem[i//2][indexes] = torch.zeros(len(indexes), mem_size, queries_dim, device=device)
+                self.layers_cmem[i//2][indexes] = torch.zeros(len(indexes), cmem_size, queries_dim, device=device)
+
+    def return_memories(self):
+        return {'cross_mem':self.cross_mem, 'cross_cmem':self.cross_cmem, 
+                'layers_mem':self.layers_mem, 'layers_cmem':self.layers_cmem}
+
+    def load_memories(self, dict):
+        self.cross_mem = dict['cross_mem']
+        self.cross_cmem = dict['cross_cmem']
+        self.layers_mem = dict['layers_mem']
+        self.layers_cmem = dict['layers_cmem']
 
