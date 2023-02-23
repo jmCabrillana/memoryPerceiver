@@ -336,8 +336,8 @@ class PerceiverIO(nn.Module):
                 'layers_mem':self.layers_mem, 'layers_cmem':self.layers_cmem}
 
     def load_memories(self, dict):
-        self.cross_mem = dict['cross_mem']
-        self.cross_cmem = dict['cross_cmem']
-        self.layers_mem = dict['layers_mem']
-        self.layers_cmem = dict['layers_cmem']
+        self.cross_mem = dict['cross_mem'].clone().detach()
+        self.cross_cmem = dict['cross_cmem'].clone().detach()
+        self.layers_mem = dict['layers_mem'].clone().detach()
+        self.layers_cmem = dict['layers_cmem'].clone().detach()
 
