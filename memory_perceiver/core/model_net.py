@@ -332,13 +332,15 @@ class PerceiverIO(nn.Module):
                 self.layers_mem[i//2][indexes] = torch.zeros(len(indexes), mem_size, queries_dim, device=device)
                 self.layers_cmem[i//2][indexes] = torch.zeros(len(indexes), cmem_size, queries_dim, device=device)
 
-    def return_memories(self):
-        return {'cross_mem':self.cross_mem, 'cross_cmem':self.cross_cmem, 
-                'layers_mem':self.layers_mem, 'layers_cmem':self.layers_cmem}
+    def return_memories(self, device=torch.device('cpu')):
+        return {'cross_mem':self.cross_mem.to(device), 'cross_cmem':self.cross_cmem.to(device), 
+                'layers_mem':[layer_mem.to(device) for layer_mem in self.layers_mem], 
+                'layers_cmem':[layer_cmem.to(device) for layer_cmem in self.layers_cmem] }
 
     def load_memories(self, dict):
-        self.cross_mem = dict['cross_mem'].clone().detach()
-        self.cross_cmem = dict['cross_cmem'].clone().detach()
-        self.layers_mem = dict['layers_mem'].clone().detach()
-        self.layers_cmem = dict['layers_cmem'].clone().detach()
+        device = self.cross_mem.device
+        self.cross_mem = dict['cross_mem'].clone().detach().to(device)
+        self.cross_cmem = dict['cross_cmem'].clone().detach().to(device)
+        self.layers_mem = [layer_mem.clone().detach().to(device) for layer_mem in dict['layers_mem']]
+        self.layers_cmem = [layer_cmem.clone().detach().to(device) for layer_cmem in dict['layers_cmem']]
 
