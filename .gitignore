@@ -134,5 +134,6 @@ memory_perceiver/data_test
 memory_perceiver/main/pretrained_models
 memory_perceiver/main/monitor
 memory_perceiver/main/weights
+memory_perceiver/main/outputs
 google-cloud-sdk/
 OmniIsaacGymEnvs
