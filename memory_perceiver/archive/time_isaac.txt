@@ -1,0 +1,4651 @@
+ni.isaac.core-1.46.3] startup
+[4.062s] [ext: omni.warp-0.6.3] startup
+[4.437s] [ext: omni.kit.window.title-1.1.2] startup
+2023-07-31 21:58:04 [4,426ms] [Warning] [carb.windowing-glfw.plugin] GLFW initialization failed.
+2023-07-31 21:58:04 [4,426ms] [Warning] [carb] Failed to startup plugin carb.windowing-glfw.plugin (interfaces: [carb::windowing::IGLContext v1.0],[carb::windowing::IWindowing v1.3]) (impl: carb.windowing-glfw.plugin)
+2023-07-31 21:58:04 [4,427ms] [Warning] [carb] [Plugin: libomni.structuredlog.plugin.so] Module /isaac-sim/kit/libomni.structuredlog.plugin.so remained loaded after unload request
+2023-07-31 21:58:04 [4,429ms] [Warning] [carb.windowing-glfw.plugin] GLFW initialization failed.
+2023-07-31 21:58:04 [4,429ms] [Warning] [carb] Failed to startup plugin carb.windowing-glfw.plugin (interfaces: [carb::windowing::IGLContext v1.0],[carb::windowing::IWindowing v1.3]) (impl: carb.windowing-glfw.plugin)
+[4.444s] [ext: omni.kit.viewport.bundle-104.0.2] startup
+[4.444s] [ext: omni.isaac.gym-0.3.3] startup
+[4.444s] [ext: omni.isaac.sim.python.gym.headless.render-2022.2.1] startup
+[4.446s] Simulation App Starting
+2023-07-31 21:58:04 [4,631ms] [Warning] [carb.audio.device] audio device is misconfigured or broken {deviceIndex = 0, name = 'default'} (The device is likely misconfigured, check your $HOME/.asoundrc)
+2023-07-31 21:58:04 [4,631ms] [Warning] [carb.audio.output] failed to retrieve the capabilities for device 0 {result = eDeviceLost (2)}
+2023-07-31 21:58:04 [4,631ms] [Warning] [carb.audio.context] failed to set the requested output during context creation.  Using a null streamer instead {result = eDeviceLost (2)}
+2023-07-31 21:58:05 [5,236ms] [Warning] [rtx.neuraylib.plugin] [IRAY:RENDER]   1.1   IRAY   rend warn : CUDA device 0 (Tesla T4): ECC is enabled, this will reduce rendering performance (it is strongly recommended to disable ECC with iray)
+[8.130s] app ready
+[8.270s] Simulation App Startup Complete
+[8.299s] [ext: omni.inspect-1.0.1] startup
+[8.316s] [ext: omni.debugdraw-0.1.1] startup
+[8.325s] [ext: omni.activity.core-1.0.1] startup
+[8.330s] [ext: omni.kit.widget.stage-2.7.24] startup
+[8.346s] [ext: omni.kit.window.property-1.8.2] startup
+[8.351s] [ext: omni.kit.property.usd-3.18.17] startup
+[8.369s] [ext: omni.kit.widget.text_editor-1.0.2] startup
+[8.372s] [ext: omni.kit.widget.graph-1.5.6-104_2] startup
+[8.382s] [ext: omni.kit.window.extensions-1.1.1] startup
+[8.390s] [ext: omni.graph.ui-1.24.2] startup
+[8.454s] [ext: omni.graph.action-1.31.1] startup
+[8.468s] [ext: omni.syntheticdata-0.2.4] startup
+2023-07-31 21:58:08 [8,475ms] [Warning] [omni.kit.viewport.menubar.core.menu_item.viewport_menu_item] ViewportMenuItem order argument is deprecated, use order_setting_path
+2023-07-31 21:58:08 [8,475ms] [Warning] [omni.syntheticdata.scripts.extension] SyntheticData extension needs at least a stageFrameHistoryCount of 3
+[8.498s] [ext: omni.command.usd-1.0.2] startup
+[8.502s] [ext: omni.graph.scriptnode-0.10.0] startup
+[8.506s] [ext: omni.graph.bundle.action-1.3.0] startup
+[8.506s] [ext: omni.replicator.core-1.7.8] startup
+2023-07-31 21:58:08 [8,614ms] [Warning] [omni.replicator.core.scripts.annotators] Annotator PostProcessDispatch is already registered, overwriting annotator template
+[8.719s] [ext: omni.replicator.isaac-1.7.4] startup
+[9.027s] [ext: omni.physx.flatcache-104.2.4-5.1] startup
+2023-07-31 21:58:09 [9,210ms] [Warning] [omni.client.plugin]  Tick: authentication: Could not resolve host name "isaac-dev.ov.nvidia.com"
+2023-07-31 21:58:09 [9,222ms] [Warning] [omni.client.plugin]  Tick: authentication: Could not resolve host name "isaac-dev.ov.nvidia.com"
+2023-07-31 21:58:09 [9,232ms] [Warning] [omni.client.plugin]  Tick: authentication: Could not resolve host name "isaac-dev.ov.nvidia.com"
+2023-07-31 21:58:09 [9,242ms] [Warning] [omni.isaac.core.utils.nucleus] /persistent/app/omniverse/mountedDrives setting not found
+2023-07-31 21:58:10 [11,035ms] [Warning] [omni.isaac.core.utils.nucleus] /persistent/app/omniverse/mountedDrives setting not found
+2023-07-31 21:58:11 [11,461ms] [Warning] [omni.replicator.core.scripts.writers] Writer already exists. Overwriting writer PytorchWriter.
+~*~*~*
+~*~*~* Direct GPU Helper:
+~*~*~*   2 articulations, maxLinks=3
+~*~*~*
+2023-07-31 21:58:13 [13,416ms] [Warning] [omni.replicator.core.scripts.writers] Unable to write metadata, no backend specified. To enable metadata writing, either specify a backend or override the `write_metadata` function.
+~*~*~*
+~*~*~* Direct GPU Helper:
+~*~*~*   2 articulations, maxLinks=3
+~*~*~*
+PLAY
+Initialization:  0.6314935684204102
+Get observations:  0.0031387805938720703
+Process inputs:  0.0008785724639892578
+  Padding:  0.029422521591186523
+    Load memories:  0.005276203155517578
+    Inference:  0.0869905948638916
+    Load memories:  0.0005910396575927734
+    Inference:  0.08643937110900879
+    optimizer:  1.1920928955078125e-06
+Print:  0.0005354881286621094
+Step environment:  0.019719362258911133
+Get observations:  0.006455421447753906
+Process inputs:  0.0002689361572265625
+$$$$$$$$$$$$ 00000 $$$$$$$$$$$
+Print:  1.1920928955078125e-05
+Step environment:  0.02486872673034668
+Get observations:  0.007894515991210938
+Process inputs:  0.0002760887145996094
+Print:  5.245208740234375e-06
+Step environment:  0.03163719177246094
+Get observations:  0.008194208145141602
+Process inputs:  0.00031876564025878906
+Print:  4.76837158203125e-06
+Step environment:  0.022724390029907227
+Get observations:  0.00822758674621582
+Process inputs:  0.0002658367156982422
+Print:  5.0067901611328125e-06
+Step environment:  0.027936458587646484
+Get observations:  0.007928848266601562
+Process inputs:  0.00031375885009765625
+Print:  5.9604644775390625e-06
+Step environment:  0.024722814559936523
+Get observations:  0.008529186248779297
+Process inputs:  0.0006763935089111328
+Print:  7.62939453125e-06
+Step environment:  0.02595067024230957
+Get observations:  0.004643917083740234
+Process inputs:  0.0003077983856201172
+Print:  5.4836273193359375e-06
+Step environment:  0.025512218475341797
+Get observations:  0.004652976989746094
+Process inputs:  0.00026988983154296875
+  Padding:  0.03297901153564453
+    Load memories:  0.00021386146545410156
+    Inference:  0.06743979454040527
+    Load memories:  0.00012946128845214844
+    Inference:  0.06586623191833496
+    optimizer:  2.1457672119140625e-06
+Print:  0.0004246234893798828
+Step environment:  0.018608570098876953
+Get observations:  0.0066797733306884766
+Process inputs:  0.00033593177795410156
+Print:  5.0067901611328125e-06
+Step environment:  0.02535271644592285
+Get observations:  0.008115530014038086
+Process inputs:  0.0002772808074951172
+Print:  4.5299530029296875e-06
+Step environment:  0.026207923889160156
+Get observations:  0.005398750305175781
+Process inputs:  0.0002894401550292969
+Print:  4.76837158203125e-06
+Step environment:  0.023912668228149414
+Get observations:  0.005532503128051758
+Process inputs:  0.0002868175506591797
+Print:  5.7220458984375e-06
+Step environment:  0.024630308151245117
+Get observations:  0.004505157470703125
+Process inputs:  0.00027632713317871094
+Print:  5.9604644775390625e-06
+Step environment:  0.024139881134033203
+Get observations:  0.00449371337890625
+Process inputs:  0.0002605915069580078
+Print:  4.76837158203125e-06
+Step environment:  0.02585625648498535
+Get observations:  0.004391908645629883
+Process inputs:  0.0002880096435546875
+Print:  6.4373016357421875e-06
+Step environment:  0.02369093894958496
+Get observations:  0.004453420639038086
+Process inputs:  0.00027179718017578125
+  Padding:  0.03245091438293457
+    Load memories:  0.00020265579223632812
+    Inference:  0.06740450859069824
+    Load memories:  0.00013589859008789062
+    Inference:  0.06577253341674805
+    optimizer:  1.1920928955078125e-06
+Print:  0.00010800361633300781
+Step environment:  0.019403934478759766
+Get observations:  0.00815272331237793
+Process inputs:  0.00029349327087402344
+Print:  5.7220458984375e-06
+Step environment:  0.023540735244750977
+Get observations:  0.007300138473510742
+Process inputs:  0.0002880096435546875
+Print:  5.7220458984375e-06
+Step environment:  0.0264892578125
+Get observations:  0.004546403884887695
+Process inputs:  0.00029540061950683594
+Print:  2.8371810913085938e-05
+Step environment:  0.025258302688598633
+Get observations:  0.004483461380004883
+Process inputs:  0.00030684471130371094
+Print:  4.5299530029296875e-06
+Step environment:  0.024973154067993164
+Get observations:  0.0044629573822021484
+Process inputs:  0.0003962516784667969
+Print:  5.7220458984375e-06
+Step environment:  0.0243990421295166
+Get observations:  0.004464387893676758
+Process inputs:  0.00027561187744140625
+Print:  5.245208740234375e-06
+Step environment:  0.024750947952270508
+Get observations:  0.0042896270751953125
+Process inputs:  0.00029659271240234375
+Print:  4.76837158203125e-06
+Step environment:  0.025389671325683594
+Get observations:  0.005564451217651367
+Process inputs:  0.0002586841583251953
+  Padding:  0.031267642974853516
+    Load memories:  0.00021576881408691406
+    Inference:  0.0678560733795166
+    Load memories:  0.00016450881958007812
+    Inference:  0.06617569923400879
+    optimizer:  1.1920928955078125e-06
+Print:  0.00010204315185546875
+Step environment:  0.018829345703125
+Get observations:  0.008901834487915039
+Process inputs:  0.00034332275390625
+Print:  5.0067901611328125e-06
+Step environment:  0.023520469665527344
+Get observations:  0.007256269454956055
+Process inputs:  0.0002803802490234375
+Print:  7.152557373046875e-06
+Step environment:  0.026484251022338867
+Get observations:  0.005427360534667969
+Process inputs:  0.0002675056457519531
+Print:  4.76837158203125e-06
+Step environment:  0.023849964141845703
+Get observations:  0.0054931640625
+Process inputs:  0.0002684593200683594
+Print:  5.0067901611328125e-06
+Step environment:  0.02435588836669922
+Get observations:  0.005376338958740234
+Process inputs:  0.0002586841583251953
+Print:  4.76837158203125e-06
+Step environment:  0.023847103118896484
+Get observations:  0.00548553466796875
+Process inputs:  0.00025653839111328125
+Print:  4.5299530029296875e-06
+Step environment:  0.02346205711364746
+Get observations:  0.004385709762573242
+Process inputs:  0.00025582313537597656
+Print:  4.5299530029296875e-06
+Step environment:  0.02389979362487793
+Get observations:  0.004361152648925781
+Process inputs:  0.0002732276916503906
+  Padding:  0.03283524513244629
+    Load memories:  0.0005362033843994141
+    Inference:  0.06763601303100586
+    Load memories:  0.00013828277587890625
+    Inference:  0.06574010848999023
+    optimizer:  9.5367431640625e-07
+Print:  0.00010967254638671875
+Step environment:  0.01873040199279785
+Get observations:  0.007204294204711914
+Process inputs:  0.0003037452697753906
+Print:  4.0531158447265625e-06
+Step environment:  0.02471184730529785
+Get observations:  0.0077741146087646484
+Process inputs:  0.00027179718017578125
+Print:  5.0067901611328125e-06
+Step environment:  0.026177644729614258
+Get observations:  0.005371570587158203
+Process inputs:  0.0003299713134765625
+Print:  6.67572021484375e-06
+Step environment:  0.023824691772460938
+Get observations:  0.004328012466430664
+Process inputs:  0.0002803802490234375
+Print:  4.76837158203125e-06
+Step environment:  0.02517104148864746
+Get observations:  0.004480600357055664
+Process inputs:  0.00026035308837890625
+Print:  5.0067901611328125e-06
+Step environment:  0.02466750144958496
+Get observations:  0.004335165023803711
+Process inputs:  0.0002727508544921875
+Print:  4.5299530029296875e-06
+Step environment:  0.024801969528198242
+Get observations:  0.004259347915649414
+Process inputs:  0.0002567768096923828
+Print:  4.291534423828125e-06
+Step environment:  0.02494359016418457
+Get observations:  0.004161834716796875
+Process inputs:  0.00027489662170410156
+  Padding:  0.03253173828125
+    Load memories:  0.00027060508728027344
+    Inference:  0.06788897514343262
+    Load memories:  0.00047278404235839844
+    Inference:  0.06555342674255371
+    optimizer:  1.1920928955078125e-06
+Print:  9.799003601074219e-05
+Step environment:  0.018715381622314453
+Get observations:  0.007234096527099609
+Process inputs:  0.00029730796813964844
+Print:  4.291534423828125e-06
+Step environment:  0.024830102920532227
+Get observations:  0.007272481918334961
+Process inputs:  0.0002741813659667969
+Print:  4.5299530029296875e-06
+Step environment:  0.02275228500366211
+Get observations:  0.006969928741455078
+Process inputs:  0.0002892017364501953
+Print:  4.5299530029296875e-06
+Step environment:  0.02629876136779785
+Get observations:  0.005408048629760742
+Process inputs:  0.0003211498260498047
+Print:  5.245208740234375e-06
+Step environment:  0.023289918899536133
+Get observations:  0.005619525909423828
+Process inputs:  0.0002796649932861328
+Print:  6.67572021484375e-06
+Step environment:  0.02406930923461914
+Get observations:  0.0044286251068115234
+Process inputs:  0.0002655982971191406
+Print:  4.5299530029296875e-06
+Step environment:  0.0252532958984375
+Get observations:  0.0052433013916015625
+Process inputs:  0.0002732276916503906
+Print:  5.0067901611328125e-06
+Step environment:  0.024653196334838867
+Get observations:  0.004252433776855469
+Process inputs:  0.000286102294921875
+  Padding:  0.03278493881225586
+    Load memories:  0.00018930435180664062
+    Inference:  0.0678412914276123
+    Load memories:  0.00020813941955566406
+    Inference:  0.06546187400817871
+    optimizer:  1.430511474609375e-06
+Print:  0.0004458427429199219
+Step environment:  0.01964116096496582
+Get observations:  0.00732421875
+Process inputs:  0.0003192424774169922
+Print:  4.76837158203125e-06
+Step environment:  0.02516913414001465
+Get observations:  0.0070726871490478516
+Process inputs:  0.0003185272216796875
+$$$$$$$$$$$$ 11111 $$$$$$$$$$$
+Print:  1.3113021850585938e-05
+Step environment:  0.026502132415771484
+Get observations:  0.004393100738525391
+Process inputs:  0.0002899169921875
+Print:  4.5299530029296875e-06
+Step environment:  0.02493762969970703
+Get observations:  0.0044672489166259766
+Process inputs:  0.00028061866760253906
+Print:  4.76837158203125e-06
+Step environment:  0.024815797805786133
+Get observations:  0.004388332366943359
+Process inputs:  0.00028777122497558594
+Print:  5.0067901611328125e-06
+Step environment:  0.02442026138305664
+Get observations:  0.004441499710083008
+Process inputs:  0.0002624988555908203
+Print:  4.5299530029296875e-06
+Step environment:  0.025433063507080078
+Get observations:  0.004740715026855469
+Process inputs:  0.0002853870391845703
+Print:  7.62939453125e-06
+Step environment:  0.023393630981445312
+Get observations:  0.0043010711669921875
+Process inputs:  0.0002834796905517578
+  Padding:  0.03254365921020508
+    Load memories:  0.0002493858337402344
+    Inference:  0.06754660606384277
+    Load memories:  0.00014328956604003906
+    Inference:  0.06605648994445801
+    optimizer:  1.430511474609375e-06
+Print:  0.0001201629638671875
+Step environment:  0.019797086715698242
+Get observations:  0.007130861282348633
+Process inputs:  0.00029754638671875
+Print:  6.198883056640625e-06
+Step environment:  0.02524399757385254
+Get observations:  0.0077037811279296875
+Process inputs:  0.00032591819763183594
+Print:  4.76837158203125e-06
+Step environment:  0.02247762680053711
+Get observations:  0.0073392391204833984
+Process inputs:  0.00026607513427734375
+Print:  4.0531158447265625e-06
+Step environment:  0.025689125061035156
+Get observations:  0.00435328483581543
+Process inputs:  0.00024962425231933594
+Print:  4.76837158203125e-06
+Step environment:  0.02515125274658203
+Get observations:  0.004487276077270508
+Process inputs:  0.0002644062042236328
+Print:  4.76837158203125e-06
+Step environment:  0.024504423141479492
+Get observations:  0.004410743713378906
+Process inputs:  0.00027108192443847656
+Print:  4.291534423828125e-06
+Step environment:  0.02434563636779785
+Get observations:  0.004374265670776367
+Process inputs:  0.00024628639221191406
+Print:  4.76837158203125e-06
+Step environment:  0.02506875991821289
+Get observations:  0.005646467208862305
+Process inputs:  0.0002732276916503906
+  Padding:  0.03157401084899902
+    Load memories:  0.00022172927856445312
+    Inference:  0.06821203231811523
+    Load memories:  0.0001289844512939453
+    Inference:  0.06543278694152832
+    optimizer:  9.5367431640625e-07
+Print:  0.00010704994201660156
+Step environment:  0.019245386123657227
+Get observations:  0.007236957550048828
+Process inputs:  0.0002880096435546875
+Print:  4.291534423828125e-06
+Step environment:  0.025089263916015625
+Get observations:  0.007645368576049805
+Process inputs:  0.00030040740966796875
+Print:  6.4373016357421875e-06
+Step environment:  0.022246122360229492
+Get observations:  0.007346391677856445
+Process inputs:  0.0002913475036621094
+Print:  4.291534423828125e-06
+Step environment:  0.0260317325592041
+Get observations:  0.004313230514526367
+Process inputs:  0.00028514862060546875
+Print:  5.4836273193359375e-06
+Step environment:  0.02460455894470215
+Get observations:  0.0043447017669677734
+Process inputs:  0.00024962425231933594
+Print:  4.76837158203125e-06
+Step environment:  0.024191617965698242
+Get observations:  0.00439906120300293
+Process inputs:  0.00025463104248046875
+Print:  4.0531158447265625e-06
+Step environment:  0.024687767028808594
+Get observations:  0.005482196807861328
+Process inputs:  0.000247955322265625
+Print:  4.291534423828125e-06
+Step environment:  0.023130178451538086
+Get observations:  0.0045604705810546875
+Process inputs:  0.00024580955505371094
+  Padding:  0.032691240310668945
+    Load memories:  0.0005586147308349609
+    Inference:  0.06739401817321777
+    Load memories:  0.00017118453979492188
+    Inference:  0.0662240982055664
+    optimizer:  1.1920928955078125e-06
+Print:  0.00010824203491210938
+Step environment:  0.018737077713012695
+Get observations:  0.007109880447387695
+Process inputs:  0.00031495094299316406
+Print:  4.291534423828125e-06
+Step environment:  0.024539709091186523
+Get observations:  0.007654428482055664
+Process inputs:  0.0002875328063964844
+Print:  5.0067901611328125e-06
+Step environment:  0.02327728271484375
+Get observations:  0.006644487380981445
+Process inputs:  0.00029158592224121094
+Print:  6.4373016357421875e-06
+Step environment:  0.026434659957885742
+Get observations:  0.0043752193450927734
+Process inputs:  0.0003161430358886719
+Print:  4.76837158203125e-06
+Step environment:  0.025093555450439453
+Get observations:  0.004163265228271484
+Process inputs:  0.0002651214599609375
+Print:  4.76837158203125e-06
+Step environment:  0.025225162506103516
+Get observations:  0.0043141841888427734
+Process inputs:  0.000286102294921875
+Print:  5.7220458984375e-06
+Step environment:  0.024875164031982422
+Get observations:  0.00539851188659668
+Process inputs:  0.00028252601623535156
+Print:  4.5299530029296875e-06
+Step environment:  0.023638010025024414
+Get observations:  0.004388570785522461
+Process inputs:  0.00031280517578125
+  Padding:  0.03260016441345215
+    Load memories:  0.0002067089080810547
+    Inference:  0.06785941123962402
+    Load memories:  0.0004956722259521484
+    Inference:  0.06526708602905273
+    optimizer:  9.5367431640625e-07
+Print:  0.00010204315185546875
+Step environment:  0.018774986267089844
+Get observations:  0.0072591304779052734
+Process inputs:  0.00028634071350097656
+Print:  4.5299530029296875e-06
+Step environment:  0.024383068084716797
+Get observations:  0.0076982975006103516
+Process inputs:  0.00029850006103515625
+Print:  5.245208740234375e-06
+Step environment:  0.022032976150512695
+Get observations:  0.007048845291137695
+Process inputs:  0.00025916099548339844
+Print:  4.0531158447265625e-06
+Step environment:  0.02635502815246582
+Get observations:  0.0043239593505859375
+Process inputs:  0.0003619194030761719
+Print:  4.76837158203125e-06
+Step environment:  0.024491548538208008
+Get observations:  0.005558967590332031
+Process inputs:  0.0002892017364501953
+Print:  6.9141387939453125e-06
+Step environment:  0.023938894271850586
+Get observations:  0.00449061393737793
+Process inputs:  0.00030422210693359375
+Print:  5.7220458984375e-06
+Step environment:  0.02474236488342285
+Get observations:  0.005402326583862305
+Process inputs:  0.00028896331787109375
+Print:  4.291534423828125e-06
+Step environment:  0.02362346649169922
+Get observations:  0.004300117492675781
+Process inputs:  0.0002734661102294922
+  Padding:  0.03258156776428223
+    Load memories:  0.00020241737365722656
+    Inference:  0.06789708137512207
+    Load memories:  0.0001766681671142578
+    Inference:  0.06554722785949707
+    optimizer:  1.1920928955078125e-06
+Print:  0.00046634674072265625
+Step environment:  0.019875049591064453
+Get observations:  0.008726835250854492
+Process inputs:  0.0003256797790527344
+Print:  4.76837158203125e-06
+Step environment:  0.023501873016357422
+Get observations:  0.007773160934448242
+Process inputs:  0.0003216266632080078
+Print:  4.76837158203125e-06
+Step environment:  0.026396989822387695
+Get observations:  0.004382133483886719
+Process inputs:  0.0002841949462890625
+Print:  4.0531158447265625e-06
+Step environment:  0.026034116744995117
+Get observations:  0.004277229309082031
+Process inputs:  0.0002961158752441406
+Print:  5.7220458984375e-06
+Step environment:  0.0251007080078125
+Get observations:  0.0044097900390625
+Process inputs:  0.0002837181091308594
+Print:  4.76837158203125e-06
+Step environment:  0.02511143684387207
+Get observations:  0.004365444183349609
+Process inputs:  0.00028967857360839844
+Print:  5.0067901611328125e-06
+Step environment:  0.024472713470458984
+Get observations:  0.005452871322631836
+Process inputs:  0.0003237724304199219
+Print:  7.62939453125e-06
+Step environment:  0.024869680404663086
+Get observations:  0.0043201446533203125
+Process inputs:  0.0002868175506591797
+  Padding:  0.03253936767578125
+    Load memories:  0.0002167224884033203
+    Inference:  0.0667276382446289
+    Load memories:  0.00019931793212890625
+    Inference:  0.0652170181274414
+    optimizer:  9.5367431640625e-07
+Print:  0.0004923343658447266
+Step environment:  0.019290447235107422
+Get observations:  0.008487701416015625
+Process inputs:  0.0002808570861816406
+Print:  4.291534423828125e-06
+Step environment:  0.023070335388183594
+Get observations:  0.007275104522705078
+Process inputs:  0.0003142356872558594
+Print:  5.0067901611328125e-06
+Step environment:  0.026571035385131836
+Get observations:  0.004328250885009766
+Process inputs:  0.0002684593200683594
+$$$$$$$$$$$$ 22222 $$$$$$$$$$$
+Print:  1.0728836059570312e-05
+Step environment:  0.024980783462524414
+Get observations:  0.00439143180847168
+Process inputs:  0.00030684471130371094
+Print:  5.0067901611328125e-06
+Step environment:  0.024686098098754883
+Get observations:  0.0043566226959228516
+Process inputs:  0.0002429485321044922
+Print:  4.291534423828125e-06
+Step environment:  0.024731159210205078
+Get observations:  0.0042247772216796875
+Process inputs:  0.0003178119659423828
+Print:  4.5299530029296875e-06
+Step environment:  0.025516986846923828
+Get observations:  0.004700183868408203
+Process inputs:  0.0002677440643310547
+Print:  6.67572021484375e-06
+Step environment:  0.02303791046142578
+~*~*~*
+~*~*~* Direct GPU Helper:
+~*~*~*   2 articulations, maxLinks=3
+~*~*~*
+REPLAY
+Initialization:  0.43974733352661133
+Get observations:  0.0016598701477050781
+Process inputs:  0.0007042884826660156
+  Padding:  0.054190874099731445
+    Load memories:  0.00538182258605957
+    Inference model:  0.026421546936035156
+    rearrange:  0.00020623207092285156
+    Inference projection:  0.000217437744140625
+    Load memories:  0.03551530838012695
+    Inference:  0.0634756088256836
+    Backward:  0.012204647064208984
+    Load memories:  0.08484292030334473
+    Inference model:  0.024817943572998047
+    rearrange:  0.0001659393310546875
+    Inference projection:  0.00021004676818847656
+    Load memories:  0.03826737403869629
+    Inference:  0.06375551223754883
+    Backward:  0.011566400527954102
+    optimizer:  2.384185791015625e-06
+Print:  0.00021314620971679688
+Step environment:  0.10142016410827637
+Get observations:  0.011805057525634766
+Process inputs:  0.0003304481506347656
+$$$$$$$$$$$$ 00000 $$$$$$$$$$$
+expectation:  [[97.73509216308594], [101.16036987304688]]
+action:  tensor([[-0.0419],
+        [-0.0553]], device='cuda:0')
+observations tensor([5.3427e-05, 6.4113e-03, 8.0109e-05, 9.6131e-03], device='cuda:0')
+Print:  0.0077056884765625
+Step environment:  0.016216516494750977
+Get observations:  0.010210037231445312
+Process inputs:  0.0003237724304199219
+Print:  7.152557373046875e-06
+Step environment:  0.018285036087036133
+Get observations:  0.010563850402832031
+Process inputs:  0.00030875205993652344
+Print:  5.245208740234375e-06
+Step environment:  0.023224353790283203
+Get observations:  0.007755756378173828
+Process inputs:  0.00027179718017578125
+Print:  5.4836273193359375e-06
+Step environment:  0.021527767181396484
+Get observations:  0.007781505584716797
+Process inputs:  0.00026869773864746094
+Print:  4.76837158203125e-06
+Step environment:  0.021347522735595703
+Get observations:  0.00763249397277832
+Process inputs:  0.0002932548522949219
+Print:  5.0067901611328125e-06
+Step environment:  0.021129369735717773
+Get observations:  0.007807493209838867
+Process inputs:  0.0003027915954589844
+Print:  5.0067901611328125e-06
+Step environment:  0.02121257781982422
+Get observations:  0.007885456085205078
+Process inputs:  0.00028443336486816406
+  Padding:  0.057695865631103516
+    Load memories:  0.0005948543548583984
+    Inference model:  0.02919316291809082
+    rearrange:  0.00015282630920410156
+    Inference projection:  0.0002079010009765625
+    Load memories:  0.00019073486328125
+    Inference:  0.10132884979248047
+    Backward:  0.013092041015625
+    Load memories:  0.00020694732666015625
+    Inference model:  0.1077578067779541
+    rearrange:  0.0006651878356933594
+    Inference projection:  0.0002541542053222656
+    Load memories:  0.000156402587890625
+    Inference:  0.10094475746154785
+    Backward:  0.011269330978393555
+    optimizer:  2.6226043701171875e-06
+Print:  0.00017714500427246094
+Step environment:  0.10300731658935547
+Get observations:  0.011633157730102539
+Process inputs:  0.000347137451171875
+Print:  7.3909759521484375e-06
+Step environment:  0.019776105880737305
+Get observations:  0.01064443588256836
+Process inputs:  0.00032019615173339844
+Print:  6.4373016357421875e-06
+Step environment:  0.023052453994750977
+Get observations:  0.008009672164916992
+Process inputs:  0.0002799034118652344
+Print:  4.5299530029296875e-06
+Step environment:  0.021671533584594727
+Get observations:  0.00887608528137207
+Process inputs:  0.0002837181091308594
+Print:  5.4836273193359375e-06
+Step environment:  0.021705150604248047
+Get observations:  0.007948160171508789
+Process inputs:  0.0003075599670410156
+Print:  5.245208740234375e-06
+Step environment:  0.02053689956665039
+Get observations:  0.008889913558959961
+Process inputs:  0.00027871131896972656
+Print:  5.0067901611328125e-06
+Step environment:  0.02130746841430664
+Get observations:  0.00803518295288086
+Process inputs:  0.00027489662170410156
+Print:  5.245208740234375e-06
+Step environment:  0.020623207092285156
+Get observations:  0.008742570877075195
+Process inputs:  0.0002846717834472656
+  Padding:  0.056374311447143555
+    Load memories:  0.00021219253540039062
+    Inference model:  0.029195308685302734
+    rearrange:  0.00014066696166992188
+    Inference projection:  0.00022363662719726562
+    Load memories:  0.00016808509826660156
+    Inference:  0.10149908065795898
+    Backward:  0.012988805770874023
+    Load memories:  0.0005147457122802734
+    Inference model:  0.10654020309448242
+    rearrange:  0.00016832351684570312
+    Inference projection:  0.0002319812774658203
+    Load memories:  0.00018095970153808594
+    Inference:  0.10253596305847168
+    Backward:  0.011257171630859375
+    optimizer:  2.6226043701171875e-06
+Print:  0.0002396106719970703
+Step environment:  0.10247039794921875
+Get observations:  0.010478734970092773
+Process inputs:  0.0003120899200439453
+Print:  5.0067901611328125e-06
+Step environment:  0.020968914031982422
+Get observations:  0.010755777359008789
+Process inputs:  0.00027441978454589844
+Print:  1.9550323486328125e-05
+Step environment:  0.02332901954650879
+Get observations:  0.0076715946197509766
+Process inputs:  0.000293731689453125
+Print:  4.291534423828125e-06
+Step environment:  0.021634817123413086
+Get observations:  0.009104013442993164
+Process inputs:  0.0002949237823486328
+Print:  7.152557373046875e-06
+Step environment:  0.022680282592773438
+Get observations:  0.007666110992431641
+Process inputs:  0.00033283233642578125
+Print:  5.7220458984375e-06
+Step environment:  0.021550655364990234
+Get observations:  0.008811712265014648
+Process inputs:  0.00030112266540527344
+Print:  4.76837158203125e-06
+Step environment:  0.021912097930908203
+Get observations:  0.007991790771484375
+Process inputs:  0.0003495216369628906
+Print:  5.245208740234375e-06
+Step environment:  0.02044963836669922
+Get observations:  0.007857799530029297
+Process inputs:  0.0002815723419189453
+  Padding:  0.0575711727142334
+    Load memories:  0.00023221969604492188
+    Inference model:  0.02993297576904297
+    rearrange:  0.0006351470947265625
+    Inference projection:  0.00027251243591308594
+    Load memories:  0.0001571178436279297
+    Inference:  0.10198307037353516
+    Backward:  0.011376380920410156
+    Load memories:  0.000194549560546875
+    Inference model:  0.10926318168640137
+    rearrange:  0.0005211830139160156
+    Inference projection:  0.0002465248107910156
+    Load memories:  0.0001304149627685547
+    Inference:  0.10588264465332031
+    Backward:  0.010183095932006836
+    optimizer:  2.6226043701171875e-06
+Print:  0.00014662742614746094
+Step environment:  0.10907244682312012
+Get observations:  0.01123046875
+Process inputs:  0.00034546852111816406
+Print:  6.9141387939453125e-06
+Step environment:  0.019960641860961914
+Get observations:  0.011096000671386719
+Process inputs:  0.00033164024353027344
+Print:  5.7220458984375e-06
+Step environment:  0.023590803146362305
+Get observations:  0.007693052291870117
+Process inputs:  0.0002856254577636719
+Print:  4.76837158203125e-06
+Step environment:  0.022406816482543945
+Get observations:  0.007770061492919922
+Process inputs:  0.0003063678741455078
+Print:  5.7220458984375e-06
+Step environment:  0.021378040313720703
+Get observations:  0.007820844650268555
+Process inputs:  0.0002827644348144531
+Print:  4.76837158203125e-06
+Step environment:  0.02162766456604004
+Get observations:  0.0077707767486572266
+Process inputs:  0.0002834796905517578
+Print:  5.245208740234375e-06
+Step environment:  0.021654605865478516
+Get observations:  0.007727146148681641
+Process inputs:  0.00031566619873046875
+Print:  4.76837158203125e-06
+Step environment:  0.023656845092773438
+Get observations:  0.008902788162231445
+Process inputs:  0.0003104209899902344
+  Padding:  0.05717062950134277
+    Load memories:  0.00024199485778808594
+    Inference model:  0.029951095581054688
+    rearrange:  0.0002090930938720703
+    Inference projection:  0.0002484321594238281
+    Load memories:  0.00025582313537597656
+    Inference:  0.0966634750366211
+    Backward:  0.014288187026977539
+    Load memories:  0.0005116462707519531
+    Inference model:  0.10766267776489258
+    rearrange:  0.00019550323486328125
+    Inference projection:  0.00028777122497558594
+    Load memories:  0.00019359588623046875
+    Inference:  0.10367321968078613
+    Backward:  0.010968208312988281
+OPTIMIZING
+    optimizer:  0.010543107986450195
+Print:  0.00011682510375976562
+Step environment:  0.10505485534667969
+Get observations:  0.010880708694458008
+Process inputs:  0.0003292560577392578
+Print:  4.291534423828125e-06
+Step environment:  0.018979787826538086
+Get observations:  0.010717391967773438
+Process inputs:  0.00027823448181152344
+Print:  5.245208740234375e-06
+Step environment:  0.0234372615814209
+Get observations:  0.009110450744628906
+Process inputs:  0.0007796287536621094
+Print:  5.7220458984375e-06
+Step environment:  0.021262645721435547
+Get observations:  0.007881641387939453
+Process inputs:  0.00025916099548339844
+Print:  4.76837158203125e-06
+Step environment:  0.02113795280456543
+Get observations:  0.008925199508666992
+Process inputs:  0.00026226043701171875
+Print:  4.76837158203125e-06
+Step environment:  0.022512435913085938
+Get observations:  0.0077016353607177734
+Process inputs:  0.00030422210693359375
+Print:  4.5299530029296875e-06
+Step environment:  0.021507978439331055
+Get observations:  0.007871150970458984
+Process inputs:  0.0002593994140625
+Print:  4.76837158203125e-06
+Step environment:  0.021514892578125
+Get observations:  0.008821487426757812
+Process inputs:  0.00029158592224121094
+  Padding:  0.056595802307128906
+    Load memories:  0.0004975795745849609
+    Inference model:  0.02916121482849121
+    rearrange:  0.00015115737915039062
+    Inference projection:  0.0002894401550292969
+    Load memories:  0.00019168853759765625
+    Inference:  0.10626721382141113
+    Backward:  0.011073589324951172
+    Load memories:  0.00018358230590820312
+    Inference model:  0.11030411720275879
+    rearrange:  0.0004425048828125
+    Inference projection:  0.00024890899658203125
+    Load memories:  0.0001614093780517578
+    Inference:  0.10286974906921387
+    Backward:  0.010871648788452148
+    optimizer:  2.1457672119140625e-06
+Print:  0.00023603439331054688
+Step environment:  0.1040811538696289
+Get observations:  0.012111425399780273
+Process inputs:  0.00034809112548828125
+Print:  6.4373016357421875e-06
+Step environment:  0.018917560577392578
+Get observations:  0.010565042495727539
+Process inputs:  0.000301361083984375
+Print:  5.7220458984375e-06
+Step environment:  0.019740819931030273
+Get observations:  0.01049947738647461
+Process inputs:  0.0002810955047607422
+Print:  4.291534423828125e-06
+Step environment:  0.02251601219177246
+Get observations:  0.007886409759521484
+Process inputs:  0.0002465248107910156
+Print:  4.5299530029296875e-06
+Step environment:  0.02150702476501465
+Get observations:  0.007773637771606445
+Process inputs:  0.0002543926239013672
+Print:  4.0531158447265625e-06
+Step environment:  0.02127361297607422
+Get observations:  0.007791757583618164
+Process inputs:  0.0002951622009277344
+Print:  4.291534423828125e-06
+Step environment:  0.021290063858032227
+Get observations:  0.007702350616455078
+Process inputs:  0.0002617835998535156
+Print:  4.291534423828125e-06
+Step environment:  0.02199268341064453
+Get observations:  0.00884699821472168
+Process inputs:  0.00035262107849121094
+  Padding:  0.05670928955078125
+    Load memories:  0.00025343894958496094
+    Inference model:  0.030372142791748047
+    rearrange:  0.00016999244689941406
+    Inference projection:  0.00024628639221191406
+    Load memories:  0.00020074844360351562
+    Inference:  0.10128378868103027
+    Backward:  0.01197195053100586
+    Load memories:  0.00048732757568359375
+    Inference model:  0.10853385925292969
+    rearrange:  0.000152587890625
+    Inference projection:  0.00024080276489257812
+    Load memories:  0.00017118453979492188
+    Inference:  0.10350847244262695
+    Backward:  0.011188268661499023
+    optimizer:  2.384185791015625e-06
+Print:  0.00015926361083984375
+Step environment:  0.1052401065826416
+Get observations:  0.01144862174987793
+Process inputs:  0.00033283233642578125
+Print:  5.4836273193359375e-06
+Step environment:  0.019964933395385742
+Get observations:  0.010312795639038086
+Process inputs:  0.00033092498779296875
+$$$$$$$$$$$$ 11111 $$$$$$$$$$$
+expectation:  [[48.92683410644531], [52.20551300048828]]
+action:  tensor([[ 0.0491],
+        [-0.0190]], device='cuda:0')
+observations tensor([0.0127, 0.0695, 0.0268, 0.1650], device='cuda:0')
+Print:  0.00786900520324707
+Step environment:  0.020296096801757812
+Get observations:  0.007790327072143555
+Process inputs:  0.0003139972686767578
+Print:  4.5299530029296875e-06
+Step environment:  0.021870136260986328
+Get observations:  0.009012699127197266
+Process inputs:  0.0002903938293457031
+Print:  6.67572021484375e-06
+Step environment:  0.022427082061767578
+Get observations:  0.008643150329589844
+Process inputs:  0.0003147125244140625
+Print:  5.245208740234375e-06
+Step environment:  0.022193193435668945
+Get observations:  0.00785207748413086
+Process inputs:  0.00034117698669433594
+Print:  5.0067901611328125e-06
+Step environment:  0.0213320255279541
+Get observations:  0.008726835250854492
+Process inputs:  0.00029349327087402344
+Print:  5.7220458984375e-06
+Step environment:  0.02215123176574707
+Get observations:  0.00786137580871582
+Process inputs:  0.0003020763397216797
+  Padding:  0.05780148506164551
+    Load memories:  0.0002155303955078125
+    Inference model:  0.02947854995727539
+    rearrange:  0.0004534721374511719
+    Inference projection:  0.00025010108947753906
+    Load memories:  0.0002334117889404297
+    Inference:  0.10309386253356934
+    Backward:  0.010868072509765625
+    Load memories:  0.00019073486328125
+    Inference model:  0.10976529121398926
+    rearrange:  0.00043463706970214844
+    Inference projection:  0.0002777576446533203
+    Load memories:  0.0001475811004638672
+    Inference:  0.10342812538146973
+    Backward:  0.010350942611694336
+    optimizer:  2.384185791015625e-06
+Print:  0.0001468658447265625
+Step environment:  0.10474705696105957
+Get observations:  0.01082301139831543
+Process inputs:  0.0003046989440917969
+Print:  5.7220458984375e-06
+Step environment:  0.021151304244995117
+Get observations:  0.011039972305297852
+Process inputs:  0.0002982616424560547
+Print:  5.4836273193359375e-06
+Step environment:  0.02334737777709961
+Get observations:  0.0077800750732421875
+Process inputs:  0.00028252601623535156
+Print:  4.76837158203125e-06
+Step environment:  0.02197432518005371
+Get observations:  0.007812976837158203
+Process inputs:  0.00028443336486816406
+Print:  5.4836273193359375e-06
+Step environment:  0.021602153778076172
+Get observations:  0.007835149765014648
+Process inputs:  0.00027561187744140625
+Print:  5.0067901611328125e-06
+Step environment:  0.022922039031982422
+Get observations:  0.00887608528137207
+Process inputs:  0.0002796649932861328
+Print:  5.245208740234375e-06
+Step environment:  0.020574331283569336
+Get observations:  0.007859468460083008
+Process inputs:  0.0002777576446533203
+Print:  4.76837158203125e-06
+Step environment:  0.02194976806640625
+Get observations:  0.009123563766479492
+Process inputs:  0.00027179718017578125
+  Padding:  0.056667327880859375
+    Load memories:  0.0002105236053466797
+    Inference model:  0.029618501663208008
+    rearrange:  0.0001533031463623047
+    Inference projection:  0.00022935867309570312
+    Load memories:  0.0001690387725830078
+    Inference:  0.10554122924804688
+    Backward:  0.012312889099121094
+    Load memories:  0.00018334388732910156
+    Inference model:  0.11004185676574707
+    rearrange:  0.0001506805419921875
+    Inference projection:  0.0003006458282470703
+    Load memories:  0.00016379356384277344
+    Inference:  0.10642647743225098
+    Backward:  0.010843515396118164
+    optimizer:  2.6226043701171875e-06
+Print:  0.00017905235290527344
+Step environment:  0.10457801818847656
+Get observations:  0.011673212051391602
+Process inputs:  0.000293731689453125
+Print:  4.291534423828125e-06
+Step environment:  0.019223690032958984
+Get observations:  0.010596036911010742
+Process inputs:  0.00029277801513671875
+Print:  5.245208740234375e-06
+Step environment:  0.03232002258300781
+Get observations:  0.007899761199951172
+Process inputs:  0.0002810955047607422
+Print:  4.5299530029296875e-06
+Step environment:  0.021802663803100586
+Get observations:  0.009292125701904297
+Process inputs:  0.0002713203430175781
+Print:  6.67572021484375e-06
+Step environment:  0.021828174591064453
+Get observations:  0.007668256759643555
+Process inputs:  0.0002613067626953125
+Print:  5.0067901611328125e-06
+Step environment:  0.02079629898071289
+Get observations:  0.00771021842956543
+Process inputs:  0.00027680397033691406
+Print:  5.9604644775390625e-06
+Step environment:  0.021258831024169922
+Get observations:  0.007762908935546875
+Process inputs:  0.0002715587615966797
+Print:  4.76837158203125e-06
+Step environment:  0.021288633346557617
+Get observations:  0.007815361022949219
+Process inputs:  0.0002624988555908203
+  Padding:  0.05756068229675293
+    Load memories:  0.0002391338348388672
+    Inference model:  0.030609130859375
+    rearrange:  0.00046181678771972656
+    Inference projection:  0.0002551078796386719
+    Load memories:  0.00017142295837402344
+    Inference:  0.1036221981048584
+    Backward:  0.010660648345947266
+    Load memories:  0.000171661376953125
+    Inference model:  0.11241817474365234
+    rearrange:  0.0004851818084716797
+    Inference projection:  0.0002949237823486328
+    Load memories:  0.0001666545867919922
+    Inference:  0.10521626472473145
+    Backward:  0.012137651443481445
+OPTIMIZING
+    optimizer:  0.006555795669555664
+Print:  0.00028228759765625
+Step environment:  0.10985159873962402
+Get observations:  0.010751962661743164
+Process inputs:  0.0002894401550292969
+Print:  6.198883056640625e-06
+Step environment:  0.019846200942993164
+Get observations:  0.010620832443237305
+Process inputs:  0.0002779960632324219
+Print:  5.4836273193359375e-06
+Step environment:  0.0236053466796875
+Get observations:  0.007705211639404297
+Process inputs:  0.00027370452880859375
+Print:  5.0067901611328125e-06
+Step environment:  0.021596193313598633
+Get observations:  0.00766754150390625
+Process inputs:  0.0002894401550292969
+Print:  5.245208740234375e-06
+Step environment:  0.021500825881958008
+Get observations:  0.007876396179199219
+Process inputs:  0.0002701282501220703
+Print:  4.5299530029296875e-06
+Step environment:  0.021104097366333008
+Get observations:  0.007560253143310547
+Process inputs:  0.0002486705780029297
+Print:  4.0531158447265625e-06
+Step environment:  0.021192312240600586
+Get observations:  0.007810831069946289
+Process inputs:  0.0002570152282714844
+Print:  4.5299530029296875e-06
+Step environment:  0.020864486694335938
+Get observations:  0.00894021987915039
+Process inputs:  0.0002524852752685547
+  Padding:  0.0564427375793457
+    Load memories:  0.0002541542053222656
+    Inference model:  0.029201269149780273
+    rearrange:  0.0001862049102783203
+    Inference projection:  0.00026488304138183594
+    Load memories:  0.0001933574676513672
+    Inference:  0.1064753532409668
+    Backward:  0.01181650161743164
+    Load memories:  0.00020956993103027344
+    Inference model:  0.1112971305847168
+    rearrange:  0.00017404556274414062
+    Inference projection:  0.0002319812774658203
+    Load memories:  0.00020384788513183594
+    Inference:  0.10390472412109375
+    Backward:  0.012171506881713867
+    optimizer:  2.384185791015625e-06
+Print:  0.0001914501190185547
+Step environment:  0.10399866104125977
+Get observations:  0.012056350708007812
+Process inputs:  0.0003459453582763672
+Print:  4.5299530029296875e-06
+Step environment:  0.019585371017456055
+Get observations:  0.010576248168945312
+Process inputs:  0.0002791881561279297
+Print:  5.7220458984375e-06
+Step environment:  0.023301124572753906
+Get observations:  0.007842302322387695
+Process inputs:  0.00032210350036621094
+Print:  5.0067901611328125e-06
+Step environment:  0.021888017654418945
+Get observations:  0.008810997009277344
+Process inputs:  0.0002970695495605469
+Print:  6.67572021484375e-06
+Step environment:  0.0222470760345459
+Get observations:  0.007906675338745117
+Process inputs:  0.0002791881561279297
+Print:  5.0067901611328125e-06
+Step environment:  0.02089524269104004
+Get observations:  0.007650852203369141
+Process inputs:  0.0002906322479248047
+Print:  5.7220458984375e-06
+Step environment:  0.021851301193237305
+Get observations:  0.008875846862792969
+Process inputs:  0.0002841949462890625
+Print:  5.245208740234375e-06
+Step environment:  0.022310972213745117
+Get observations:  0.007657766342163086
+Process inputs:  0.0002658367156982422
+  Padding:  0.05778193473815918
+    Load memories:  0.0002338886260986328
+    Inference model:  0.029876708984375
+    rearrange:  0.0004398822784423828
+    Inference projection:  0.0002715587615966797
+    Load memories:  0.000156402587890625
+    Inference:  0.10415530204772949
+    Backward:  0.01089620590209961
+    Load memories:  0.00019979476928710938
+    Inference model:  0.11088275909423828
+    rearrange:  0.00041556358337402344
+    Inference projection:  0.000278472900390625
+    Load memories:  0.0001659393310546875
+    Inference:  0.10693621635437012
+    Backward:  0.010774374008178711
+    optimizer:  2.384185791015625e-06
+Print:  0.0001499652862548828
+Step environment:  0.10442399978637695
+Get observations:  0.011486291885375977
+Process inputs:  0.00030922889709472656
+Print:  5.9604644775390625e-06
+Step environment:  0.01959848403930664
+Get observations:  0.010811805725097656
+Process inputs:  0.0003056526184082031
+Print:  5.245208740234375e-06
+Step environment:  0.02401590347290039
+Get observations:  0.007890462875366211
+Process inputs:  0.00029087066650390625
+Print:  4.76837158203125e-06
+Step environment:  0.02241659164428711
+Get observations:  0.007665395736694336
+Process inputs:  0.0002894401550292969
+Print:  1.7642974853515625e-05
+Step environment:  0.022115707397460938
+Get observations:  0.0077457427978515625
+Process inputs:  0.0003044605255126953
+Print:  5.0067901611328125e-06
+Step environment:  0.021533727645874023
+Get observations:  0.007788658142089844
+Process inputs:  0.0003712177276611328
+Print:  5.245208740234375e-06
+Step environment:  0.021387338638305664
+Get observations:  0.00770258903503418
+Process inputs:  0.00026488304138183594
+Print:  4.76837158203125e-06
+Step environment:  0.02144145965576172
+Get observations:  0.009061336517333984
+Process inputs:  0.0002765655517578125
+  Padding:  0.05606794357299805
+    Load memories:  0.0002739429473876953
+    Inference model:  0.029941558837890625
+    rearrange:  0.00017380714416503906
+    Inference projection:  0.0002357959747314453
+    Load memories:  0.00019359588623046875
+    Inference:  0.10513067245483398
+    Backward:  0.011993885040283203
+    Load memories:  0.00018286705017089844
+    Inference model:  0.11002016067504883
+    rearrange:  0.0001533031463623047
+    Inference projection:  0.0002129077911376953
+    Load memories:  0.00016188621520996094
+    Inference:  0.10595846176147461
+    Backward:  0.01074075698852539
+    optimizer:  2.384185791015625e-06
+Print:  0.00018835067749023438
+Step environment:  0.10581660270690918
+Get observations:  0.011790752410888672
+Process inputs:  0.0003104209899902344
+Print:  4.291534423828125e-06
+Step environment:  0.019238710403442383
+Get observations:  0.011247634887695312
+Process inputs:  0.00026726722717285156
+Print:  5.245208740234375e-06
+Step environment:  0.022890329360961914
+Get observations:  0.0077283382415771484
+Process inputs:  0.0002880096435546875
+$$$$$$$$$$$$ 22222 $$$$$$$$$$$
+expectation:  [[3.1211252212524414], [3.798316478729248]]
+action:  tensor([[-0.0229],
+        [-0.0089]], device='cuda:0')
+observations tensor([0.0614, 0.2239, 0.1875, 0.8504], device='cuda:0')
+Print:  0.007055044174194336
+Step environment:  0.02003335952758789
+Get observations:  0.008856534957885742
+Process inputs:  0.0002663135528564453
+Print:  7.3909759521484375e-06
+Step environment:  0.02204728126525879
+Get observations:  0.008637428283691406
+Process inputs:  0.0003459453582763672
+Print:  5.9604644775390625e-06
+Step environment:  0.022828102111816406
+Get observations:  0.008629560470581055
+Process inputs:  0.00029468536376953125
+Print:  5.4836273193359375e-06
+Step environment:  0.0216519832611084
+Get observations:  0.00793313980102539
+Process inputs:  0.0002884864807128906
+Print:  5.7220458984375e-06
+Step environment:  0.021001338958740234
+~*~*~*
+~*~*~* Direct GPU Helper:
+~*~*~*   2 articulations, maxLinks=3
+~*~*~*
+PLAY
+Initialization:  1.395646572113037
+Get observations:  0.0020749568939208984
+Process inputs:  0.0003495216369628906
+  Padding:  0.02490973472595215
+    Load memories:  0.005275726318359375
+    Inference:  0.06381630897521973
+    Load memories:  0.0007154941558837891
+    Inference:  0.06658220291137695
+    optimizer:  1.430511474609375e-06
+Print:  0.00013017654418945312
+Step environment:  0.019855260848999023
+Get observations:  0.008941888809204102
+Process inputs:  0.00031113624572753906
+$$$$$$$$$$$$ 00000 $$$$$$$$$$$
+Print:  1.2874603271484375e-05
+Step environment:  0.023091793060302734
+Get observations:  0.007311820983886719
+Process inputs:  0.00029468536376953125
+Print:  6.4373016357421875e-06
+Step environment:  0.026779890060424805
+Get observations:  0.004330873489379883
+Process inputs:  0.0002968311309814453
+Print:  4.291534423828125e-06
+Step environment:  0.025269269943237305
+Get observations:  0.004369974136352539
+Process inputs:  0.0002753734588623047
+Print:  4.5299530029296875e-06
+Step environment:  0.024780988693237305
+Get observations:  0.004211902618408203
+Process inputs:  0.0002598762512207031
+Print:  4.0531158447265625e-06
+Step environment:  0.024554729461669922
+Get observations:  0.004366397857666016
+Process inputs:  0.00029540061950683594
+Print:  4.5299530029296875e-06
+Step environment:  0.024854421615600586
+Get observations:  0.0043718814849853516
+Process inputs:  0.000274658203125
+Print:  4.76837158203125e-06
+Step environment:  0.02471160888671875
+Get observations:  0.0042209625244140625
+Process inputs:  0.00029277801513671875
+  Padding:  0.03259468078613281
+    Load memories:  0.0004904270172119141
+    Inference:  0.0674436092376709
+    Load memories:  0.00017547607421875
+    Inference:  0.06777024269104004
+    optimizer:  9.5367431640625e-07
+Print:  0.00010633468627929688
+Step environment:  0.018307209014892578
+Get observations:  0.006775856018066406
+Process inputs:  0.0002803802490234375
+Print:  4.291534423828125e-06
+Step environment:  0.02651500701904297
+Get observations:  0.007667064666748047
+Process inputs:  0.00029158592224121094
+Print:  5.7220458984375e-06
+Step environment:  0.023179292678833008
+Get observations:  0.007368326187133789
+Process inputs:  0.00031447410583496094
+Print:  6.9141387939453125e-06
+Step environment:  0.02654123306274414
+Get observations:  0.004368305206298828
+Process inputs:  0.00030350685119628906
+Print:  5.245208740234375e-06
+Step environment:  0.024769306182861328
+Get observations:  0.004442453384399414
+Process inputs:  0.0002765655517578125
+Print:  5.245208740234375e-06
+Step environment:  0.024859905242919922
+Get observations:  0.004262208938598633
+Process inputs:  0.00029397010803222656
+Print:  5.245208740234375e-06
+Step environment:  0.024521827697753906
+Get observations:  0.0054509639739990234
+Process inputs:  0.0002722740173339844
+Print:  4.76837158203125e-06
+Step environment:  0.02373647689819336
+Get observations:  0.004386186599731445
+Process inputs:  0.0002989768981933594
+  Padding:  0.03276324272155762
+    Load memories:  0.00019550323486328125
+    Inference:  0.06714558601379395
+    Load memories:  0.0004818439483642578
+    Inference:  0.06654620170593262
+    optimizer:  1.1920928955078125e-06
+Print:  0.00010585784912109375
+Step environment:  0.018987178802490234
+Get observations:  0.005903005599975586
+Process inputs:  0.0003025531768798828
+Print:  4.76837158203125e-06
+Step environment:  0.026176929473876953
+Get observations:  0.007883310317993164
+Process inputs:  0.0002875328063964844
+Print:  5.4836273193359375e-06
+Step environment:  0.02340531349182129
+Get observations:  0.0069122314453125
+Process inputs:  0.0002884864807128906
+Print:  4.5299530029296875e-06
+Step environment:  0.025813817977905273
+Get observations:  0.004527568817138672
+Process inputs:  0.00025963783264160156
+Print:  5.245208740234375e-06
+Step environment:  0.025107622146606445
+Get observations:  0.005302906036376953
+Process inputs:  0.000293731689453125
+Print:  7.3909759521484375e-06
+Step environment:  0.023824214935302734
+Get observations:  0.004365444183349609
+Process inputs:  0.0002598762512207031
+Print:  4.76837158203125e-06
+Step environment:  0.02483534812927246
+Get observations:  0.004117012023925781
+Process inputs:  0.00026035308837890625
+Print:  5.0067901611328125e-06
+Step environment:  0.02487778663635254
+Get observations:  0.004351377487182617
+Process inputs:  0.0002484321594238281
+  Padding:  0.03278946876525879
+    Load memories:  0.00022172927856445312
+    Inference:  0.06722450256347656
+    Load memories:  0.00013899803161621094
+    Inference:  0.06693577766418457
+    optimizer:  9.5367431640625e-07
+Print:  0.0003902912139892578
+Step environment:  0.018212318420410156
+Get observations:  0.006955623626708984
+Process inputs:  0.00034236907958984375
+Print:  5.4836273193359375e-06
+Step environment:  0.024711132049560547
+Get observations:  0.007760047912597656
+Process inputs:  0.0002684593200683594
+Print:  5.4836273193359375e-06
+Step environment:  0.022632360458374023
+Get observations:  0.007147073745727539
+Process inputs:  0.0002868175506591797
+Print:  4.291534423828125e-06
+Step environment:  0.026516437530517578
+Get observations:  0.0042798519134521484
+Process inputs:  0.00026535987854003906
+Print:  4.76837158203125e-06
+Step environment:  0.025075674057006836
+Get observations:  0.00527644157409668
+Process inputs:  0.00028634071350097656
+Print:  5.245208740234375e-06
+Step environment:  0.024364948272705078
+Get observations:  0.004214286804199219
+Process inputs:  0.0002796649932861328
+Print:  5.245208740234375e-06
+Step environment:  0.026002168655395508
+Get observations:  0.004987478256225586
+Process inputs:  0.00031828880310058594
+Print:  7.867813110351562e-06
+Step environment:  0.02509760856628418
+Get observations:  0.004271507263183594
+Process inputs:  0.0002899169921875
+  Padding:  0.032829999923706055
+    Load memories:  0.00019788742065429688
+    Inference:  0.06887078285217285
+    Load memories:  0.00015854835510253906
+    Inference:  0.06975603103637695
+    optimizer:  1.1920928955078125e-06
+Print:  0.0004668235778808594
+Step environment:  0.018961668014526367
+Get observations:  0.0071446895599365234
+Process inputs:  0.00027441978454589844
+Print:  4.5299530029296875e-06
+Step environment:  0.02688002586364746
+Get observations:  0.00746464729309082
+Process inputs:  0.0003142356872558594
+Print:  6.4373016357421875e-06
+Step environment:  0.023333072662353516
+Get observations:  0.007136821746826172
+Process inputs:  0.0003447532653808594
+Print:  5.245208740234375e-06
+Step environment:  0.026502609252929688
+Get observations:  0.004383563995361328
+Process inputs:  0.0002636909484863281
+Print:  5.7220458984375e-06
+Step environment:  0.02497267723083496
+Get observations:  0.004365205764770508
+Process inputs:  0.0002589225769042969
+Print:  5.0067901611328125e-06
+Step environment:  0.025275707244873047
+Get observations:  0.004279613494873047
+Process inputs:  0.00026297569274902344
+Print:  5.0067901611328125e-06
+Step environment:  0.02549457550048828
+Get observations:  0.005248308181762695
+Process inputs:  0.00029754638671875
+Print:  6.9141387939453125e-06
+Step environment:  0.025172710418701172
+Get observations:  0.004168987274169922
+Process inputs:  0.0002627372741699219
+  Padding:  0.03275704383850098
+    Load memories:  0.00021266937255859375
+    Inference:  0.0681157112121582
+    Load memories:  0.00016808509826660156
+    Inference:  0.06718802452087402
+    optimizer:  1.6689300537109375e-06
+Print:  0.0006072521209716797
+Step environment:  0.02001476287841797
+Get observations:  0.00895380973815918
+Process inputs:  0.0003113746643066406
+Print:  4.76837158203125e-06
+Step environment:  0.023354053497314453
+Get observations:  0.0071544647216796875
+Process inputs:  0.00029587745666503906
+Print:  5.9604644775390625e-06
+Step environment:  0.02676558494567871
+Get observations:  0.004324913024902344
+Process inputs:  0.00026798248291015625
+Print:  5.0067901611328125e-06
+Step environment:  0.025300979614257812
+Get observations:  0.005287885665893555
+Process inputs:  0.0002765655517578125
+Print:  5.245208740234375e-06
+Step environment:  0.023790359497070312
+Get observations:  0.0043027400970458984
+Process inputs:  0.000263214111328125
+Print:  5.245208740234375e-06
+Step environment:  0.02515554428100586
+Get observations:  0.004361867904663086
+Process inputs:  0.0002689361572265625
+Print:  5.0067901611328125e-06
+Step environment:  0.024857044219970703
+Get observations:  0.0053997039794921875
+Process inputs:  0.0002627372741699219
+Print:  6.4373016357421875e-06
+Step environment:  0.024090290069580078
+Get observations:  0.004261493682861328
+Process inputs:  0.0003314018249511719
+  Padding:  0.032511234283447266
+    Load memories:  0.0001983642578125
+    Inference:  0.06723356246948242
+    Load memories:  0.00013494491577148438
+    Inference:  0.06766247749328613
+    optimizer:  1.1920928955078125e-06
+Print:  0.0004405975341796875
+Step environment:  0.018741130828857422
+Get observations:  0.008389949798583984
+Process inputs:  0.0003733634948730469
+Print:  5.245208740234375e-06
+Step environment:  0.02404165267944336
+Get observations:  0.007637977600097656
+Process inputs:  0.0002765655517578125
+$$$$$$$$$$$$ 11111 $$$$$$$$$$$
+Print:  1.1444091796875e-05
+Step environment:  0.023346424102783203
+Get observations:  0.007074117660522461
+Process inputs:  0.00030422210693359375
+Print:  5.4836273193359375e-06
+Step environment:  0.026807785034179688
+Get observations:  0.004172086715698242
+Process inputs:  0.0002548694610595703
+Print:  4.5299530029296875e-06
+Step environment:  0.026071548461914062
+Get observations:  0.0052945613861083984
+Process inputs:  0.00025463104248046875
+Print:  4.76837158203125e-06
+Step environment:  0.024533748626708984
+Get observations:  0.004404306411743164
+Process inputs:  0.0002665519714355469
+Print:  4.5299530029296875e-06
+Step environment:  0.02507472038269043
+Get observations:  0.005429744720458984
+Process inputs:  0.0002593994140625
+Print:  5.9604644775390625e-06
+Step environment:  0.02363443374633789
+Get observations:  0.004202127456665039
+Process inputs:  0.0002803802490234375
+  Padding:  0.032782554626464844
+    Load memories:  0.0002300739288330078
+    Inference:  0.06930184364318848
+    Load memories:  0.00014066696166992188
+    Inference:  0.06898093223571777
+    optimizer:  1.430511474609375e-06
+Print:  0.00043320655822753906
+Step environment:  0.019183874130249023
+Get observations:  0.006731271743774414
+Process inputs:  0.00031256675720214844
+Print:  4.291534423828125e-06
+Step environment:  0.026600360870361328
+Get observations:  0.007711172103881836
+Process inputs:  0.0003120899200439453
+Print:  5.0067901611328125e-06
+Step environment:  0.022714853286743164
+Get observations:  0.007292270660400391
+Process inputs:  0.00026535987854003906
+Print:  4.5299530029296875e-06
+Step environment:  0.02629876136779785
+Get observations:  0.005263805389404297
+Process inputs:  0.0002758502960205078
+Print:  5.245208740234375e-06
+Step environment:  0.02347731590270996
+Get observations:  0.004100799560546875
+Process inputs:  0.00026226043701171875
+Print:  4.5299530029296875e-06
+Step environment:  0.024878740310668945
+Get observations:  0.0042955875396728516
+Process inputs:  0.00025773048400878906
+Print:  4.76837158203125e-06
+Step environment:  0.02518773078918457
+Get observations:  0.005207538604736328
+Process inputs:  0.0002925395965576172
+Print:  6.198883056640625e-06
+Step environment:  0.023975849151611328
+Get observations:  0.004326581954956055
+Process inputs:  0.00028133392333984375
+  Padding:  0.03279566764831543
+    Load memories:  0.00023889541625976562
+    Inference:  0.06901144981384277
+    Load memories:  0.00015163421630859375
+    Inference:  0.06803655624389648
+    optimizer:  1.1920928955078125e-06
+Print:  0.00045371055603027344
+Step environment:  0.019534826278686523
+Get observations:  0.008244514465332031
+Process inputs:  0.0002884864807128906
+Print:  4.0531158447265625e-06
+Step environment:  0.02330636978149414
+Get observations:  0.008269309997558594
+Process inputs:  0.00032782554626464844
+Print:  5.0067901611328125e-06
+Step environment:  0.027992963790893555
+Get observations:  0.0045621395111083984
+Process inputs:  0.0002620220184326172
+Print:  3.814697265625e-06
+Step environment:  0.024738311767578125
+Get observations:  0.00421142578125
+Process inputs:  0.0002586841583251953
+Print:  4.76837158203125e-06
+Step environment:  0.02607583999633789
+Get observations:  0.005297183990478516
+Process inputs:  0.0003139972686767578
+Print:  5.4836273193359375e-06
+Step environment:  0.02420806884765625
+Get observations:  0.00415802001953125
+Process inputs:  0.0002853870391845703
+Print:  5.7220458984375e-06
+Step environment:  0.025400638580322266
+Get observations:  0.005518674850463867
+Process inputs:  0.00028014183044433594
+Print:  7.3909759521484375e-06
+Step environment:  0.02385544776916504
+Get observations:  0.004401683807373047
+Process inputs:  0.00026798248291015625
+  Padding:  0.03266429901123047
+    Load memories:  0.00022029876708984375
+    Inference:  0.06827759742736816
+    Load memories:  0.0005064010620117188
+    Inference:  0.06950712203979492
+    optimizer:  9.5367431640625e-07
+Print:  0.0003998279571533203
+Step environment:  0.018709659576416016
+Get observations:  0.006719112396240234
+Process inputs:  0.00033736228942871094
+Print:  5.0067901611328125e-06
+Step environment:  0.02661585807800293
+Get observations:  0.0073125362396240234
+Process inputs:  0.0003113746643066406
+Print:  5.245208740234375e-06
+Step environment:  0.02382969856262207
+Get observations:  0.007404804229736328
+Process inputs:  0.00027370452880859375
+Print:  4.76837158203125e-06
+Step environment:  0.026282787322998047
+Get observations:  0.004495382308959961
+Process inputs:  0.0002789497375488281
+Print:  4.5299530029296875e-06
+Step environment:  0.0251922607421875
+Get observations:  0.004355669021606445
+Process inputs:  0.0002586841583251953
+Print:  5.0067901611328125e-06
+Step environment:  0.02516031265258789
+Get observations:  0.0043795108795166016
+Process inputs:  0.00026154518127441406
+Print:  4.76837158203125e-06
+Step environment:  0.025029897689819336
+Get observations:  0.005594968795776367
+Process inputs:  0.0002880096435546875
+Print:  6.9141387939453125e-06
+Step environment:  0.02390909194946289
+Get observations:  0.004281759262084961
+Process inputs:  0.00031447410583496094
+  Padding:  0.0329287052154541
+    Load memories:  0.00021958351135253906
+    Inference:  0.06928086280822754
+    Load memories:  0.00018334388732910156
+    Inference:  0.0673377513885498
+    optimizer:  1.430511474609375e-06
+Print:  0.00041365623474121094
+Step environment:  0.02013874053955078
+Get observations:  0.00856471061706543
+Process inputs:  0.0003314018249511719
+Print:  5.0067901611328125e-06
+Step environment:  0.024161100387573242
+Get observations:  0.007647037506103516
+Process inputs:  0.00032448768615722656
+Print:  5.245208740234375e-06
+Step environment:  0.027283906936645508
+Get observations:  0.004246711730957031
+Process inputs:  0.0002994537353515625
+Print:  5.245208740234375e-06
+Step environment:  0.026121854782104492
+Get observations:  0.0044040679931640625
+Process inputs:  0.0002713203430175781
+Print:  5.0067901611328125e-06
+Step environment:  0.02548980712890625
+Get observations:  0.004153728485107422
+Process inputs:  0.00026535987854003906
+Print:  5.245208740234375e-06
+Step environment:  0.024824857711791992
+Get observations:  0.0053691864013671875
+Process inputs:  0.0002722740173339844
+Print:  5.245208740234375e-06
+Step environment:  0.023693561553955078
+Get observations:  0.005362272262573242
+Process inputs:  0.00025177001953125
+Print:  5.9604644775390625e-06
+Step environment:  0.023596525192260742
+Get observations:  0.004327058792114258
+Process inputs:  0.00029969215393066406
+  Padding:  0.03248929977416992
+    Load memories:  0.00022554397583007812
+    Inference:  0.06803631782531738
+    Load memories:  0.00015211105346679688
+    Inference:  0.06856346130371094
+    optimizer:  1.1920928955078125e-06
+Print:  0.0004229545593261719
+Step environment:  0.018909454345703125
+Get observations:  0.006936550140380859
+Process inputs:  0.00028896331787109375
+Print:  5.0067901611328125e-06
+Step environment:  0.025570392608642578
+Get observations:  0.007531642913818359
+Process inputs:  0.0003173351287841797
+Print:  2.3603439331054688e-05
+Step environment:  0.023445606231689453
+Get observations:  0.007258415222167969
+Process inputs:  0.000274658203125
+Print:  4.291534423828125e-06
+Step environment:  0.026008129119873047
+Get observations:  0.0044667720794677734
+Process inputs:  0.00027370452880859375
+Print:  5.0067901611328125e-06
+Step environment:  0.025139808654785156
+Get observations:  0.004289388656616211
+Process inputs:  0.0002601146697998047
+Print:  4.76837158203125e-06
+Step environment:  0.025803089141845703
+Get observations:  0.004317045211791992
+Process inputs:  0.0002853870391845703
+Print:  5.4836273193359375e-06
+Step environment:  0.02506113052368164
+Get observations:  0.005236387252807617
+Process inputs:  0.00032448768615722656
+Print:  6.4373016357421875e-06
+Step environment:  0.024235010147094727
+Get observations:  0.004305362701416016
+Process inputs:  0.0002751350402832031
+  Padding:  0.03276634216308594
+    Load memories:  0.00018453598022460938
+    Inference:  0.06932449340820312
+    Load memories:  0.0001506805419921875
+    Inference:  0.06703710556030273
+    optimizer:  1.1920928955078125e-06
+Print:  0.0004975795745849609
+Step environment:  0.019589662551879883
+Get observations:  0.006387472152709961
+Process inputs:  0.00035381317138671875
+Print:  5.7220458984375e-06
+Step environment:  0.026099443435668945
+Get observations:  0.007480144500732422
+Process inputs:  0.0002732276916503906
+Print:  5.4836273193359375e-06
+Step environment:  0.026575326919555664
+Get observations:  0.004336833953857422
+Process inputs:  0.00026535987854003906
+$$$$$$$$$$$$ 22222 $$$$$$$$$$$
+Print:  1.1682510375976562e-05
+Step environment:  0.02505350112915039
+Get observations:  0.004323244094848633
+Process inputs:  0.00024700164794921875
+Print:  4.5299530029296875e-06
+Step environment:  0.0252532958984375
+Get observations:  0.0042417049407958984
+Process inputs:  0.00030517578125
+Print:  4.291534423828125e-06
+Step environment:  0.024745464324951172
+Get observations:  0.0042345523834228516
+Process inputs:  0.0002422332763671875
+Print:  4.76837158203125e-06
+Step environment:  0.02467203140258789
+Get observations:  0.005392789840698242
+Process inputs:  0.0002880096435546875
+Print:  4.76837158203125e-06
+Step environment:  0.024527549743652344
+~*~*~*
+~*~*~* Direct GPU Helper:
+~*~*~*   2 articulations, maxLinks=3
+~*~*~*
+REPLAY
+Initialization:  0.42815732955932617
+Get observations:  0.0014247894287109375
+Process inputs:  0.0003402233123779297
+  Padding:  0.0536952018737793
+    Load memories:  0.005208730697631836
+    Inference model:  0.025037288665771484
+    rearrange:  0.00014066696166992188
+    Inference projection:  0.00019216537475585938
+    Load memories:  0.03782200813293457
+    Inference:  0.06813549995422363
+    Backward:  0.01150822639465332
+    Load memories:  0.08558988571166992
+    Inference model:  0.025749683380126953
+    rearrange:  0.00016236305236816406
+    Inference projection:  0.00024962425231933594
+    Load memories:  0.04130840301513672
+    Inference:  0.06757020950317383
+    Backward:  0.010557889938354492
+    optimizer:  2.384185791015625e-06
+Print:  0.00014901161193847656
+Step environment:  0.1058342456817627
+Get observations:  0.012266159057617188
+Process inputs:  0.00032520294189453125
+$$$$$$$$$$$$ 00000 $$$$$$$$$$$
+expectation:  [[51.47941589355469], [26.24392318725586]]
+action:  tensor([[ 1.3600],
+        [-0.3010]], device='cuda:0')
+observations tensor([-0.0008, -0.0974, -0.0012, -0.1461], device='cuda:0')
+Print:  0.008773565292358398
+Step environment:  0.0167849063873291
+Get observations:  0.010841131210327148
+Process inputs:  0.0003514289855957031
+Print:  5.4836273193359375e-06
+Step environment:  0.023087024688720703
+Get observations:  0.007909297943115234
+Process inputs:  0.0003018379211425781
+Print:  4.76837158203125e-06
+Step environment:  0.022424697875976562
+Get observations:  0.007792234420776367
+Process inputs:  0.00031638145446777344
+Print:  5.0067901611328125e-06
+Step environment:  0.02210545539855957
+Get observations:  0.007836341857910156
+Process inputs:  0.00030493736267089844
+Print:  5.4836273193359375e-06
+Step environment:  0.021860837936401367
+Get observations:  0.007993698120117188
+Process inputs:  0.000255584716796875
+Print:  4.76837158203125e-06
+Step environment:  0.021712303161621094
+Get observations:  0.007832765579223633
+Process inputs:  0.00027680397033691406
+Print:  5.0067901611328125e-06
+Step environment:  0.022644519805908203
+Get observations:  0.00833892822265625
+Process inputs:  0.00029754638671875
+  Padding:  0.05678558349609375
+    Load memories:  0.00023126602172851562
+    Inference model:  0.02946758270263672
+    rearrange:  0.00017833709716796875
+    Inference projection:  0.00024437904357910156
+    Load memories:  0.0002155303955078125
+    Inference:  0.11311101913452148
+    Backward:  0.011716365814208984
+    Load memories:  0.00019860267639160156
+    Inference model:  0.11616897583007812
+    rearrange:  0.000141143798828125
+    Inference projection:  0.0002548694610595703
+    Load memories:  0.0001919269561767578
+    Inference:  0.10956406593322754
+    Backward:  0.01105809211730957
+    optimizer:  2.384185791015625e-06
+Print:  0.0001652240753173828
+Step environment:  0.1070852279663086
+Get observations:  0.011901617050170898
+Process inputs:  0.0003223419189453125
+Print:  5.0067901611328125e-06
+Step environment:  0.01951289176940918
+Get observations:  0.01086568832397461
+Process inputs:  0.00029730796813964844
+Print:  5.4836273193359375e-06
+Step environment:  0.019376754760742188
+Get observations:  0.010509967803955078
+Process inputs:  0.00029277801513671875
+Print:  4.76837158203125e-06
+Step environment:  0.022864103317260742
+Get observations:  0.009047269821166992
+Process inputs:  0.0002598762512207031
+Print:  6.4373016357421875e-06
+Step environment:  0.022494077682495117
+Get observations:  0.008111000061035156
+Process inputs:  0.0002875328063964844
+Print:  5.9604644775390625e-06
+Step environment:  0.020288944244384766
+Get observations:  0.007976293563842773
+Process inputs:  0.0002980232238769531
+Print:  5.7220458984375e-06
+Step environment:  0.021632671356201172
+Get observations:  0.008114099502563477
+Process inputs:  0.00027751922607421875
+Print:  5.0067901611328125e-06
+Step environment:  0.021044492721557617
+Get observations:  0.008010387420654297
+Process inputs:  0.0002758502960205078
+  Padding:  0.057144880294799805
+    Load memories:  0.0002415180206298828
+    Inference model:  0.029817581176757812
+    rearrange:  0.0004582405090332031
+    Inference projection:  0.0002770423889160156
+    Load memories:  0.00017452239990234375
+    Inference:  0.10632658004760742
+    Backward:  0.011511802673339844
+    Load memories:  0.00019550323486328125
+    Inference model:  0.11231851577758789
+    rearrange:  0.00040984153747558594
+    Inference projection:  0.0002512931823730469
+    Load memories:  0.00016045570373535156
+    Inference:  0.10776185989379883
+    Backward:  0.011309385299682617
+    optimizer:  2.384185791015625e-06
+Print:  0.00016355514526367188
+Step environment:  0.10485720634460449
+Get observations:  0.011955022811889648
+Process inputs:  0.0003826618194580078
+Print:  6.67572021484375e-06
+Step environment:  0.019580841064453125
+Get observations:  0.010581254959106445
+Process inputs:  0.0003237724304199219
+Print:  5.7220458984375e-06
+Step environment:  0.023299217224121094
+Get observations:  0.007927179336547852
+Process inputs:  0.0002593994140625
+Print:  4.76837158203125e-06
+Step environment:  0.021650314331054688
+Get observations:  0.007714271545410156
+Process inputs:  0.0002942085266113281
+Print:  5.7220458984375e-06
+Step environment:  0.021503448486328125
+Get observations:  0.008215188980102539
+Process inputs:  0.0002951622009277344
+Print:  5.0067901611328125e-06
+Step environment:  0.0212552547454834
+Get observations:  0.007778167724609375
+Process inputs:  0.0002701282501220703
+Print:  5.0067901611328125e-06
+Step environment:  0.021571874618530273
+Get observations:  0.008169412612915039
+Process inputs:  0.00028395652770996094
+Print:  4.0531158447265625e-06
+Step environment:  0.02165675163269043
+Get observations:  0.008794784545898438
+Process inputs:  0.00026035308837890625
+  Padding:  0.05662846565246582
+    Load memories:  0.00023818016052246094
+    Inference model:  0.029360055923461914
+    rearrange:  0.00015497207641601562
+    Inference projection:  0.0002319812774658203
+    Load memories:  0.00019598007202148438
+    Inference:  0.10942625999450684
+    Backward:  0.010871171951293945
+    Load memories:  0.00020694732666015625
+    Inference model:  0.1141502857208252
+    rearrange:  0.00017189979553222656
+    Inference projection:  0.0002429485321044922
+    Load memories:  0.00017762184143066406
+    Inference:  0.10885310173034668
+    Backward:  0.012235879898071289
+    optimizer:  2.86102294921875e-06
+Print:  0.0003159046173095703
+Step environment:  0.10519623756408691
+Get observations:  0.012295722961425781
+Process inputs:  0.00034117698669433594
+Print:  5.245208740234375e-06
+Step environment:  0.02027106285095215
+Get observations:  0.01082754135131836
+Process inputs:  0.00030422210693359375
+Print:  6.4373016357421875e-06
+Step environment:  0.02432417869567871
+Get observations:  0.007950782775878906
+Process inputs:  0.0002925395965576172
+Print:  5.245208740234375e-06
+Step environment:  0.022159099578857422
+Get observations:  0.009149312973022461
+Process inputs:  0.0002911090850830078
+Print:  6.67572021484375e-06
+Step environment:  0.02223682403564453
+Get observations:  0.007951736450195312
+Process inputs:  0.00029659271240234375
+Print:  5.7220458984375e-06
+Step environment:  0.020685434341430664
+Get observations:  0.0077342987060546875
+Process inputs:  0.0003044605255126953
+Print:  5.245208740234375e-06
+Step environment:  0.021843910217285156
+Get observations:  0.008981943130493164
+Process inputs:  0.0002732276916503906
+Print:  5.0067901611328125e-06
+Step environment:  0.022236347198486328
+Get observations:  0.007744312286376953
+Process inputs:  0.00026416778564453125
+  Padding:  0.057878971099853516
+    Load memories:  0.0002694129943847656
+    Inference model:  0.029926300048828125
+    rearrange:  0.00041365623474121094
+    Inference projection:  0.0002524852752685547
+    Load memories:  0.00017976760864257812
+    Inference:  0.10908985137939453
+    Backward:  0.01096796989440918
+    Load memories:  0.00017142295837402344
+    Inference model:  0.11252999305725098
+    rearrange:  0.00047779083251953125
+    Inference projection:  0.0002713203430175781
+    Load memories:  0.0001354217529296875
+    Inference:  0.10664057731628418
+    Backward:  0.010695695877075195
+OPTIMIZING
+    optimizer:  0.007965803146362305
+Print:  0.00011587142944335938
+Step environment:  0.11100435256958008
+Get observations:  0.01215219497680664
+Process inputs:  0.00031757354736328125
+Print:  6.198883056640625e-06
+Step environment:  0.01938796043395996
+Get observations:  0.011201858520507812
+Process inputs:  0.0003364086151123047
+Print:  5.7220458984375e-06
+Step environment:  0.01972675323486328
+Get observations:  0.010616302490234375
+Process inputs:  0.0002853870391845703
+Print:  4.291534423828125e-06
+Step environment:  0.023015260696411133
+Get observations:  0.007884979248046875
+Process inputs:  0.00028252601623535156
+Print:  5.245208740234375e-06
+Step environment:  0.02132129669189453
+Get observations:  0.007763385772705078
+Process inputs:  0.0003006458282470703
+Print:  5.7220458984375e-06
+Step environment:  0.022428512573242188
+Get observations:  0.007842063903808594
+Process inputs:  0.000293731689453125
+Print:  4.291534423828125e-06
+Step environment:  0.020844459533691406
+Get observations:  0.007798671722412109
+Process inputs:  0.00030493736267089844
+Print:  4.76837158203125e-06
+Step environment:  0.022015094757080078
+Get observations:  0.009003639221191406
+Process inputs:  0.00027441978454589844
+  Padding:  0.057092905044555664
+    Load memories:  0.0002613067626953125
+    Inference model:  0.029012203216552734
+    rearrange:  0.000171661376953125
+    Inference projection:  0.00023412704467773438
+    Load memories:  0.00017404556274414062
+    Inference:  0.11048531532287598
+    Backward:  0.011310100555419922
+    Load memories:  0.0001983642578125
+    Inference model:  0.1126868724822998
+    rearrange:  0.0001583099365234375
+    Inference projection:  0.00023746490478515625
+    Load memories:  0.0001659393310546875
+    Inference:  0.10731244087219238
+    Backward:  0.01051473617553711
+    optimizer:  2.384185791015625e-06
+Print:  0.00015020370483398438
+Step environment:  0.10632824897766113
+Get observations:  0.012316465377807617
+Process inputs:  0.00030303001403808594
+Print:  4.291534423828125e-06
+Step environment:  0.01958298683166504
+Get observations:  0.01086115837097168
+Process inputs:  0.0002944469451904297
+Print:  5.245208740234375e-06
+Step environment:  0.023415327072143555
+Get observations:  0.00898885726928711
+Process inputs:  0.0003001689910888672
+Print:  4.0531158447265625e-06
+Step environment:  0.022596120834350586
+Get observations:  0.009172201156616211
+Process inputs:  0.0003020763397216797
+Print:  6.198883056640625e-06
+Step environment:  0.021250247955322266
+Get observations:  0.008014440536499023
+Process inputs:  0.0002949237823486328
+Print:  5.0067901611328125e-06
+Step environment:  0.02027273178100586
+Get observations:  0.007912874221801758
+Process inputs:  0.0002570152282714844
+Print:  4.291534423828125e-06
+Step environment:  0.02174687385559082
+Get observations:  0.007638216018676758
+Process inputs:  0.00024819374084472656
+Print:  4.291534423828125e-06
+Step environment:  0.021492481231689453
+Get observations:  0.007872343063354492
+Process inputs:  0.00025272369384765625
+  Padding:  0.0579679012298584
+    Load memories:  0.000240325927734375
+    Inference model:  0.029884815216064453
+    rearrange:  0.000457763671875
+    Inference projection:  0.0002627372741699219
+    Load memories:  0.00016260147094726562
+    Inference:  0.11333584785461426
+    Backward:  0.011270999908447266
+    Load memories:  0.00017452239990234375
+    Inference model:  0.11311101913452148
+    rearrange:  0.00044155120849609375
+    Inference projection:  0.0002543926239013672
+    Load memories:  0.00015997886657714844
+    Inference:  0.11086010932922363
+    Backward:  0.010512590408325195
+    optimizer:  1.9073486328125e-06
+Print:  0.0001418590545654297
+Step environment:  0.10975050926208496
+Get observations:  0.012723684310913086
+Process inputs:  0.00031828880310058594
+Print:  6.67572021484375e-06
+Step environment:  0.019173383712768555
+Get observations:  0.010889053344726562
+Process inputs:  0.0002913475036621094
+$$$$$$$$$$$$ 11111 $$$$$$$$$$$
+expectation:  [[5.939811706542969], [-11.221524238586426]]
+action:  tensor([[-0.1624],
+        [ 0.2398]], device='cuda:0')
+observations tensor([-0.4859, -1.4729, -0.9522, -4.1306], device='cuda:0')
+Print:  0.007922172546386719
+Step environment:  0.01940441131591797
+Get observations:  0.008896589279174805
+Process inputs:  0.0002720355987548828
+Print:  4.5299530029296875e-06
+Step environment:  0.021733522415161133
+Get observations:  0.007887601852416992
+Process inputs:  0.0002675056457519531
+Print:  4.76837158203125e-06
+Step environment:  0.020626544952392578
+Get observations:  0.007627010345458984
+Process inputs:  0.00027370452880859375
+Print:  4.76837158203125e-06
+Step environment:  0.021480321884155273
+Get observations:  0.007960796356201172
+Process inputs:  0.00030922889709472656
+Print:  5.0067901611328125e-06
+Step environment:  0.021801233291625977
+Get observations:  0.008772850036621094
+Process inputs:  0.0002796649932861328
+Print:  4.5299530029296875e-06
+Step environment:  0.022922992706298828
+Get observations:  0.008843183517456055
+Process inputs:  0.00028634071350097656
+  Padding:  0.057559967041015625
+    Load memories:  0.00024580955505371094
+    Inference model:  0.029560565948486328
+    rearrange:  0.0001704692840576172
+    Inference projection:  0.00022482872009277344
+    Load memories:  0.0001690387725830078
+    Inference:  0.11133050918579102
+    Backward:  0.011350870132446289
+    Load memories:  0.00016880035400390625
+    Inference model:  0.1137244701385498
+    rearrange:  0.000171661376953125
+    Inference projection:  0.0002372264862060547
+    Load memories:  0.0001823902130126953
+    Inference:  0.1090996265411377
+    Backward:  0.011515140533447266
+    optimizer:  2.1457672119140625e-06
+Print:  0.0001475811004638672
+Step environment:  0.10537147521972656
+Get observations:  0.011446952819824219
+Process inputs:  0.0003139972686767578
+Print:  5.245208740234375e-06
+Step environment:  0.019910812377929688
+Get observations:  0.010676383972167969
+Process inputs:  0.0003311634063720703
+Print:  5.245208740234375e-06
+Step environment:  0.020130157470703125
+Get observations:  0.01002192497253418
+Process inputs:  0.0003190040588378906
+Print:  4.5299530029296875e-06
+Step environment:  0.023105382919311523
+Get observations:  0.008935928344726562
+Process inputs:  0.0002961158752441406
+Print:  6.9141387939453125e-06
+Step environment:  0.02264571189880371
+Get observations:  0.00772404670715332
+Process inputs:  0.0002512931823730469
+Print:  4.76837158203125e-06
+Step environment:  0.02084183692932129
+Get observations:  0.007879972457885742
+Process inputs:  0.0003037452697753906
+Print:  4.76837158203125e-06
+Step environment:  0.02147364616394043
+Get observations:  0.007928133010864258
+Process inputs:  0.0002493858337402344
+Print:  5.0067901611328125e-06
+Step environment:  0.021846771240234375
+Get observations:  0.008877277374267578
+Process inputs:  0.0002887248992919922
+  Padding:  0.05647873878479004
+    Load memories:  0.0002162456512451172
+    Inference model:  0.02956676483154297
+    rearrange:  0.0004401206970214844
+    Inference projection:  0.0002474784851074219
+    Load memories:  0.0001628398895263672
+    Inference:  0.1071934700012207
+    Backward:  0.011450529098510742
+    Load memories:  0.0002262592315673828
+    Inference model:  0.11260056495666504
+    rearrange:  0.00042247772216796875
+    Inference projection:  0.0002751350402832031
+    Load memories:  0.00016760826110839844
+    Inference:  0.11031007766723633
+    Backward:  0.010871171951293945
+    optimizer:  2.384185791015625e-06
+Print:  0.00015282630920410156
+Step environment:  0.1080782413482666
+Get observations:  0.012191057205200195
+Process inputs:  0.00031447410583496094
+Print:  6.4373016357421875e-06
+Step environment:  0.019796371459960938
+Get observations:  0.011839628219604492
+Process inputs:  0.0003147125244140625
+Print:  5.4836273193359375e-06
+Step environment:  0.026072263717651367
+Get observations:  0.008996248245239258
+Process inputs:  0.0003273487091064453
+Print:  5.0067901611328125e-06
+Step environment:  0.022644758224487305
+Get observations:  0.00786733627319336
+Process inputs:  0.0003132820129394531
+Print:  5.7220458984375e-06
+Step environment:  0.022571325302124023
+Get observations:  0.00891423225402832
+Process inputs:  0.00032639503479003906
+Print:  6.198883056640625e-06
+Step environment:  0.02353811264038086
+Get observations:  0.007899284362792969
+Process inputs:  0.00030684471130371094
+Print:  5.245208740234375e-06
+Step environment:  0.022352218627929688
+Get observations:  0.010135889053344727
+Process inputs:  0.0006661415100097656
+Print:  7.3909759521484375e-06
+Step environment:  0.021695375442504883
+Get observations:  0.008793115615844727
+Process inputs:  0.0002925395965576172
+  Padding:  0.056764841079711914
+    Load memories:  0.00024056434631347656
+    Inference model:  0.030088424682617188
+    rearrange:  0.00015592575073242188
+    Inference projection:  0.00020837783813476562
+    Load memories:  0.00019741058349609375
+    Inference:  0.10664176940917969
+    Backward:  0.011846780776977539
+    Load memories:  0.08806872367858887
+    Inference model:  0.02620840072631836
+    rearrange:  0.00015926361083984375
+    Inference projection:  0.0002167224884033203
+    Load memories:  0.04174399375915527
+    Inference:  0.06817889213562012
+    Backward:  0.01185464859008789
+OPTIMIZING
+    optimizer:  0.00629734992980957
+Print:  0.00012493133544921875
+Step environment:  0.10897493362426758
+Get observations:  0.01175689697265625
+Process inputs:  0.00032401084899902344
+Print:  4.76837158203125e-06
+Step environment:  0.019532203674316406
+Get observations:  0.01124715805053711
+Process inputs:  0.00028395652770996094
+Print:  5.245208740234375e-06
+Step environment:  0.02325606346130371
+Get observations:  0.008026599884033203
+Process inputs:  0.0005519390106201172
+Print:  7.152557373046875e-06
+Step environment:  0.021142959594726562
+Get observations:  0.007843971252441406
+Process inputs:  0.00028252601623535156
+Print:  5.4836273193359375e-06
+Step environment:  0.02142024040222168
+Get observations:  0.007694244384765625
+Process inputs:  0.0002779960632324219
+Print:  4.5299530029296875e-06
+Step environment:  0.02149367332458496
+Get observations:  0.007882833480834961
+Process inputs:  0.0002903938293457031
+Print:  4.76837158203125e-06
+Step environment:  0.021327972412109375
+Get observations:  0.007872343063354492
+Process inputs:  0.0002589225769042969
+Print:  4.5299530029296875e-06
+Step environment:  0.022757291793823242
+Get observations:  0.007930278778076172
+Process inputs:  0.00028634071350097656
+  Padding:  0.05765247344970703
+    Load memories:  0.0004999637603759766
+    Inference model:  0.02966022491455078
+    rearrange:  0.00017786026000976562
+    Inference projection:  0.0002560615539550781
+    Load memories:  0.00019097328186035156
+    Inference:  0.10953068733215332
+    Backward:  0.010982036590576172
+    Load memories:  0.00018167495727539062
+    Inference model:  0.11724615097045898
+    rearrange:  0.0004875659942626953
+    Inference projection:  0.00025653839111328125
+    Load memories:  0.00015306472778320312
+    Inference:  0.11091995239257812
+    Backward:  0.010715484619140625
+    optimizer:  2.6226043701171875e-06
+Print:  0.00023698806762695312
+Step environment:  0.10796952247619629
+Get observations:  0.01122736930847168
+Process inputs:  0.00031256675720214844
+Print:  5.9604644775390625e-06
+Step environment:  0.02126622200012207
+Get observations:  0.011202096939086914
+Process inputs:  0.00031280517578125
+Print:  5.9604644775390625e-06
+Step environment:  0.01992487907409668
+Get observations:  0.010678529739379883
+Process inputs:  0.00028252601623535156
+Print:  4.5299530029296875e-06
+Step environment:  0.023195266723632812
+Get observations:  0.008823871612548828
+Process inputs:  0.0002675056457519531
+Print:  5.245208740234375e-06
+Step environment:  0.02288055419921875
+Get observations:  0.007723093032836914
+Process inputs:  0.0002605915069580078
+Print:  4.5299530029296875e-06
+Step environment:  0.02063775062561035
+Get observations:  0.007707357406616211
+Process inputs:  0.0002512931823730469
+Print:  4.5299530029296875e-06
+Step environment:  0.021793127059936523
+Get observations:  0.007997512817382812
+Process inputs:  0.0002753734588623047
+Print:  4.5299530029296875e-06
+Step environment:  0.02118682861328125
+Get observations:  0.009036540985107422
+Process inputs:  0.00029087066650390625
+  Padding:  0.056731224060058594
+    Load memories:  0.0002243518829345703
+    Inference model:  0.029607057571411133
+    rearrange:  0.00014257431030273438
+    Inference projection:  0.0001919269561767578
+    Load memories:  0.00016188621520996094
+    Inference:  0.11606621742248535
+    Backward:  0.011649608612060547
+    Load memories:  0.0001785755157470703
+    Inference model:  0.11451935768127441
+    rearrange:  0.0001647472381591797
+    Inference projection:  0.0003693103790283203
+    Load memories:  0.00019550323486328125
+    Inference:  0.11115789413452148
+    Backward:  0.012219667434692383
+    optimizer:  1.4781951904296875e-05
+Print:  0.0001838207244873047
+Step environment:  0.10758495330810547
+Get observations:  0.012267351150512695
+Process inputs:  0.00034046173095703125
+Print:  5.4836273193359375e-06
+Step environment:  0.01939558982849121
+Get observations:  0.011074304580688477
+Process inputs:  0.00031828880310058594
+Print:  5.7220458984375e-06
+Step environment:  0.019546031951904297
+Get observations:  0.010344743728637695
+Process inputs:  0.00028252601623535156
+Print:  4.291534423828125e-06
+Step environment:  0.023591995239257812
+Get observations:  0.009052276611328125
+Process inputs:  0.0002911090850830078
+Print:  6.4373016357421875e-06
+Step environment:  0.022933006286621094
+Get observations:  0.007651805877685547
+Process inputs:  0.0003247261047363281
+Print:  4.76837158203125e-06
+Step environment:  0.021096229553222656
+Get observations:  0.007975578308105469
+Process inputs:  0.0002880096435546875
+Print:  4.76837158203125e-06
+Step environment:  0.02117180824279785
+Get observations:  0.007755756378173828
+Process inputs:  0.00028514862060546875
+Print:  4.5299530029296875e-06
+Step environment:  0.020807504653930664
+Get observations:  0.007898330688476562
+Process inputs:  0.00026297569274902344
+  Padding:  0.057924509048461914
+    Load memories:  0.00021338462829589844
+    Inference model:  0.029551029205322266
+    rearrange:  0.00043892860412597656
+    Inference projection:  0.00025653839111328125
+    Load memories:  0.00015783309936523438
+    Inference:  0.11179351806640625
+    Backward:  0.01162576675415039
+    Load memories:  0.00018787384033203125
+    Inference model:  0.11465692520141602
+    rearrange:  0.0004715919494628906
+    Inference projection:  0.0002567768096923828
+    Load memories:  0.00016164779663085938
+    Inference:  0.1085975170135498
+    Backward:  0.010671615600585938
+    optimizer:  2.384185791015625e-06
+Print:  0.00017833709716796875
+Step environment:  0.10794663429260254
+Get observations:  0.012026548385620117
+Process inputs:  0.00030040740966796875
+Print:  6.198883056640625e-06
+Step environment:  0.019408464431762695
+Get observations:  0.011128425598144531
+Process inputs:  0.0003151893615722656
+Print:  5.7220458984375e-06
+Step environment:  0.023491382598876953
+Get observations:  0.008940696716308594
+Process inputs:  0.00027942657470703125
+$$$$$$$$$$$$ 22222 $$$$$$$$$$$
+expectation:  [[-4.57559061050415], [2.2152156829833984]]
+action:  tensor([[ 0.8359],
+        [-0.4630]], device='cuda:0')
+observations tensor([-0.2030,  0.5863,  0.5905,  2.7284], device='cuda:0')
+Print:  0.0059490203857421875
+Step environment:  0.01948380470275879
+Get observations:  0.007994651794433594
+Process inputs:  0.0003075599670410156
+Print:  4.5299530029296875e-06
+Step environment:  0.02053046226501465
+Get observations:  0.007827520370483398
+Process inputs:  0.000308990478515625
+Print:  5.245208740234375e-06
+Step environment:  0.021266937255859375
+Get observations:  0.007867097854614258
+Process inputs:  0.0002980232238769531
+Print:  5.0067901611328125e-06
+Step environment:  0.021703243255615234
+Get observations:  0.007759809494018555
+Process inputs:  0.00024962425231933594
+Print:  4.291534423828125e-06
+Step environment:  0.022875547409057617
+~*~*~*
+~*~*~* Direct GPU Helper:
+~*~*~*   2 articulations, maxLinks=3
+~*~*~*
+PLAY
+Initialization:  1.302795648574829
+Get observations:  0.0018954277038574219
+Process inputs:  0.0003383159637451172
+  Padding:  0.02493453025817871
+    Load memories:  0.005139350891113281
+    Inference:  0.0633542537689209
+    Load memories:  0.00047326087951660156
+    Inference:  0.0702364444732666
+    optimizer:  1.1920928955078125e-06
+Print:  0.00010967254638671875
+Step environment:  0.020122766494750977
+Get observations:  0.0071108341217041016
+Process inputs:  0.00036406517028808594
+$$$$$$$$$$$$ 00000 $$$$$$$$$$$
+Print:  1.3828277587890625e-05
+Step environment:  0.02531743049621582
+Get observations:  0.007474422454833984
+Process inputs:  0.0002887248992919922
+Print:  6.67572021484375e-06
+Step environment:  0.02288222312927246
+Get observations:  0.007031917572021484
+Process inputs:  0.00028252601623535156
+Print:  4.0531158447265625e-06
+Step environment:  0.026469945907592773
+Get observations:  0.004342794418334961
+Process inputs:  0.0002765655517578125
+Print:  5.4836273193359375e-06
+Step environment:  0.02579784393310547
+Get observations:  0.004210710525512695
+Process inputs:  0.0002598762512207031
+Print:  4.5299530029296875e-06
+Step environment:  0.02482914924621582
+Get observations:  0.004549264907836914
+Process inputs:  0.0002512931823730469
+Print:  4.76837158203125e-06
+Step environment:  0.025140762329101562
+Get observations:  0.005213499069213867
+Process inputs:  0.0002658367156982422
+Print:  4.291534423828125e-06
+Step environment:  0.02410268783569336
+Get observations:  0.0041561126708984375
+Process inputs:  0.000274658203125
+  Padding:  0.0328364372253418
+    Load memories:  0.0006723403930664062
+    Inference:  0.07059550285339355
+    Load memories:  0.00014781951904296875
+    Inference:  0.06925082206726074
+    optimizer:  9.5367431640625e-07
+Print:  0.00011491775512695312
+Step environment:  0.020188093185424805
+Get observations:  0.006337404251098633
+Process inputs:  0.00031280517578125
+Print:  5.4836273193359375e-06
+Step environment:  0.027088403701782227
+Get observations:  0.007556438446044922
+Process inputs:  0.0006010532379150391
+Print:  7.867813110351562e-06
+Step environment:  0.022889137268066406
+Get observations:  0.007090568542480469
+Process inputs:  0.0003235340118408203
+Print:  5.245208740234375e-06
+Step environment:  0.026717424392700195
+Get observations:  0.004212856292724609
+Process inputs:  0.00027942657470703125
+Print:  5.9604644775390625e-06
+Step environment:  0.025892257690429688
+Get observations:  0.004427433013916016
+Process inputs:  0.00029850006103515625
+Print:  6.198883056640625e-06
+Step environment:  0.027534008026123047
+Get observations:  0.004244565963745117
+Process inputs:  0.00038743019104003906
+Print:  6.198883056640625e-06
+Step environment:  0.02657485008239746
+Get observations:  0.004231929779052734
+Process inputs:  0.00027441978454589844
+Print:  5.4836273193359375e-06
+Step environment:  0.025972604751586914
+Get observations:  0.004527091979980469
+Process inputs:  0.00025916099548339844
+  Padding:  0.03294634819030762
+    Load memories:  0.0005025863647460938
+    Inference:  0.07090544700622559
+    Load memories:  0.00013947486877441406
+    Inference:  0.06934452056884766
+    optimizer:  1.1920928955078125e-06
+Print:  0.00010704994201660156
+Step environment:  0.01965928077697754
+Get observations:  0.006410837173461914
+Process inputs:  0.0002932548522949219
+Print:  5.0067901611328125e-06
+Step environment:  0.02619791030883789
+Get observations:  0.007903337478637695
+Process inputs:  0.0005471706390380859
+Print:  6.9141387939453125e-06
+Step environment:  0.026050329208374023
+Get observations:  0.00548863410949707
+Process inputs:  0.00025916099548339844
+Print:  4.291534423828125e-06
+Step environment:  0.024188995361328125
+Get observations:  0.004437685012817383
+Process inputs:  0.00025844573974609375
+Print:  5.4836273193359375e-06
+Step environment:  0.02517557144165039
+Get observations:  0.0043485164642333984
+Process inputs:  0.0002567768096923828
+Print:  5.0067901611328125e-06
+Step environment:  0.025273799896240234
+Get observations:  0.004442453384399414
+Process inputs:  0.0002777576446533203
+Print:  4.76837158203125e-06
+Step environment:  0.025049209594726562
+Get observations:  0.004455089569091797
+Process inputs:  0.0002663135528564453
+Print:  4.76837158203125e-06
+Step environment:  0.024932146072387695
+Get observations:  0.0043163299560546875
+Process inputs:  0.0002658367156982422
+  Padding:  0.03272056579589844
+    Load memories:  0.0004987716674804688
+    Inference:  0.06809473037719727
+    Load memories:  0.0001392364501953125
+    Inference:  0.06874299049377441
+    optimizer:  9.5367431640625e-07
+Print:  0.0001068115234375
+Step environment:  0.01917123794555664
+Get observations:  0.008987665176391602
+Process inputs:  0.0003056526184082031
+Print:  4.5299530029296875e-06
+Step environment:  0.023973941802978516
+Get observations:  0.007875204086303711
+Process inputs:  0.00026726722717285156
+Print:  5.0067901611328125e-06
+Step environment:  0.022815704345703125
+Get observations:  0.0073032379150390625
+Process inputs:  0.00029468536376953125
+Print:  6.198883056640625e-06
+Step environment:  0.02237415313720703
+Get observations:  0.007172346115112305
+Process inputs:  0.0003006458282470703
+Print:  5.7220458984375e-06
+Step environment:  0.026389122009277344
+Get observations:  0.0043964385986328125
+Process inputs:  0.0002589225769042969
+Print:  5.245208740234375e-06
+Step environment:  0.025027036666870117
+Get observations:  0.004420757293701172
+Process inputs:  0.0002815723419189453
+Print:  5.7220458984375e-06
+Step environment:  0.024953365325927734
+Get observations:  0.004281759262084961
+Process inputs:  0.00025582313537597656
+Print:  4.5299530029296875e-06
+Step environment:  0.024637699127197266
+Get observations:  0.004278898239135742
+Process inputs:  0.0002608299255371094
+  Padding:  0.0328524112701416
+    Load memories:  0.00027060508728027344
+    Inference:  0.07004547119140625
+    Load memories:  0.0005810260772705078
+    Inference:  0.07125234603881836
+    optimizer:  1.6689300537109375e-06
+Print:  0.00011920928955078125
+Step environment:  0.02004551887512207
+Get observations:  0.00640106201171875
+Process inputs:  0.0003032684326171875
+Print:  4.291534423828125e-06
+Step environment:  0.026912212371826172
+Get observations:  0.007944583892822266
+Process inputs:  0.000255584716796875
+Print:  5.245208740234375e-06
+Step environment:  0.026298046112060547
+Get observations:  0.00452113151550293
+Process inputs:  0.0002675056457519531
+Print:  4.291534423828125e-06
+Step environment:  0.025142431259155273
+Get observations:  0.0045168399810791016
+Process inputs:  0.000244140625
+Print:  4.76837158203125e-06
+Step environment:  0.02527141571044922
+Get observations:  0.005524158477783203
+Process inputs:  0.0002570152282714844
+Print:  6.198883056640625e-06
+Step environment:  0.02366495132446289
+Get observations:  0.005391120910644531
+Process inputs:  0.0002772808074951172
+Print:  4.76837158203125e-06
+Step environment:  0.026304006576538086
+Get observations:  0.004396677017211914
+Process inputs:  0.0002455711364746094
+Print:  4.5299530029296875e-06
+Step environment:  0.023925304412841797
+Get observations:  0.004381418228149414
+Process inputs:  0.00023818016052246094
+  Padding:  0.0328216552734375
+    Load memories:  0.00023984909057617188
+    Inference:  0.06937527656555176
+    Load memories:  0.00046825408935546875
+    Inference:  0.07133007049560547
+    optimizer:  1.1920928955078125e-06
+Print:  0.0004527568817138672
+Step environment:  0.018468379974365234
+Get observations:  0.006824493408203125
+Process inputs:  0.0002868175506591797
+Print:  4.5299530029296875e-06
+Step environment:  0.026913881301879883
+Get observations:  0.007458925247192383
+Process inputs:  0.0002789497375488281
+Print:  5.0067901611328125e-06
+Step environment:  0.022864818572998047
+Get observations:  0.0074880123138427734
+Process inputs:  0.0002834796905517578
+Print:  4.76837158203125e-06
+Step environment:  0.026089906692504883
+Get observations:  0.004212617874145508
+Process inputs:  0.00026035308837890625
+Print:  5.0067901611328125e-06
+Step environment:  0.024925947189331055
+Get observations:  0.004383563995361328
+Process inputs:  0.00026917457580566406
+Print:  4.5299530029296875e-06
+Step environment:  0.024954557418823242
+Get observations:  0.0052835941314697266
+Process inputs:  0.00029206275939941406
+Print:  5.0067901611328125e-06
+Step environment:  0.023321866989135742
+Get observations:  0.005528450012207031
+Process inputs:  0.0003001689910888672
+Print:  6.198883056640625e-06
+Step environment:  0.02442455291748047
+Get observations:  0.004267215728759766
+Process inputs:  0.0002849102020263672
+  Padding:  0.0324249267578125
+    Load memories:  0.0002117156982421875
+    Inference:  0.07159233093261719
+    Load memories:  0.0001609325408935547
+    Inference:  0.07027196884155273
+    optimizer:  1.1920928955078125e-06
+Print:  0.0003883838653564453
+Step environment:  0.019029617309570312
+Get observations:  0.006136894226074219
+Process inputs:  0.0003008842468261719
+Print:  4.291534423828125e-06
+Step environment:  0.026777029037475586
+Get observations:  0.007865667343139648
+Process inputs:  0.00030303001403808594
+$$$$$$$$$$$$ 11111 $$$$$$$$$$$
+Print:  1.1920928955078125e-05
+Step environment:  0.02302861213684082
+Get observations:  0.0071866512298583984
+Process inputs:  0.000274658203125
+Print:  4.291534423828125e-06
+Step environment:  0.023069381713867188
+Get observations:  0.007247447967529297
+Process inputs:  0.0003132820129394531
+Print:  4.76837158203125e-06
+Step environment:  0.02605605125427246
+Get observations:  0.004368782043457031
+Process inputs:  0.00028395652770996094
+Print:  5.245208740234375e-06
+Step environment:  0.025099754333496094
+Get observations:  0.005467414855957031
+Process inputs:  0.0002715587615966797
+Print:  5.7220458984375e-06
+Step environment:  0.023944377899169922
+Get observations:  0.005331277847290039
+Process inputs:  0.0002696514129638672
+Print:  6.198883056640625e-06
+Step environment:  0.024555683135986328
+Get observations:  0.005352973937988281
+Process inputs:  0.0002677440643310547
+  Padding:  0.031290531158447266
+    Load memories:  0.00023651123046875
+    Inference:  0.06878185272216797
+    Load memories:  0.00015854835510253906
+    Inference:  0.07270240783691406
+    optimizer:  1.430511474609375e-06
+Print:  0.00037097930908203125
+Step environment:  0.01838850975036621
+Get observations:  0.007388591766357422
+Process inputs:  0.00030612945556640625
+Print:  4.76837158203125e-06
+Step environment:  0.027293682098388672
+Get observations:  0.0077362060546875
+Process inputs:  0.00034737586975097656
+Print:  5.7220458984375e-06
+Step environment:  0.023065805435180664
+Get observations:  0.0071485042572021484
+Process inputs:  0.00029087066650390625
+Print:  4.5299530029296875e-06
+Step environment:  0.026089906692504883
+Get observations:  0.0042994022369384766
+Process inputs:  0.0002510547637939453
+Print:  4.5299530029296875e-06
+Step environment:  0.025417566299438477
+Get observations:  0.004229545593261719
+Process inputs:  0.00024700164794921875
+Print:  4.76837158203125e-06
+Step environment:  0.02471137046813965
+Get observations:  0.004473447799682617
+Process inputs:  0.0002562999725341797
+Print:  5.0067901611328125e-06
+Step environment:  0.02483987808227539
+Get observations:  0.0053060054779052734
+Process inputs:  0.00024509429931640625
+Print:  6.198883056640625e-06
+Step environment:  0.02374410629272461
+Get observations:  0.004328727722167969
+Process inputs:  0.00025963783264160156
+  Padding:  0.0325930118560791
+    Load memories:  0.0002467632293701172
+    Inference:  0.07152700424194336
+    Load memories:  0.0001518726348876953
+    Inference:  0.07174205780029297
+    optimizer:  1.430511474609375e-06
+Print:  0.0003368854522705078
+Step environment:  0.018674135208129883
+Get observations:  0.0074422359466552734
+Process inputs:  0.0003058910369873047
+Print:  4.76837158203125e-06
+Step environment:  0.025768518447875977
+Get observations:  0.008081912994384766
+Process inputs:  0.0002906322479248047
+Print:  5.0067901611328125e-06
+Step environment:  0.022370338439941406
+Get observations:  0.007460832595825195
+Process inputs:  0.00026297569274902344
+Print:  3.814697265625e-06
+Step environment:  0.026292800903320312
+Get observations:  0.00438690185546875
+Process inputs:  0.00027298927307128906
+Print:  5.245208740234375e-06
+Step environment:  0.025138139724731445
+Get observations:  0.004400968551635742
+Process inputs:  0.0002589225769042969
+Print:  4.5299530029296875e-06
+Step environment:  0.024430513381958008
+Get observations:  0.004374980926513672
+Process inputs:  0.00029158592224121094
+Print:  4.76837158203125e-06
+Step environment:  0.02487969398498535
+Get observations:  0.0066072940826416016
+Process inputs:  0.00032401084899902344
+Print:  7.3909759521484375e-06
+Step environment:  0.028742313385009766
+Get observations:  0.004279136657714844
+Process inputs:  0.0003273487091064453
+  Padding:  0.03243231773376465
+    Load memories:  0.005249500274658203
+    Inference:  0.06674480438232422
+    Load memories:  0.0001685619354248047
+    Inference:  0.06974339485168457
+    optimizer:  9.5367431640625e-07
+Print:  0.0005257129669189453
+Step environment:  0.018976926803588867
+Get observations:  0.00646519660949707
+Process inputs:  0.0003142356872558594
+Print:  4.291534423828125e-06
+Step environment:  0.025821447372436523
+Get observations:  0.007825136184692383
+Process inputs:  0.00030231475830078125
+Print:  5.245208740234375e-06
+Step environment:  0.022748947143554688
+Get observations:  0.007085561752319336
+Process inputs:  0.00030422210693359375
+Print:  4.5299530029296875e-06
+Step environment:  0.02590799331665039
+Get observations:  0.0043370723724365234
+Process inputs:  0.0002486705780029297
+Print:  5.0067901611328125e-06
+Step environment:  0.024718761444091797
+Get observations:  0.004485130310058594
+Process inputs:  0.0002486705780029297
+Print:  1.5497207641601562e-05
+Step environment:  0.020926952362060547
+Get observations:  0.007186174392700195
+Process inputs:  0.00030159950256347656
+Print:  5.245208740234375e-06
+Step environment:  0.025940418243408203
+Get observations:  0.004730939865112305
+Process inputs:  0.00025582313537597656
+Print:  6.198883056640625e-06
+Step environment:  0.02411484718322754
+Get observations:  0.004426002502441406
+Process inputs:  0.0002472400665283203
+  Padding:  0.032448530197143555
+    Load memories:  0.00021982192993164062
+    Inference:  0.06858611106872559
+    Load memories:  0.00013637542724609375
+    Inference:  0.07140636444091797
+    optimizer:  1.1920928955078125e-06
+Print:  0.0004029273986816406
+Step environment:  0.01907801628112793
+Get observations:  0.006752967834472656
+Process inputs:  0.0002789497375488281
+Print:  4.76837158203125e-06
+Step environment:  0.026693105697631836
+Get observations:  0.007680177688598633
+Process inputs:  0.000308990478515625
+Print:  5.7220458984375e-06
+Step environment:  0.022956132888793945
+Get observations:  0.007112026214599609
+Process inputs:  0.0002853870391845703
+Print:  4.5299530029296875e-06
+Step environment:  0.026427030563354492
+Get observations:  0.004235029220581055
+Process inputs:  0.00024628639221191406
+Print:  4.76837158203125e-06
+Step environment:  0.025170326232910156
+Get observations:  0.005461454391479492
+Process inputs:  0.0002906322479248047
+Print:  4.76837158203125e-06
+Step environment:  0.023018360137939453
+Get observations:  0.004399776458740234
+Process inputs:  0.0002753734588623047
+Print:  5.0067901611328125e-06
+Step environment:  0.02410292625427246
+Get observations:  0.00555729866027832
+Process inputs:  0.00030875205993652344
+Print:  6.67572021484375e-06
+Step environment:  0.023484230041503906
+Get observations:  0.004475116729736328
+Process inputs:  0.0002543926239013672
+  Padding:  0.03281283378601074
+    Load memories:  0.00020956993103027344
+    Inference:  0.07200908660888672
+    Load memories:  0.00013446807861328125
+    Inference:  0.07084155082702637
+    optimizer:  1.430511474609375e-06
+Print:  0.0003826618194580078
+Step environment:  0.019153833389282227
+Get observations:  0.0070073604583740234
+Process inputs:  0.0003032684326171875
+Print:  4.0531158447265625e-06
+Step environment:  0.03088831901550293
+Get observations:  0.006943941116333008
+Process inputs:  0.0003173351287841797
+Print:  5.245208740234375e-06
+Step environment:  0.02793431282043457
+Get observations:  0.008003950119018555
+Process inputs:  0.0002830028533935547
+Print:  4.5299530029296875e-06
+Step environment:  0.022832155227661133
+Get observations:  0.007294416427612305
+Process inputs:  0.0002605915069580078
+Print:  5.0067901611328125e-06
+Step environment:  0.02613043785095215
+Get observations:  0.00433802604675293
+Process inputs:  0.0002448558807373047
+Print:  4.76837158203125e-06
+Step environment:  0.0251007080078125
+Get observations:  0.004457712173461914
+Process inputs:  0.00026679039001464844
+Print:  5.245208740234375e-06
+Step environment:  0.02490711212158203
+Get observations:  0.005535602569580078
+Process inputs:  0.00026488304138183594
+Print:  6.198883056640625e-06
+Step environment:  0.023275136947631836
+Get observations:  0.004450798034667969
+Process inputs:  0.000255584716796875
+  Padding:  0.032659292221069336
+    Load memories:  0.0002276897430419922
+    Inference:  0.07255864143371582
+    Load memories:  0.00013685226440429688
+    Inference:  0.07135915756225586
+    optimizer:  1.430511474609375e-06
+Print:  0.0004725456237792969
+Step environment:  0.01980113983154297
+Get observations:  0.0070648193359375
+Process inputs:  0.00031280517578125
+Print:  5.0067901611328125e-06
+Step environment:  0.026073455810546875
+Get observations:  0.008829832077026367
+Process inputs:  0.00029969215393066406
+Print:  5.245208740234375e-06
+Step environment:  0.02555108070373535
+Get observations:  0.006943464279174805
+Process inputs:  0.00028777122497558594
+$$$$$$$$$$$$ 22222 $$$$$$$$$$$
+Print:  1.1444091796875e-05
+Step environment:  0.026006460189819336
+Get observations:  0.004265785217285156
+Process inputs:  0.0003142356872558594
+Print:  5.0067901611328125e-06
+Step environment:  0.02587723731994629
+Get observations:  0.005486249923706055
+Process inputs:  0.00024318695068359375
+Print:  4.76837158203125e-06
+Step environment:  0.02395796775817871
+Get observations:  0.004243612289428711
+Process inputs:  0.000240325927734375
+Print:  4.291534423828125e-06
+Step environment:  0.02490973472595215
+Get observations:  0.005427837371826172
+Process inputs:  0.0002765655517578125
+Print:  6.4373016357421875e-06
+Step environment:  0.02435469627380371
+~*~*~*
+~*~*~* Direct GPU Helper:
+~*~*~*   2 articulations, maxLinks=3
+~*~*~*
+REPLAY
+Initialization:  0.43334197998046875
+Get observations:  0.0016384124755859375
+Process inputs:  0.0003674030303955078
+  Padding:  0.054114580154418945
+    Load memories:  0.005160808563232422
+    Inference model:  0.02568340301513672
+    rearrange:  0.00016617774963378906
+    Inference projection:  0.00023055076599121094
+    Load memories:  0.03869938850402832
+    Inference:  0.06956219673156738
+    Backward:  0.011401176452636719
+    Load memories:  0.08909344673156738
+    Inference model:  0.026113033294677734
+    rearrange:  0.000152587890625
+    Inference projection:  0.0003066062927246094
+    Load memories:  0.04424762725830078
+    Inference:  0.07153749465942383
+    Backward:  0.010445356369018555
+    optimizer:  2.86102294921875e-06
+Print:  0.00020599365234375
+Step environment:  0.10895776748657227
+Get observations:  0.012248754501342773
+Process inputs:  0.0006620883941650391
+$$$$$$$$$$$$ 00000 $$$$$$$$$$$
+expectation:  [[41.86753845214844], [10.515259742736816]]
+action:  tensor([[-0.6048],
+        [ 1.4173]], device='cuda:0')
+observations tensor([0.0065, 0.7779, 0.0097, 1.1664], device='cuda:0')
+Print:  0.007889986038208008
+Step environment:  0.0165097713470459
+Get observations:  0.010907649993896484
+Process inputs:  0.0002923011779785156
+Print:  4.5299530029296875e-06
+Step environment:  0.019161462783813477
+Get observations:  0.010596036911010742
+Process inputs:  0.00031447410583496094
+Print:  5.0067901611328125e-06
+Step environment:  0.023133516311645508
+Get observations:  0.007901906967163086
+Process inputs:  0.0002963542938232422
+Print:  5.4836273193359375e-06
+Step environment:  0.0214080810546875
+Get observations:  0.007891178131103516
+Process inputs:  0.00029397010803222656
+Print:  5.4836273193359375e-06
+Step environment:  0.021741390228271484
+Get observations:  0.007882118225097656
+Process inputs:  0.00031185150146484375
+Print:  6.198883056640625e-06
+Step environment:  0.022526025772094727
+Get observations:  0.00879359245300293
+Process inputs:  0.00031256675720214844
+Print:  5.245208740234375e-06
+Step environment:  0.02265644073486328
+Get observations:  0.008870363235473633
+Process inputs:  0.0002713203430175781
+  Padding:  0.056359291076660156
+    Load memories:  0.000278472900390625
+    Inference model:  0.02989506721496582
+    rearrange:  0.00017547607421875
+    Inference projection:  0.00025272369384765625
+    Load memories:  0.00018906593322753906
+    Inference:  0.1177971363067627
+    Backward:  0.011253595352172852
+    Load memories:  0.00022363662719726562
+    Inference model:  0.11751031875610352
+    rearrange:  0.000179290771484375
+    Inference projection:  0.00022912025451660156
+    Load memories:  0.00020241737365722656
+    Inference:  0.11431193351745605
+    Backward:  0.011075496673583984
+    optimizer:  2.1457672119140625e-06
+Print:  0.00025153160095214844
+Step environment:  0.10841846466064453
+Get observations:  0.011152982711791992
+Process inputs:  0.00030732154846191406
+Print:  5.0067901611328125e-06
+Step environment:  0.021323204040527344
+Get observations:  0.011012554168701172
+Process inputs:  0.00027942657470703125
+Print:  5.4836273193359375e-06
+Step environment:  0.019775390625
+Get observations:  0.010746240615844727
+Process inputs:  0.0002689361572265625
+Print:  4.5299530029296875e-06
+Step environment:  0.018993377685546875
+Get observations:  0.010467767715454102
+Process inputs:  0.00026917457580566406
+Print:  6.9141387939453125e-06
+Step environment:  0.02320384979248047
+Get observations:  0.007908821105957031
+Process inputs:  0.0003001689910888672
+Print:  5.9604644775390625e-06
+Step environment:  0.021041154861450195
+Get observations:  0.00793600082397461
+Process inputs:  0.0002868175506591797
+Print:  5.9604644775390625e-06
+Step environment:  0.021741390228271484
+Get observations:  0.007850885391235352
+Process inputs:  0.0003178119659423828
+Print:  1.5497207641601562e-05
+Step environment:  0.02167677879333496
+Get observations:  0.007954120635986328
+Process inputs:  0.0003261566162109375
+  Padding:  0.05776238441467285
+    Load memories:  0.00023436546325683594
+    Inference model:  0.029955148696899414
+    rearrange:  0.0003902912139892578
+    Inference projection:  0.0002384185791015625
+    Load memories:  0.0001838207244873047
+    Inference:  0.11523890495300293
+    Backward:  0.010771036148071289
+    Load memories:  0.00024080276489257812
+    Inference model:  0.11571717262268066
+    rearrange:  0.0004341602325439453
+    Inference projection:  0.0002434253692626953
+    Load memories:  0.00015807151794433594
+    Inference:  0.11382007598876953
+    Backward:  0.010686159133911133
+    optimizer:  2.6226043701171875e-06
+Print:  0.00016951560974121094
+Step environment:  0.10905718803405762
+Get observations:  0.012881040573120117
+Process inputs:  0.0004906654357910156
+Print:  9.298324584960938e-06
+Step environment:  0.022143125534057617
+Get observations:  0.011178255081176758
+Process inputs:  0.00045561790466308594
+Print:  8.106231689453125e-06
+Step environment:  0.02603006362915039
+Get observations:  0.008739471435546875
+Process inputs:  0.0003192424774169922
+Print:  5.245208740234375e-06
+Step environment:  0.02340412139892578
+Get observations:  0.0077207088470458984
+Process inputs:  0.0003037452697753906
+Print:  6.4373016357421875e-06
+Step environment:  0.021175384521484375
+Get observations:  0.007934808731079102
+Process inputs:  0.0002944469451904297
+Print:  5.245208740234375e-06
+Step environment:  0.02148270606994629
+Get observations:  0.007932662963867188
+Process inputs:  0.00032520294189453125
+Print:  5.4836273193359375e-06
+Step environment:  0.021363258361816406
+Get observations:  0.007935047149658203
+Process inputs:  0.0005671977996826172
+Print:  7.62939453125e-06
+Step environment:  0.021275043487548828
+Get observations:  0.007818460464477539
+Process inputs:  0.00038814544677734375
+  Padding:  0.05760693550109863
+    Load memories:  0.00023984909057617188
+    Inference model:  0.029394149780273438
+    rearrange:  0.00016641616821289062
+    Inference projection:  0.0002090930938720703
+    Load memories:  0.0001919269561767578
+    Inference:  0.11820244789123535
+    Backward:  0.01129460334777832
+    Load memories:  0.0001800060272216797
+    Inference model:  0.11738419532775879
+    rearrange:  0.00021576881408691406
+    Inference projection:  0.0002281665802001953
+    Load memories:  0.0001914501190185547
+    Inference:  0.11204957962036133
+    Backward:  0.011881828308105469
+    optimizer:  3.5762786865234375e-06
+Print:  0.00017261505126953125
+Step environment:  0.10962438583374023
+Get observations:  0.012666463851928711
+Process inputs:  0.0003273487091064453
+Print:  5.245208740234375e-06
+Step environment:  0.0200650691986084
+Get observations:  0.011209726333618164
+Process inputs:  0.0002739429473876953
+Print:  5.4836273193359375e-06
+Step environment:  0.019788265228271484
+Get observations:  0.011097908020019531
+Process inputs:  0.00031876564025878906
+Print:  4.76837158203125e-06
+Step environment:  0.023088932037353516
+Get observations:  0.008826732635498047
+Process inputs:  0.0002675056457519531
+Print:  7.3909759521484375e-06
+Step environment:  0.022002220153808594
+Get observations:  0.007891654968261719
+Process inputs:  0.0002586841583251953
+Print:  5.245208740234375e-06
+Step environment:  0.020227670669555664
+Get observations:  0.007985115051269531
+Process inputs:  0.00026702880859375
+Print:  4.76837158203125e-06
+Step environment:  0.021450281143188477
+Get observations:  0.00882863998413086
+Process inputs:  0.0002484321594238281
+Print:  4.5299530029296875e-06
+Step environment:  0.021233558654785156
+Get observations:  0.008057832717895508
+Process inputs:  0.00027561187744140625
+  Padding:  0.05749225616455078
+    Load memories:  0.00020194053649902344
+    Inference model:  0.030032634735107422
+    rearrange:  0.0004134178161621094
+    Inference projection:  0.00025153160095214844
+    Load memories:  0.0001761913299560547
+    Inference:  0.11651611328125
+    Backward:  0.010718107223510742
+    Load memories:  0.00017547607421875
+    Inference model:  0.11665034294128418
+    rearrange:  0.0004508495330810547
+    Inference projection:  0.0002377033233642578
+    Load memories:  0.0001678466796875
+    Inference:  0.11456656455993652
+    Backward:  0.010845661163330078
+OPTIMIZING
+    optimizer:  0.007380962371826172
+Print:  0.00012612342834472656
+Step environment:  0.1138758659362793
+Get observations:  0.010946989059448242
+Process inputs:  0.00035452842712402344
+Print:  7.62939453125e-06
+Step environment:  0.021165132522583008
+Get observations:  0.010950565338134766
+Process inputs:  0.0003056526184082031
+Print:  5.245208740234375e-06
+Step environment:  0.01996636390686035
+Get observations:  0.010641813278198242
+Process inputs:  0.0002892017364501953
+Print:  4.5299530029296875e-06
+Step environment:  0.02330756187438965
+Get observations:  0.007736682891845703
+Process inputs:  0.0002684593200683594
+Print:  5.0067901611328125e-06
+Step environment:  0.021655797958374023
+Get observations:  0.007764577865600586
+Process inputs:  0.00030517578125
+Print:  5.4836273193359375e-06
+Step environment:  0.02191948890686035
+Get observations:  0.01001119613647461
+Process inputs:  0.0002586841583251953
+Print:  4.76837158203125e-06
+Step environment:  0.02384662628173828
+Get observations:  0.007797956466674805
+Process inputs:  0.0011854171752929688
+Print:  7.867813110351562e-06
+Step environment:  0.020214557647705078
+Get observations:  0.007873058319091797
+Process inputs:  0.0002655982971191406
+  Padding:  0.058027029037475586
+    Load memories:  0.00021839141845703125
+    Inference model:  0.029749393463134766
+    rearrange:  0.0001552104949951172
+    Inference projection:  0.000240325927734375
+    Load memories:  0.00018024444580078125
+    Inference:  0.1155695915222168
+    Backward:  0.011417388916015625
+    Load memories:  0.09148240089416504
+    Inference model:  0.0266568660736084
+    rearrange:  0.0001583099365234375
+    Inference projection:  0.00022912025451660156
+    Load memories:  0.04418373107910156
+    Inference:  0.0712733268737793
+    Backward:  0.012409687042236328
+    optimizer:  3.0994415283203125e-06
+Print:  0.0001761913299560547
+Step environment:  0.10713720321655273
+Get observations:  0.011311531066894531
+Process inputs:  0.00034356117248535156
+Print:  5.4836273193359375e-06
+Step environment:  0.021808862686157227
+Get observations:  0.011106252670288086
+Process inputs:  0.00032448768615722656
+Print:  6.4373016357421875e-06
+Step environment:  0.024680376052856445
+Get observations:  0.008873462677001953
+Process inputs:  0.0003020763397216797
+Print:  5.0067901611328125e-06
+Step environment:  0.020806550979614258
+Get observations:  0.010046958923339844
+Process inputs:  0.00032448768615722656
+Print:  7.152557373046875e-06
+Step environment:  0.02205634117126465
+Get observations:  0.00784158706665039
+Process inputs:  0.0003070831298828125
+Print:  5.9604644775390625e-06
+Step environment:  0.022999286651611328
+Get observations:  0.007748603820800781
+Process inputs:  0.0003063678741455078
+Print:  5.4836273193359375e-06
+Step environment:  0.022377490997314453
+Get observations:  0.007953882217407227
+Process inputs:  0.0002808570861816406
+Print:  5.0067901611328125e-06
+Step environment:  0.02182745933532715
+Get observations:  0.007839441299438477
+Process inputs:  0.00029277801513671875
+  Padding:  0.05759286880493164
+    Load memories:  0.0002453327178955078
+    Inference model:  0.02980518341064453
+    rearrange:  0.0004961490631103516
+    Inference projection:  0.00028443336486816406
+    Load memories:  0.00016307830810546875
+    Inference:  0.11269497871398926
+    Backward:  0.011624813079833984
+    Load memories:  0.00019311904907226562
+    Inference model:  0.11525940895080566
+    rearrange:  0.0004527568817138672
+    Inference projection:  0.00025844573974609375
+    Load memories:  0.00019168853759765625
+    Inference:  0.11366844177246094
+    Backward:  0.011043548583984375
+    optimizer:  2.6226043701171875e-06
+Print:  0.00017213821411132812
+Step environment:  0.1087656021118164
+Get observations:  0.012093782424926758
+Process inputs:  0.00031685829162597656
+Print:  6.9141387939453125e-06
+Step environment:  0.020113229751586914
+Get observations:  0.011020183563232422
+Process inputs:  0.0003132820129394531
+$$$$$$$$$$$$ 11111 $$$$$$$$$$$
+expectation:  [[-5.516993522644043], [15.54817008972168]]
+action:  tensor([[1.3290],
+        [0.8765]], device='cuda:0')
+observations tensor([-0.4547, -1.7923, -0.0498, -3.1244], device='cuda:0')
+Print:  0.008060693740844727
+Step environment:  0.01619863510131836
+Get observations:  0.010601282119750977
+Process inputs:  0.0002658367156982422
+Print:  3.814697265625e-06
+Step environment:  0.022421598434448242
+Get observations:  0.007831096649169922
+Process inputs:  0.00026726722717285156
+Print:  5.0067901611328125e-06
+Step environment:  0.021368741989135742
+Get observations:  0.007969141006469727
+Process inputs:  0.0002684593200683594
+Print:  1.1920928955078125e-05
+Step environment:  0.02165508270263672
+Get observations:  0.007993459701538086
+Process inputs:  0.00025463104248046875
+Print:  4.76837158203125e-06
+Step environment:  0.021286725997924805
+Get observations:  0.008825540542602539
+Process inputs:  0.0002980232238769531
+Print:  5.0067901611328125e-06
+Step environment:  0.021903038024902344
+Get observations:  0.00888681411743164
+Process inputs:  0.00027441978454589844
+  Padding:  0.05647611618041992
+    Load memories:  0.00021576881408691406
+    Inference model:  0.02978992462158203
+    rearrange:  0.00018215179443359375
+    Inference projection:  0.00028204917907714844
+    Load memories:  0.00018453598022460938
+    Inference:  0.11979961395263672
+    Backward:  0.011137247085571289
+    Load memories:  0.00017547607421875
+    Inference model:  0.11793804168701172
+    rearrange:  0.00015163421630859375
+    Inference projection:  0.0002257823944091797
+    Load memories:  0.00016689300537109375
+    Inference:  0.11489129066467285
+    Backward:  0.011552095413208008
+    optimizer:  2.384185791015625e-06
+Print:  0.0001583099365234375
+Step environment:  0.10787391662597656
+Get observations:  0.01141357421875
+Process inputs:  0.0003268718719482422
+Print:  4.76837158203125e-06
+Step environment:  0.021403074264526367
+Get observations:  0.010938405990600586
+Process inputs:  0.000274658203125
+Print:  5.245208740234375e-06
+Step environment:  0.019997358322143555
+Get observations:  0.010648965835571289
+Process inputs:  0.00027060508728027344
+Print:  4.5299530029296875e-06
+Step environment:  0.023253202438354492
+Get observations:  0.008911371231079102
+Process inputs:  0.0003104209899902344
+Print:  7.152557373046875e-06
+Step environment:  0.02355051040649414
+Get observations:  0.007841110229492188
+Process inputs:  0.0004000663757324219
+Print:  2.3126602172851562e-05
+Step environment:  0.024858951568603516
+Get observations:  0.008597612380981445
+Process inputs:  0.00043511390686035156
+Print:  7.3909759521484375e-06
+Step environment:  0.0254819393157959
+Get observations:  0.008526325225830078
+Process inputs:  0.0003178119659423828
+Print:  5.4836273193359375e-06
+Step environment:  0.02349710464477539
+Get observations:  0.007890939712524414
+Process inputs:  0.0003077983856201172
+  Padding:  0.05768918991088867
+    Load memories:  0.0002605915069580078
+    Inference model:  0.02952718734741211
+    rearrange:  0.00044274330139160156
+    Inference projection:  0.00025463104248046875
+    Load memories:  0.0001747608184814453
+    Inference:  0.11303067207336426
+    Backward:  0.011028528213500977
+    Load memories:  0.00018858909606933594
+    Inference model:  0.1190333366394043
+    rearrange:  0.0004515647888183594
+    Inference projection:  0.0002665519714355469
+    Load memories:  0.000179290771484375
+    Inference:  0.1148989200592041
+    Backward:  0.011052608489990234
+    optimizer:  3.0994415283203125e-06
+Print:  0.00016808509826660156
+Step environment:  0.11043524742126465
+Get observations:  0.01271820068359375
+Process inputs:  0.0003409385681152344
+Print:  6.9141387939453125e-06
+Step environment:  0.020244121551513672
+Get observations:  0.011215686798095703
+Process inputs:  0.0003094673156738281
+Print:  5.7220458984375e-06
+Step environment:  0.020438671112060547
+Get observations:  0.010141372680664062
+Process inputs:  0.0002942085266113281
+Print:  4.76837158203125e-06
+Step environment:  0.019865751266479492
+Get observations:  0.010520458221435547
+Process inputs:  0.00026917457580566406
+Print:  5.0067901611328125e-06
+Step environment:  0.023189544677734375
+Get observations:  0.0077342987060546875
+Process inputs:  0.0002815723419189453
+Print:  4.5299530029296875e-06
+Step environment:  0.02220463752746582
+Get observations:  0.007825613021850586
+Process inputs:  0.00027680397033691406
+Print:  5.245208740234375e-06
+Step environment:  0.021268367767333984
+Get observations:  0.009008407592773438
+Process inputs:  0.00027871131896972656
+Print:  5.4836273193359375e-06
+Step environment:  0.024692058563232422
+Get observations:  0.008819103240966797
+Process inputs:  0.0002677440643310547
+  Padding:  0.05628490447998047
+    Load memories:  0.005358695983886719
+    Inference model:  0.0254974365234375
+    rearrange:  0.00015020370483398438
+    Inference projection:  0.00020623207092285156
+    Load memories:  0.04387640953063965
+    Inference:  0.0748908519744873
+    Backward:  0.011398553848266602
+    Load memories:  0.0001838207244873047
+    Inference model:  0.11543440818786621
+    rearrange:  0.0001628398895263672
+    Inference projection:  0.0002315044403076172
+    Load memories:  0.00022101402282714844
+    Inference:  0.1112370491027832
+    Backward:  0.011314630508422852
+OPTIMIZING
+    optimizer:  0.006252288818359375
+Print:  0.00012230873107910156
+Step environment:  0.1138303279876709
+Get observations:  0.012222766876220703
+Process inputs:  0.0003445148468017578
+Print:  4.76837158203125e-06
+Step environment:  0.019518375396728516
+Get observations:  0.010948896408081055
+Process inputs:  0.00031256675720214844
+Print:  5.4836273193359375e-06
+Step environment:  0.024595260620117188
+Get observations:  0.008861780166625977
+Process inputs:  0.0006465911865234375
+Print:  7.3909759521484375e-06
+Step environment:  0.024236679077148438
+Get observations:  0.007734775543212891
+Process inputs:  0.00030493736267089844
+Print:  5.4836273193359375e-06
+Step environment:  0.02361917495727539
+Get observations:  0.00906825065612793
+Process inputs:  0.00032210350036621094
+Print:  5.245208740234375e-06
+Step environment:  0.0227658748626709
+Get observations:  0.008886337280273438
+Process inputs:  0.00028705596923828125
+Print:  5.0067901611328125e-06
+Step environment:  0.02285003662109375
+Get observations:  0.007841348648071289
+Process inputs:  0.0003170967102050781
+Print:  5.0067901611328125e-06
+Step environment:  0.021696805953979492
+Get observations:  0.007725238800048828
+Process inputs:  0.0003173351287841797
+  Padding:  0.057486534118652344
+    Load memories:  0.0005288124084472656
+    Inference model:  0.02963709831237793
+    rearrange:  0.00019407272338867188
+    Inference projection:  0.00023508071899414062
+    Load memories:  0.00020194053649902344
+    Inference:  0.10988092422485352
+    Backward:  0.011567115783691406
+    Load memories:  0.0002033710479736328
+    Inference model:  0.1156163215637207
+    rearrange:  0.0005271434783935547
+    Inference projection:  0.0003368854522705078
+    Load memories:  0.0001480579376220703
+    Inference:  0.11490988731384277
+    Backward:  0.012060165405273438
+    optimizer:  4.291534423828125e-06
+Print:  0.00019812583923339844
+Step environment:  0.10851931571960449
+Get observations:  0.01066732406616211
+Process inputs:  0.0003228187561035156
+Print:  6.4373016357421875e-06
+Step environment:  0.022113800048828125
+Get observations:  0.010756254196166992
+Process inputs:  0.0003361701965332031
+Print:  6.198883056640625e-06
+Step environment:  0.02142500877380371
+Get observations:  0.010370254516601562
+Process inputs:  0.00036215782165527344
+Print:  5.4836273193359375e-06
+Step environment:  0.024685382843017578
+Get observations:  0.0077588558197021484
+Process inputs:  0.0003323554992675781
+Print:  5.7220458984375e-06
+Step environment:  0.023607492446899414
+Get observations:  0.009033918380737305
+Process inputs:  0.00034499168395996094
+Print:  5.4836273193359375e-06
+Step environment:  0.02416229248046875
+Get observations:  0.008838653564453125
+Process inputs:  0.00031948089599609375
+Print:  5.245208740234375e-06
+Step environment:  0.0239410400390625
+Get observations:  0.00874948501586914
+Process inputs:  0.0005865097045898438
+Print:  7.62939453125e-06
+Step environment:  0.02328801155090332
+Get observations:  0.008711814880371094
+Process inputs:  0.00033473968505859375
+  Padding:  0.05658459663391113
+    Load memories:  0.0002827644348144531
+    Inference model:  0.030324697494506836
+    rearrange:  0.0001823902130126953
+    Inference projection:  0.000232696533203125
+    Load memories:  0.0002071857452392578
+    Inference:  0.1185615062713623
+    Backward:  0.011806249618530273
+    Load memories:  0.000202178955078125
+    Inference model:  0.11490178108215332
+    rearrange:  0.00019049644470214844
+    Inference projection:  0.00028777122497558594
+    Load memories:  0.00020241737365722656
+    Inference:  0.11304354667663574
+    Backward:  0.012246370315551758
+    optimizer:  3.5762786865234375e-06
+Print:  0.0002181529998779297
+Step environment:  0.10826325416564941
+Get observations:  0.012305259704589844
+Process inputs:  0.0003592967987060547
+Print:  5.245208740234375e-06
+Step environment:  0.02063155174255371
+Get observations:  0.01085352897644043
+Process inputs:  0.0003237724304199219
+Print:  6.198883056640625e-06
+Step environment:  0.034811973571777344
+Get observations:  0.010167598724365234
+Process inputs:  0.0007128715515136719
+Print:  8.344650268554688e-06
+Step environment:  0.02440786361694336
+Get observations:  0.007964611053466797
+Process inputs:  0.00033664703369140625
+Print:  5.7220458984375e-06
+Step environment:  0.02243781089782715
+Get observations:  0.007768869400024414
+Process inputs:  0.0003609657287597656
+Print:  5.9604644775390625e-06
+Step environment:  0.023943424224853516
+Get observations:  0.008908748626708984
+Process inputs:  0.00034332275390625
+Print:  6.67572021484375e-06
+Step environment:  0.02528977394104004
+Get observations:  0.008591175079345703
+Process inputs:  0.0003132820129394531
+Print:  5.4836273193359375e-06
+Step environment:  0.023050785064697266
+Get observations:  0.00776219367980957
+Process inputs:  0.0003604888916015625
+  Padding:  0.05830812454223633
+    Load memories:  0.0005805492401123047
+    Inference model:  0.02966165542602539
+    rearrange:  0.0001678466796875
+    Inference projection:  0.000270843505859375
+    Load memories:  0.00019431114196777344
+    Inference:  0.11363053321838379
+    Backward:  0.011210441589355469
+    Load memories:  0.00023603439331054688
+    Inference model:  0.11817169189453125
+    rearrange:  0.0005538463592529297
+    Inference projection:  0.00027823448181152344
+    Load memories:  0.00016617774963378906
+    Inference:  0.11373662948608398
+    Backward:  0.01137542724609375
+    optimizer:  3.337860107421875e-06
+Print:  0.00017714500427246094
+Step environment:  0.10994839668273926
+Get observations:  0.012490034103393555
+Process inputs:  0.00032591819763183594
+Print:  6.198883056640625e-06
+Step environment:  0.02031111717224121
+Get observations:  0.012276649475097656
+Process inputs:  0.000324249267578125
+Print:  5.7220458984375e-06
+Step environment:  0.024938344955444336
+Get observations:  0.007853984832763672
+Process inputs:  0.0002810955047607422
+$$$$$$$$$$$$ 22222 $$$$$$$$$$$
+expectation:  [[3.4084315299987793], [3.9349365234375]]
+action:  tensor([[ 0.7641],
+        [-0.2113]], device='cuda:0')
+observations tensor([-0.8600,  0.0448, -0.0713,  0.3258], device='cuda:0')
+Print:  0.0071489810943603516
+Step environment:  0.01810431480407715
+Get observations:  0.007958173751831055
+Process inputs:  0.00027751922607421875
+Print:  4.0531158447265625e-06
+Step environment:  0.020694255828857422
+Get observations:  0.007709026336669922
+Process inputs:  0.00026488304138183594
+Print:  4.5299530029296875e-06
+Step environment:  0.02139902114868164
+Get observations:  0.007868051528930664
+Process inputs:  0.0002658367156982422
+Print:  4.76837158203125e-06
+Step environment:  0.02153635025024414
+Get observations:  0.007935762405395508
+Process inputs:  0.0007295608520507812
+Print:  6.67572021484375e-06
+Step environment:  0.021075963973999023
+~*~*~*
+~*~*~* Direct GPU Helper:
+~*~*~*   2 articulations, maxLinks=3
+~*~*~*
+PLAY
+Initialization:  1.459749698638916
+Get observations:  0.0017919540405273438
+Process inputs:  0.00038623809814453125
+  Padding:  0.02486252784729004
+    Load memories:  0.005289554595947266
+    Inference:  0.06677484512329102
+    Load memories:  0.0006003379821777344
+    Inference:  0.06853795051574707
+    optimizer:  1.1920928955078125e-06
+Print:  0.00010800361633300781
+Step environment:  0.02004265785217285
+Get observations:  0.007208585739135742
+Process inputs:  0.0003097057342529297
+$$$$$$$$$$$$ 00000 $$$$$$$$$$$
+Print:  1.2636184692382812e-05
+Step environment:  0.02581310272216797
+Get observations:  0.00745701789855957
+Process inputs:  0.0002956390380859375
+Print:  6.9141387939453125e-06
+Step environment:  0.022936344146728516
+Get observations:  0.007096052169799805
+Process inputs:  0.00027108192443847656
+Print:  5.245208740234375e-06
+Step environment:  0.02664971351623535
+Get observations:  0.0042760372161865234
+Process inputs:  0.00029921531677246094
+Print:  5.245208740234375e-06
+Step environment:  0.024687767028808594
+Get observations:  0.004331350326538086
+Process inputs:  0.0002880096435546875
+Print:  5.245208740234375e-06
+Step environment:  0.02490997314453125
+Get observations:  0.004288196563720703
+Process inputs:  0.0002760887145996094
+Print:  5.0067901611328125e-06
+Step environment:  0.024758338928222656
+Get observations:  0.004451274871826172
+Process inputs:  0.00025272369384765625
+Print:  4.5299530029296875e-06
+Step environment:  0.024408340454101562
+Get observations:  0.004603385925292969
+Process inputs:  0.0002567768096923828
+  Padding:  0.03251481056213379
+    Load memories:  0.0005257129669189453
+    Inference:  0.0685129165649414
+    Load memories:  0.00016641616821289062
+    Inference:  0.0725102424621582
+    optimizer:  1.6689300537109375e-06
+Print:  0.0001461505889892578
+Step environment:  0.020244359970092773
+Get observations:  0.00682830810546875
+Process inputs:  0.0002923011779785156
+Print:  5.245208740234375e-06
+Step environment:  0.027158498764038086
+Get observations:  0.007202863693237305
+Process inputs:  0.0006649494171142578
+Print:  8.344650268554688e-06
+Step environment:  0.02304863929748535
+Get observations:  0.007524728775024414
+Process inputs:  0.00030493736267089844
+Print:  5.0067901611328125e-06
+Step environment:  0.027892351150512695
+Get observations:  0.005439281463623047
+Process inputs:  0.00030994415283203125
+Print:  5.7220458984375e-06
+Step environment:  0.025188446044921875
+Get observations:  0.004236459732055664
+Process inputs:  0.0003216266632080078
+Print:  5.9604644775390625e-06
+Step environment:  0.026256561279296875
+Get observations:  0.0044553279876708984
+Process inputs:  0.0003178119659423828
+Print:  5.9604644775390625e-06
+Step environment:  0.02651667594909668
+Get observations:  0.0042421817779541016
+Process inputs:  0.0002696514129638672
+Print:  5.0067901611328125e-06
+Step environment:  0.02604532241821289
+Get observations:  0.004305839538574219
+Process inputs:  0.00027561187744140625
+  Padding:  0.0326845645904541
+    Load memories:  0.0005218982696533203
+    Inference:  0.06804513931274414
+    Load memories:  0.000164031982421875
+    Inference:  0.07034111022949219
+    optimizer:  1.430511474609375e-06
+Print:  0.00014495849609375
+Step environment:  0.02011895179748535
+Get observations:  0.006525754928588867
+Process inputs:  0.00030112266540527344
+Print:  5.245208740234375e-06
+Step environment:  0.027960777282714844
+Get observations:  0.0077168941497802734
+Process inputs:  0.0005433559417724609
+Print:  7.867813110351562e-06
+Step environment:  0.02402472496032715
+Get observations:  0.007388591766357422
+Process inputs:  0.00033736228942871094
+Print:  4.76837158203125e-06
+Step environment:  0.027126312255859375
+Get observations:  0.00430607795715332
+Process inputs:  0.00031948089599609375
+Print:  5.7220458984375e-06
+Step environment:  0.025160551071166992
+Get observations:  0.004469633102416992
+Process inputs:  0.00027632713317871094
+Print:  5.0067901611328125e-06
+Step environment:  0.0254666805267334
+Get observations:  0.004204750061035156
+Process inputs:  0.00028252601623535156
+Print:  5.4836273193359375e-06
+Step environment:  0.025182008743286133
+Get observations:  0.004483222961425781
+Process inputs:  0.0002777576446533203
+Print:  4.76837158203125e-06
+Step environment:  0.025343656539916992
+Get observations:  0.0043182373046875
+Process inputs:  0.0002868175506591797
+  Padding:  0.03292679786682129
+    Load memories:  0.0005042552947998047
+    Inference:  0.07070183753967285
+    Load memories:  0.00013637542724609375
+    Inference:  0.07178616523742676
+    optimizer:  1.1920928955078125e-06
+Print:  9.894371032714844e-05
+Step environment:  0.01873946189880371
+Get observations:  0.007353305816650391
+Process inputs:  0.0002949237823486328
+Print:  4.76837158203125e-06
+Step environment:  0.026268482208251953
+Get observations:  0.00789332389831543
+Process inputs:  0.0005614757537841797
+Print:  7.152557373046875e-06
+Step environment:  0.02269744873046875
+Get observations:  0.0070362091064453125
+Process inputs:  0.0002601146697998047
+Print:  4.291534423828125e-06
+Step environment:  0.02681875228881836
+Get observations:  0.004396677017211914
+Process inputs:  0.0002830028533935547
+Print:  5.245208740234375e-06
+Step environment:  0.025053977966308594
+Get observations:  0.0046236515045166016
+Process inputs:  0.00026607513427734375
+Print:  5.245208740234375e-06
+Step environment:  0.02498316764831543
+Get observations:  0.0043811798095703125
+Process inputs:  0.0002923011779785156
+Print:  5.4836273193359375e-06
+Step environment:  0.024873971939086914
+Get observations:  0.004408836364746094
+Process inputs:  0.0004062652587890625
+Print:  5.4836273193359375e-06
+Step environment:  0.025460243225097656
+Get observations:  0.0043714046478271484
+Process inputs:  0.00025725364685058594
+  Padding:  0.03287053108215332
+    Load memories:  0.0005183219909667969
+    Inference:  0.07097744941711426
+    Load memories:  0.00014328956604003906
+    Inference:  0.07007050514221191
+    optimizer:  9.5367431640625e-07
+Print:  0.00010180473327636719
+Step environment:  0.019265174865722656
+Get observations:  0.006626129150390625
+Process inputs:  0.0002970695495605469
+Print:  4.5299530029296875e-06
+Step environment:  0.02723979949951172
+Get observations:  0.0076062679290771484
+Process inputs:  0.0005970001220703125
+Print:  7.3909759521484375e-06
+Step environment:  0.023211240768432617
+Get observations:  0.008232831954956055
+Process inputs:  0.0002639293670654297
+Print:  4.291534423828125e-06
+Step environment:  0.02841639518737793
+Get observations:  0.004491567611694336
+Process inputs:  0.0002567768096923828
+Print:  4.76837158203125e-06
+Step environment:  0.024521589279174805
+Get observations:  0.004422187805175781
+Process inputs:  0.0002677440643310547
+Print:  5.245208740234375e-06
+Step environment:  0.025589466094970703
+Get observations:  0.004479646682739258
+Process inputs:  0.0002536773681640625
+Print:  4.76837158203125e-06
+Step environment:  0.024822473526000977
+Get observations:  0.004446983337402344
+Process inputs:  0.0003345012664794922
+Print:  4.76837158203125e-06
+Step environment:  0.025039196014404297
+Get observations:  0.004438161849975586
+Process inputs:  0.00025916099548339844
+  Padding:  0.03290915489196777
+    Load memories:  0.005144596099853516
+    Inference:  0.06555008888244629
+    Load memories:  0.00015997886657714844
+    Inference:  0.07188129425048828
+    optimizer:  1.1920928955078125e-06
+Print:  0.00010704994201660156
+Step environment:  0.01982259750366211
+Get observations:  0.00675201416015625
+Process inputs:  0.0002894401550292969
+Print:  4.291534423828125e-06
+Step environment:  0.02683711051940918
+Get observations:  0.0077173709869384766
+Process inputs:  0.0005736351013183594
+Print:  7.62939453125e-06
+Step environment:  0.0229794979095459
+Get observations:  0.007294893264770508
+Process inputs:  0.00028967857360839844
+Print:  4.291534423828125e-06
+Step environment:  0.026444673538208008
+Get observations:  0.004400968551635742
+Process inputs:  0.0002582073211669922
+Print:  4.5299530029296875e-06
+Step environment:  0.025218725204467773
+Get observations:  0.004286289215087891
+Process inputs:  0.0002658367156982422
+Print:  5.245208740234375e-06
+Step environment:  0.025908231735229492
+Get observations:  0.004275083541870117
+Process inputs:  0.0002532005310058594
+Print:  4.76837158203125e-06
+Step environment:  0.0255739688873291
+Get observations:  0.005442142486572266
+Process inputs:  0.00027370452880859375
+Print:  4.5299530029296875e-06
+Step environment:  0.02404165267944336
+Get observations:  0.0042781829833984375
+Process inputs:  0.0002510547637939453
+  Padding:  0.033045291900634766
+    Load memories:  0.0005035400390625
+    Inference:  0.0679481029510498
+    Load memories:  0.00014829635620117188
+    Inference:  0.07030916213989258
+    optimizer:  1.1920928955078125e-06
+Print:  0.00011754035949707031
+Step environment:  0.02017998695373535
+Get observations:  0.007271766662597656
+Process inputs:  0.00029850006103515625
+Print:  4.76837158203125e-06
+Step environment:  0.025763511657714844
+Get observations:  0.007401227951049805
+Process inputs:  0.0011134147644042969
+$$$$$$$$$$$$ 11111 $$$$$$$$$$$
+Print:  1.6450881958007812e-05
+Step environment:  0.02277851104736328
+Get observations:  0.007443666458129883
+Process inputs:  0.0002932548522949219
+Print:  4.291534423828125e-06
+Step environment:  0.026305437088012695
+Get observations:  0.004315614700317383
+Process inputs:  0.00033783912658691406
+Print:  5.245208740234375e-06
+Step environment:  0.026557207107543945
+Get observations:  0.00449681282043457
+Process inputs:  0.0003123283386230469
+Print:  5.245208740234375e-06
+Step environment:  0.02566361427307129
+Get observations:  0.004282236099243164
+Process inputs:  0.00029349327087402344
+Print:  5.245208740234375e-06
+Step environment:  0.025683164596557617
+Get observations:  0.00452423095703125
+Process inputs:  0.0002949237823486328
+Print:  4.76837158203125e-06
+Step environment:  0.025004863739013672
+Get observations:  0.005503654479980469
+Process inputs:  0.00026988983154296875
+  Padding:  0.03158974647521973
+    Load memories:  0.0005021095275878906
+    Inference:  0.0710294246673584
+    Load memories:  0.000507354736328125
+    Inference:  0.07114696502685547
+    optimizer:  9.5367431640625e-07
+Print:  0.00010657310485839844
+Step environment:  0.021889209747314453
+Get observations:  0.008968114852905273
+Process inputs:  0.00029778480529785156
+Print:  5.4836273193359375e-06
+Step environment:  0.02367568016052246
+Get observations:  0.007497549057006836
+Process inputs:  0.0005800724029541016
+Print:  7.3909759521484375e-06
+Step environment:  0.02335953712463379
+Get observations:  0.007254123687744141
+Process inputs:  0.000274658203125
+Print:  4.5299530029296875e-06
+Step environment:  0.027209758758544922
+Get observations:  0.0042591094970703125
+Process inputs:  0.00029778480529785156
+Print:  5.245208740234375e-06
+Step environment:  0.025516033172607422
+Get observations:  0.004277706146240234
+Process inputs:  0.0002796649932861328
+Print:  5.0067901611328125e-06
+Step environment:  0.025006532669067383
+Get observations:  0.004444122314453125
+Process inputs:  0.00027561187744140625
+Print:  5.0067901611328125e-06
+Step environment:  0.025383472442626953
+Get observations:  0.005412578582763672
+Process inputs:  0.00028395652770996094
+Print:  5.245208740234375e-06
+Step environment:  0.02413153648376465
+Get observations:  0.004324674606323242
+Process inputs:  0.0002796649932861328
+  Padding:  0.03260040283203125
+    Load memories:  0.0005035400390625
+    Inference:  0.07118964195251465
+    Load memories:  0.00017023086547851562
+    Inference:  0.06917428970336914
+    optimizer:  1.430511474609375e-06
+Print:  0.00012636184692382812
+Step environment:  0.019937753677368164
+Get observations:  0.008753538131713867
+Process inputs:  0.0003170967102050781
+Print:  5.0067901611328125e-06
+Step environment:  0.0242462158203125
+Get observations:  0.007915973663330078
+Process inputs:  0.0005800724029541016
+Print:  7.3909759521484375e-06
+Step environment:  0.02259230613708496
+Get observations:  0.007989883422851562
+Process inputs:  0.0002608299255371094
+Print:  4.5299530029296875e-06
+Step environment:  0.028699874877929688
+Get observations:  0.004319906234741211
+Process inputs:  0.00029850006103515625
+Print:  5.4836273193359375e-06
+Step environment:  0.024899005889892578
+Get observations:  0.0053522586822509766
+Process inputs:  0.0002865791320800781
+Print:  5.4836273193359375e-06
+Step environment:  0.02458953857421875
+Get observations:  0.005334138870239258
+Process inputs:  0.00029969215393066406
+Print:  5.4836273193359375e-06
+Step environment:  0.024151325225830078
+Get observations:  0.00535893440246582
+Process inputs:  0.00029206275939941406
+Print:  5.4836273193359375e-06
+Step environment:  0.02393937110900879
+Get observations:  0.004397392272949219
+Process inputs:  0.0003082752227783203
+  Padding:  0.03266310691833496
+    Load memories:  0.005236148834228516
+    Inference:  0.06600832939147949
+    Load memories:  0.00014328956604003906
+    Inference:  0.07036471366882324
+    optimizer:  9.5367431640625e-07
+Print:  0.00010061264038085938
+Step environment:  0.019137859344482422
+Get observations:  0.0070188045501708984
+Process inputs:  0.00033211708068847656
+Print:  4.0531158447265625e-06
+Step environment:  0.026801347732543945
+Get observations:  0.007613182067871094
+Process inputs:  0.0006916522979736328
+Print:  7.152557373046875e-06
+Step environment:  0.022429466247558594
+Get observations:  0.006759166717529297
+Process inputs:  0.0002994537353515625
+Print:  4.291534423828125e-06
+Step environment:  0.02312755584716797
+Get observations:  0.007372379302978516
+Process inputs:  0.0002751350402832031
+Print:  5.0067901611328125e-06
+Step environment:  0.026458740234375
+Get observations:  0.0042574405670166016
+Process inputs:  0.0002682209014892578
+Print:  5.0067901611328125e-06
+Step environment:  0.025594234466552734
+Get observations:  0.004245281219482422
+Process inputs:  0.0002582073211669922
+Print:  5.0067901611328125e-06
+Step environment:  0.025386571884155273
+Get observations:  0.004388093948364258
+Process inputs:  0.0002799034118652344
+Print:  4.291534423828125e-06
+Step environment:  0.025281906127929688
+Get observations:  0.004359006881713867
+Process inputs:  0.0002739429473876953
+  Padding:  0.03291034698486328
+    Load memories:  0.0004968643188476562
+    Inference:  0.06798863410949707
+    Load memories:  0.00015783309936523438
+    Inference:  0.06937479972839355
+    optimizer:  9.5367431640625e-07
+Print:  0.00011491775512695312
+Step environment:  0.019780397415161133
+Get observations:  0.007288694381713867
+Process inputs:  0.00030493736267089844
+Print:  4.76837158203125e-06
+Step environment:  0.02574777603149414
+Get observations:  0.007205009460449219
+Process inputs:  0.00031185150146484375
+Print:  5.245208740234375e-06
+Step environment:  0.023758649826049805
+Get observations:  0.007165670394897461
+Process inputs:  0.00028204917907714844
+Print:  6.198883056640625e-06
+Step environment:  0.02687811851501465
+Get observations:  0.00435185432434082
+Process inputs:  0.000331878662109375
+Print:  5.245208740234375e-06
+Step environment:  0.02457427978515625
+Get observations:  0.004469156265258789
+Process inputs:  0.0002582073211669922
+Print:  5.0067901611328125e-06
+Step environment:  0.024779081344604492
+Get observations:  0.0043790340423583984
+Process inputs:  0.00025200843811035156
+Print:  4.76837158203125e-06
+Step environment:  0.025110721588134766
+Get observations:  0.004382610321044922
+Process inputs:  0.000270843505859375
+Print:  4.291534423828125e-06
+Step environment:  0.025467395782470703
+Get observations:  0.00542902946472168
+Process inputs:  0.0002715587615966797
+  Padding:  0.03156685829162598
+    Load memories:  0.00020170211791992188
+    Inference:  0.0709848403930664
+    Load memories:  0.0005207061767578125
+    Inference:  0.06940984725952148
+    optimizer:  1.1920928955078125e-06
+Print:  9.846687316894531e-05
+Step environment:  0.019948482513427734
+Get observations:  0.006619691848754883
+Process inputs:  0.0003497600555419922
+Print:  5.245208740234375e-06
+Step environment:  0.026664257049560547
+Get observations:  0.007855653762817383
+Process inputs:  0.00031256675720214844
+Print:  5.9604644775390625e-06
+Step environment:  0.02733898162841797
+Get observations:  0.004410982131958008
+Process inputs:  0.0003428459167480469
+Print:  5.4836273193359375e-06
+Step environment:  0.026639938354492188
+Get observations:  0.004293680191040039
+Process inputs:  0.00032830238342285156
+Print:  5.4836273193359375e-06
+Step environment:  0.026497602462768555
+Get observations:  0.0054759979248046875
+Process inputs:  0.0003559589385986328
+Print:  9.5367431640625e-06
+Step environment:  0.025005102157592773
+Get observations:  0.004547834396362305
+Process inputs:  0.0003228187561035156
+Print:  5.9604644775390625e-06
+Step environment:  0.025926589965820312
+Get observations:  0.004300594329833984
+Process inputs:  0.000316619873046875
+Print:  5.7220458984375e-06
+Step environment:  0.02585458755493164
+Get observations:  0.00436711311340332
+Process inputs:  0.00029969215393066406
+  Padding:  0.03269243240356445
+    Load memories:  0.000225067138671875
+    Inference:  0.07018399238586426
+    Load memories:  0.0009772777557373047
+    Inference:  0.07043218612670898
+    optimizer:  1.1920928955078125e-06
+Print:  0.00011229515075683594
+Step environment:  0.019396066665649414
+Get observations:  0.006831645965576172
+Process inputs:  0.0003185272216796875
+Print:  5.245208740234375e-06
+Step environment:  0.02691030502319336
+Get observations:  0.007573843002319336
+Process inputs:  0.0003108978271484375
+Print:  5.4836273193359375e-06
+Step environment:  0.023050308227539062
+Get observations:  0.006875514984130859
+Process inputs:  0.0002834796905517578
+$$$$$$$$$$$$ 22222 $$$$$$$$$$$
+Print:  1.2159347534179688e-05
+Step environment:  0.026317119598388672
+Get observations:  0.005598545074462891
+Process inputs:  0.00028443336486816406
+Print:  4.76837158203125e-06
+Step environment:  0.02695918083190918
+Get observations:  0.005598306655883789
+Process inputs:  0.00032258033752441406
+Print:  7.867813110351562e-06
+Step environment:  0.023012638092041016
+Get observations:  0.004381656646728516
+Process inputs:  0.00030612945556640625
+Print:  6.198883056640625e-06
+Step environment:  0.026207685470581055
+Get observations:  0.005156755447387695
+Process inputs:  0.00032520294189453125
+Print:  5.9604644775390625e-06
+Step environment:  0.025058507919311523
+~*~*~*
+~*~*~* Direct GPU Helper:
+~*~*~*   2 articulations, maxLinks=3
+~*~*~*
+REPLAY
+Initialization:  0.43266940116882324
+Get observations:  0.0018982887268066406
+Process inputs:  0.0003840923309326172
+  Padding:  0.05348372459411621
+    Load memories:  0.005118846893310547
+    Inference model:  0.02553868293762207
+    rearrange:  0.00019311904907226562
+    Inference projection:  0.0002491474151611328
+    Load memories:  0.04093360900878906
+    Inference:  0.06880307197570801
+    Backward:  0.011929035186767578
+    Load memories:  0.08683514595031738
+    Inference model:  0.025929927825927734
+    rearrange:  0.0001552104949951172
+    Inference projection:  0.0003147125244140625
+    Load memories:  0.04173564910888672
+    Inference:  0.0703732967376709
+    Backward:  0.011458396911621094
+    optimizer:  3.0994415283203125e-06
+Print:  0.00017762184143066406
+Step environment:  0.10763835906982422
+Get observations:  0.011356115341186523
+Process inputs:  0.000308990478515625
+$$$$$$$$$$$$ 00000 $$$$$$$$$$$
+expectation:  [[8.655738830566406], [29.055646896362305]]
+action:  tensor([[-1.3938],
+        [-0.3819]], device='cuda:0')
+observations tensor([-0.0026, -0.3091, -0.0039, -0.4635], device='cuda:0')
+Print:  0.009575843811035156
+Step environment:  0.015581130981445312
+Get observations:  0.011177539825439453
+Process inputs:  0.0003151893615722656
+Print:  4.76837158203125e-06
+Step environment:  0.022682666778564453
+Get observations:  0.008974790573120117
+Process inputs:  0.00030231475830078125
+Print:  4.76837158203125e-06
+Step environment:  0.0216825008392334
+Get observations:  0.008791208267211914
+Process inputs:  0.00025844573974609375
+Print:  6.198883056640625e-06
+Step environment:  0.022169113159179688
+Get observations:  0.007886171340942383
+Process inputs:  0.00028014183044433594
+Print:  4.291534423828125e-06
+Step environment:  0.020572423934936523
+Get observations:  0.007902145385742188
+Process inputs:  0.0002987384796142578
+Print:  5.0067901611328125e-06
+Step environment:  0.022356748580932617
+Get observations:  0.007824420928955078
+Process inputs:  0.0002684593200683594
+Print:  5.0067901611328125e-06
+Step environment:  0.022148609161376953
+Get observations:  0.0077381134033203125
+Process inputs:  0.00027632713317871094
+  Padding:  0.05781364440917969
+    Load memories:  0.0002307891845703125
+    Inference model:  0.02986931800842285
+    rearrange:  0.0005087852478027344
+    Inference projection:  0.0002789497375488281
+    Load memories:  0.0001590251922607422
+    Inference:  0.11979508399963379
+    Backward:  0.011608362197875977
+    Load memories:  0.0002090930938720703
+    Inference model:  0.11479520797729492
+    rearrange:  0.00057220458984375
+    Inference projection:  0.0002913475036621094
+    Load memories:  0.00017023086547851562
+    Inference:  0.11220550537109375
+    Backward:  0.011639833450317383
+    optimizer:  3.0994415283203125e-06
+Print:  0.00015783309936523438
+Step environment:  0.10747289657592773
+Get observations:  0.012236356735229492
+Process inputs:  0.0003287792205810547
+Print:  6.9141387939453125e-06
+Step environment:  0.019928455352783203
+Get observations:  0.011067628860473633
+Process inputs:  0.00029730796813964844
+Print:  5.245208740234375e-06
+Step environment:  0.02371954917907715
+Get observations:  0.007793426513671875
+Process inputs:  0.00029397010803222656
+Print:  5.0067901611328125e-06
+Step environment:  0.02167344093322754
+Get observations:  0.008092403411865234
+Process inputs:  0.00029468536376953125
+Print:  5.245208740234375e-06
+Step environment:  0.02169942855834961
+Get observations:  0.008885860443115234
+Process inputs:  0.000286102294921875
+Print:  4.76837158203125e-06
+Step environment:  0.02188277244567871
+Get observations:  0.007875919342041016
+Process inputs:  0.0003058910369873047
+Print:  5.0067901611328125e-06
+Step environment:  0.020983219146728516
+Get observations:  0.007843732833862305
+Process inputs:  0.00030803680419921875
+Print:  5.0067901611328125e-06
+Step environment:  0.017885684967041016
+Get observations:  0.010704278945922852
+Process inputs:  0.0002808570861816406
+  Padding:  0.05852317810058594
+    Load memories:  0.00022840499877929688
+    Inference model:  0.02945709228515625
+    rearrange:  0.0001537799835205078
+    Inference projection:  0.00020742416381835938
+    Load memories:  0.0001723766326904297
+    Inference:  0.11439275741577148
+    Backward:  0.012263059616088867
+    Load memories:  0.00019121170043945312
+    Inference model:  0.11389613151550293
+    rearrange:  0.0001933574676513672
+    Inference projection:  0.0002300739288330078
+    Load memories:  0.0001785755157470703
+    Inference:  0.11311697959899902
+    Backward:  0.011229753494262695
+    optimizer:  2.384185791015625e-06
+Print:  0.0001456737518310547
+Step environment:  0.10812091827392578
+Get observations:  0.011270999908447266
+Process inputs:  0.0003437995910644531
+Print:  5.4836273193359375e-06
+Step environment:  0.021195650100708008
+Get observations:  0.011401176452636719
+Process inputs:  0.0002875328063964844
+Print:  5.245208740234375e-06
+Step environment:  0.02050924301147461
+Get observations:  0.010614395141601562
+Process inputs:  0.00028252601623535156
+Print:  5.0067901611328125e-06
+Step environment:  0.02380681037902832
+Get observations:  0.008883476257324219
+Process inputs:  0.00033402442932128906
+Print:  8.821487426757812e-06
+Step environment:  0.023922204971313477
+Get observations:  0.007809638977050781
+Process inputs:  0.0003523826599121094
+Print:  5.9604644775390625e-06
+Step environment:  0.022218704223632812
+Get observations:  0.008028030395507812
+Process inputs:  0.00033211708068847656
+Print:  5.9604644775390625e-06
+Step environment:  0.022339582443237305
+Get observations:  0.00789785385131836
+Process inputs:  0.00032258033752441406
+Print:  5.0067901611328125e-06
+Step environment:  0.02249288558959961
+Get observations:  0.007732391357421875
+Process inputs:  0.00032258033752441406
+  Padding:  0.057344675064086914
+    Load memories:  0.0002079010009765625
+    Inference model:  0.029627323150634766
+    rearrange:  0.0005161762237548828
+    Inference projection:  0.00027298927307128906
+    Load memories:  0.0001785755157470703
+    Inference:  0.10750246047973633
+    Backward:  0.011118650436401367
+    Load memories:  0.00017523765563964844
+    Inference model:  0.11359310150146484
+    rearrange:  0.00041985511779785156
+    Inference projection:  0.0002779960632324219
+    Load memories:  0.00015306472778320312
+    Inference:  0.11188244819641113
+    Backward:  0.011049270629882812
+    optimizer:  2.86102294921875e-06
+Print:  0.00016832351684570312
+Step environment:  0.1074216365814209
+Get observations:  0.012825250625610352
+Process inputs:  0.00036907196044921875
+Print:  7.152557373046875e-06
+Step environment:  0.019963741302490234
+Get observations:  0.011025190353393555
+Process inputs:  0.0003464221954345703
+Print:  6.4373016357421875e-06
+Step environment:  0.021173715591430664
+Get observations:  0.010182857513427734
+Process inputs:  0.00031566619873046875
+Print:  5.0067901611328125e-06
+Step environment:  0.023260116577148438
+Get observations:  0.007681369781494141
+Process inputs:  0.00029397010803222656
+Print:  5.4836273193359375e-06
+Step environment:  0.022463083267211914
+Get observations:  0.008876323699951172
+Process inputs:  0.00028443336486816406
+Print:  5.0067901611328125e-06
+Step environment:  0.02184891700744629
+Get observations:  0.00794219970703125
+Process inputs:  0.0002703666687011719
+Print:  5.0067901611328125e-06
+Step environment:  0.02111196517944336
+Get observations:  0.0077054500579833984
+Process inputs:  0.00026988983154296875
+Print:  4.5299530029296875e-06
+Step environment:  0.022115707397460938
+Get observations:  0.009005308151245117
+Process inputs:  0.0003135204315185547
+  Padding:  0.05669832229614258
+    Load memories:  0.000255584716796875
+    Inference model:  0.03001880645751953
+    rearrange:  0.0001800060272216797
+    Inference projection:  0.00022792816162109375
+    Load memories:  0.00017213821411132812
+    Inference:  0.12174296379089355
+    Backward:  0.011997699737548828
+    Load memories:  0.0001838207244873047
+    Inference model:  0.11449241638183594
+    rearrange:  0.00018286705017089844
+    Inference projection:  0.00023865699768066406
+    Load memories:  0.00017786026000976562
+    Inference:  0.10843300819396973
+    Backward:  0.010927200317382812
+OPTIMIZING
+    optimizer:  0.007700681686401367
+Print:  0.00011563301086425781
+Step environment:  0.11271882057189941
+Get observations:  0.012417078018188477
+Process inputs:  0.0003306865692138672
+Print:  4.76837158203125e-06
+Step environment:  0.019930362701416016
+Get observations:  0.010983467102050781
+Process inputs:  0.00035381317138671875
+Print:  5.0067901611328125e-06
+Step environment:  0.019861459732055664
+Get observations:  0.011666059494018555
+Process inputs:  0.0005812644958496094
+Print:  6.4373016357421875e-06
+Step environment:  0.025744915008544922
+Get observations:  0.008899211883544922
+Process inputs:  0.0002827644348144531
+Print:  5.4836273193359375e-06
+Step environment:  0.022206544876098633
+Get observations:  0.007826089859008789
+Process inputs:  0.00026297569274902344
+Print:  4.5299530029296875e-06
+Step environment:  0.020517349243164062
+Get observations:  0.007903575897216797
+Process inputs:  0.0002598762512207031
+Print:  4.76837158203125e-06
+Step environment:  0.021923542022705078
+Get observations:  0.008022308349609375
+Process inputs:  0.0002942085266113281
+Print:  5.0067901611328125e-06
+Step environment:  0.021109580993652344
+Get observations:  0.007799625396728516
+Process inputs:  0.00028824806213378906
+  Padding:  0.05805540084838867
+    Load memories:  0.005055904388427734
+    Inference model:  0.024941205978393555
+    rearrange:  0.00015306472778320312
+    Inference projection:  0.0002269744873046875
+    Load memories:  0.0422055721282959
+    Inference:  0.06872844696044922
+    Backward:  0.01089787483215332
+    Load memories:  0.00017189979553222656
+    Inference model:  0.11365056037902832
+    rearrange:  0.0004885196685791016
+    Inference projection:  0.0002529621124267578
+    Load memories:  0.0001552104949951172
+    Inference:  0.11043238639831543
+    Backward:  0.010796546936035156
+    optimizer:  2.6226043701171875e-06
+Print:  0.0001614093780517578
+Step environment:  0.10825419425964355
+Get observations:  0.010748147964477539
+Process inputs:  0.0003268718719482422
+Print:  6.198883056640625e-06
+Step environment:  0.02118706703186035
+Get observations:  0.010945558547973633
+Process inputs:  0.0002765655517578125
+Print:  5.245208740234375e-06
+Step environment:  0.019607067108154297
+Get observations:  0.010703086853027344
+Process inputs:  0.00027489662170410156
+Print:  4.291534423828125e-06
+Step environment:  0.023115158081054688
+Get observations:  0.007996320724487305
+Process inputs:  0.0003223419189453125
+Print:  5.245208740234375e-06
+Step environment:  0.0214385986328125
+Get observations:  0.00788426399230957
+Process inputs:  0.00026607513427734375
+Print:  4.76837158203125e-06
+Step environment:  0.02167987823486328
+Get observations:  0.007739067077636719
+Process inputs:  0.0002846717834472656
+Print:  5.0067901611328125e-06
+Step environment:  0.02105712890625
+Get observations:  0.00783848762512207
+Process inputs:  0.0002734661102294922
+Print:  4.5299530029296875e-06
+Step environment:  0.02219700813293457
+Get observations:  0.008937835693359375
+Process inputs:  0.0002846717834472656
+  Padding:  0.0564877986907959
+    Load memories:  0.00025343894958496094
+    Inference model:  0.029830217361450195
+    rearrange:  0.0001766681671142578
+    Inference projection:  0.0002493858337402344
+    Load memories:  0.00019168853759765625
+    Inference:  0.11222004890441895
+    Backward:  0.012333393096923828
+    Load memories:  0.0001914501190185547
+    Inference model:  0.1139059066772461
+    rearrange:  0.0001747608184814453
+    Inference projection:  0.00025773048400878906
+    Load memories:  0.00018167495727539062
+    Inference:  0.10589814186096191
+    Backward:  0.011402368545532227
+    optimizer:  2.6226043701171875e-06
+Print:  0.00015497207641601562
+Step environment:  0.10782003402709961
+Get observations:  0.012478828430175781
+Process inputs:  0.0003323554992675781
+Print:  4.5299530029296875e-06
+Step environment:  0.02022075653076172
+Get observations:  0.010889530181884766
+Process inputs:  0.0002961158752441406
+$$$$$$$$$$$$ 11111 $$$$$$$$$$$
+expectation:  [[-0.3255293369293213], [-7.4467315673828125]]
+action:  tensor([[-2.1539],
+        [ 0.6409]], device='cuda:0')
+observations tensor([0.8111, 4.5677, 1.1960, 7.8078], device='cuda:0')
+Print:  0.008215665817260742
+Step environment:  0.0204470157623291
+Get observations:  0.008367300033569336
+Process inputs:  0.00032019615173339844
+Print:  6.67572021484375e-06
+Step environment:  0.022675752639770508
+Get observations:  0.007801532745361328
+Process inputs:  0.00028586387634277344
+Print:  5.0067901611328125e-06
+Step environment:  0.021943330764770508
+Get observations:  0.008666753768920898
+Process inputs:  0.00028443336486816406
+Print:  5.245208740234375e-06
+Step environment:  0.02232050895690918
+Get observations:  0.007772684097290039
+Process inputs:  0.0002598762512207031
+Print:  5.0067901611328125e-06
+Step environment:  0.02127552032470703
+Get observations:  0.00800323486328125
+Process inputs:  0.00029087066650390625
+Print:  5.0067901611328125e-06
+Step environment:  0.0219881534576416
+Get observations:  0.009040355682373047
+Process inputs:  0.00027942657470703125
+  Padding:  0.0567317008972168
+    Load memories:  0.0002541542053222656
+    Inference model:  0.029128074645996094
+    rearrange:  0.00017762184143066406
+    Inference projection:  0.0002295970916748047
+    Load memories:  0.00019049644470214844
+    Inference:  0.10582828521728516
+    Backward:  0.01124882698059082
+    Load memories:  0.08795833587646484
+    Inference model:  0.026534557342529297
+    rearrange:  0.0001659393310546875
+    Inference projection:  0.0002510547637939453
+    Load memories:  0.041713714599609375
+    Inference:  0.06822657585144043
+    Backward:  0.011531829833984375
+    optimizer:  2.86102294921875e-06
+Print:  0.00015044212341308594
+Step environment:  0.10819816589355469
+Get observations:  0.01226496696472168
+Process inputs:  0.0003325939178466797
+Print:  6.9141387939453125e-06
+Step environment:  0.02015066146850586
+Get observations:  0.010931015014648438
+Process inputs:  0.0002884864807128906
+Print:  5.245208740234375e-06
+Step environment:  0.023478984832763672
+Get observations:  0.00790715217590332
+Process inputs:  0.0002722740173339844
+Print:  4.0531158447265625e-06
+Step environment:  0.021471023559570312
+Get observations:  0.007946014404296875
+Process inputs:  0.0002892017364501953
+Print:  4.76837158203125e-06
+Step environment:  0.02198338508605957
+Get observations:  0.008898735046386719
+Process inputs:  0.00026679039001464844
+Print:  4.76837158203125e-06
+Step environment:  0.021793842315673828
+Get observations:  0.007974863052368164
+Process inputs:  0.0002665519714355469
+Print:  4.291534423828125e-06
+Step environment:  0.0207979679107666
+Get observations:  0.007807731628417969
+Process inputs:  0.0002734661102294922
+Print:  1.6689300537109375e-05
+Step environment:  0.0219419002532959
+Get observations:  0.009068012237548828
+Process inputs:  0.000316619873046875
+  Padding:  0.05670499801635742
+    Load memories:  0.0002467632293701172
+    Inference model:  0.0295107364654541
+    rearrange:  0.00017952919006347656
+    Inference projection:  0.00024962425231933594
+    Load memories:  0.0002086162567138672
+    Inference:  0.116363525390625
+    Backward:  0.011594057083129883
+    Load memories:  0.00018644332885742188
+    Inference model:  0.11391425132751465
+    rearrange:  0.0001652240753173828
+    Inference projection:  0.0002448558807373047
+    Load memories:  0.00018525123596191406
+    Inference:  0.11072993278503418
+    Backward:  0.011391401290893555
+    optimizer:  2.86102294921875e-06
+Print:  0.0002951622009277344
+Step environment:  0.10680627822875977
+Get observations:  0.011410713195800781
+Process inputs:  0.0003070831298828125
+Print:  5.245208740234375e-06
+Step environment:  0.02177596092224121
+Get observations:  0.01113438606262207
+Process inputs:  0.0003399848937988281
+Print:  5.9604644775390625e-06
+Step environment:  0.020146608352661133
+Get observations:  0.011690378189086914
+Process inputs:  0.0002918243408203125
+Print:  4.76837158203125e-06
+Step environment:  0.02608203887939453
+Get observations:  0.009041309356689453
+Process inputs:  0.00030994415283203125
+Print:  7.867813110351562e-06
+Step environment:  0.02179741859436035
+Get observations:  0.007977008819580078
+Process inputs:  0.00029730796813964844
+Print:  5.4836273193359375e-06
+Step environment:  0.020834684371948242
+Get observations:  0.007904767990112305
+Process inputs:  0.00030231475830078125
+Print:  5.4836273193359375e-06
+Step environment:  0.023085832595825195
+2023-07-31 21:59:19 [79,276ms] [Warning] [carb] Plugin interface for a client: omni.hydratexture.plugin was already released.
+2023-07-31 21:59:19 [79,276ms] [Warning] [carb] Plugin interface for a client: omni.hydratexture.plugin was already released.
+[79.293s] Simulation App Shutting Down
+[79.293s] [ext: omni.isaac.sim.python.gym.headless.render-2022.2.1] shutdown
+[79.293s] [ext: omni.isaac.gym-0.3.3] shutdown
+[79.294s] [ext: omni.isaac.cloner-0.4.1] shutdown
+[79.535s] [ext: omni.replicator.isaac-1.7.4] shutdown
+[79.768s] [ext: omni.isaac.core-1.46.3] shutdown
+[79.997s] [ext: omni.replicator.core-1.7.8] shutdown
+2023-07-31 21:59:19 [79,985ms] [Warning] [omni.graph.core.plugin] Could not find category 'Replicator:Annotators' for removal
+2023-07-31 21:59:19 [79,985ms] [Warning] [omni.graph.core.plugin] Could not find category 'Replicator:Annotators' for removal
+2023-07-31 21:59:19 [79,985ms] [Warning] [omni.graph.core.plugin] Could not find category 'Replicator:Annotators' for removal
+2023-07-31 21:59:19 [79,985ms] [Warning] [omni.graph.core.plugin] Could not find category 'Replicator:Annotators' for removal
+2023-07-31 21:59:19 [79,985ms] [Warning] [omni.graph.core.plugin] Could not find category 'Replicator:Annotators' for removal
+2023-07-31 21:59:19 [79,985ms] [Warning] [omni.graph.core.plugin] Could not find category 'Replicator:Annotators' for removal
+2023-07-31 21:59:19 [79,985ms] [Warning] [omni.graph.core.plugin] Could not find category 'Replicator:Annotators' for removal
+2023-07-31 21:59:19 [79,985ms] [Warning] [omni.graph.core.plugin] Could not find category 'Replicator:Annotators' for removal
+2023-07-31 21:59:19 [79,987ms] [Warning] [carb] [Plugin: omni.replicator.core.plugin] Module /isaac-sim/extscache/omni.replicator.core-1.7.8+104.2.lx64.r.cp37/bin/libomni.replicator.core.plugin.so remained loaded after unload request
+[80.251s] [ext: omni.isaac.ml_archive-1.1.0] shutdown
+[80.476s] [ext: omni.isaac.core_archive-2.0.1] shutdown
+[80.696s] [ext: omni.isaac.dynamic_control-1.2.3] shutdown
+[81.070s] [ext: omni.isaac.kit-1.4.1] shutdown
+[81.071s] [ext: omni.isaac.version-1.0.0] shutdown
+[81.276s] [ext: omni.graph.scriptnode-0.10.0] shutdown
+[81.485s] [ext: omni.graph.bundle.action-1.3.0] shutdown
+[81.485s] [ext: omni.syntheticdata-0.2.4] shutdown
+[81.702s] [ext: omni.warp-0.6.3] shutdown
+[81.914s] [ext: omni.graph.nodes-1.48.3] shutdown
+[82.129s] [ext: omni.graph.action-1.31.1] shutdown
+[82.338s] [ext: omni.graph.ui-1.24.2] shutdown
+2023-07-31 21:59:22 [82,331ms] [Warning] [omni.kit.ui] Failed to remove menu with path: Window/Visual Scripting/Toolkit. It doesn't exist.
+2023-07-31 21:59:22 [82,331ms] [Warning] [omni.kit.menu.utils.scripts.utils] omni.kit.menu.utils remove_menu_items "Create" failed list.remove(x): x not in list
+2023-07-31 21:59:22 [82,331ms] [Warning] [omni.kit.ui] Failed to remove menu with path: Window/Visual Scripting/Toolkit. It doesn't exist.
+2023-07-31 21:59:22 [82,331ms] [Warning] [omni.kit.ui] Failed to remove menu with path: Window/Visual Scripting/Node Description Editor. It doesn't exist.
+[82.884s] [ext: omni.kit.window.extensions-1.1.1] shutdown
+[83.084s] [ext: omni.pip.torch-1_13_1-0.1.4] shutdown
+[83.273s] [ext: omni.graph-1.50.2] shutdown
+[83.464s] [ext: omni.kit.test-0.0.0] shutdown
+[83.655s] [ext: omni.kit.window.title-1.1.2] shutdown
+[83.848s] [ext: omni.kit.viewport.bundle-104.0.2] shutdown
+[83.848s] [ext: omni.kit.manipulator.prim-104.10.7] shutdown
+[84.044s] [ext: omni.kit.manipulator.tool.snap-1.2.4] shutdown
+[84.240s] [ext: omni.kit.viewport.utility-1.0.14] shutdown
+[84.433s] [ext: omni.kit.browser.sample-1.2.5] shutdown
+[84.623s] [ext: omni.kit.browser.folder.core-1.7.3] shutdown
+[84.810s] [ext: omni.kit.browser.core-2.2.2] shutdown
+[84.995s] [ext: omni.kit.viewport.window-104.1.23] shutdown
+[85.197s] [ext: omni.kit.window.drop_support-1.0.1] shutdown
+[85.377s] [ext: omni.physx.flatcache-104.2.4-5.1] shutdown
+2023-07-31 21:59:25 [85,370ms] [Warning] [carb] Failed to find a plugin with an interface pointer: 0x7fba1c6bc8b0. Client: carb.scripting-python.plugin
+[85.570s] [ext: omni.kit.property.usd-3.18.17] shutdown
+[85.752s] [ext: omni.kit.window.property-1.8.2] shutdown
+[85.935s] [ext: omni.kit.widget.text_editor-1.0.2] shutdown
+[86.119s] [ext: omni.kit.widget.stage-2.7.24] shutdown
+[86.299s] [ext: omni.kit.widget.graph-1.5.6-104_2] shutdown
+[86.474s] [ext: omni.kit.viewport.rtx-104.0.0] shutdown
+[86.474s] [ext: omni.kit.viewport.pxr-104.0.1] shutdown
+[86.474s] [ext: omni.hydra.pxr.settings-1.0.3] shutdown
+[86.652s] [ext: omni.rtx.window.settings-0.6.2] shutdown
+[86.829s] [ext: omni.kit.window.status_bar-0.1.5] shutdown
+[87.007s] [ext: omni.kit.window.file-1.3.32] shutdown
+[87.184s] [ext: omni.kit.widget.toolbar-1.4.0] shutdown
+[87.359s] [ext: omni.kit.viewport.menubar.render-104.0.20] shutdown
+[87.529s] [ext: omni.kit.viewport.menubar.settings-104.3.5] shutdown
+[87.699s] [ext: omni.kit.viewport.menubar.display-104.1.11] shutdown
+[87.869s] [ext: omni.kit.viewport.menubar.camera-104.1.9] shutdown
+[88.041s] [ext: omni.kit.viewport.menubar.core-104.4.3] shutdown
+[88.214s] [ext: omni.kit.manipulator.transform-104.6.12] shutdown
+[88.386s] [ext: omni.kit.window.preferences-1.3.8] shutdown
+[88.579s] [ext: omni.kit.context_menu-1.5.12] shutdown
+[88.744s] [ext: omni.kit.material.library-1.3.21] shutdown
+2023-07-31 21:59:28 [88,772ms] [Warning] [omni.ext._impl._internal] omni.kit.material.library-1.3.21 -> <class 'omni.kit.material.library.material_library.MaterialLibraryExtension'>: extension object is still alive, something holds a reference on it. References: ["[0]:type: <class 'frame'>, id: 1215136896", "[1]:type: <class 'cell'>, id: 140496707845456"]
+[88.951s] [ext: omni.kit.window.file_importer-1.0.10] shutdown
+[89.124s] [ext: omni.kit.window.file_exporter-1.0.10] shutdown
+[89.292s] [ext: omni.kit.widget.zoombar-1.0.4] shutdown
+[89.456s] [ext: omni.kit.stage_templates-1.1.13] shutdown
+[89.625s] [ext: omni.kit.primitive.mesh-1.0.8] shutdown
+[89.791s] [ext: omni.kit.widget.viewport-104.1.16] shutdown
+[89.960s] [ext: omni.kit.viewport.registry-104.0.2] shutdown
+[90.130s] [ext: omni.kit.window.filepicker-2.7.15] shutdown
+[90.293s] [ext: omni.kit.widget.browser_bar-2.0.5] shutdown
+[90.456s] [ext: omni.kit.notification_manager-1.0.5] shutdown
+[90.621s] [ext: omni.kit.manipulator.camera-104.0.23] shutdown
+[90.785s] [ext: omni.kit.uiapp-0.0.0] shutdown
+[90.785s] [ext: omni.kit.mainwindow-1.0.0] shutdown
+[90.944s] [ext: omni.kit.manipulator.viewport-104.0.7] shutdown
+[91.109s] [ext: omni.kit.manipulator.selection-104.0.6] shutdown
+[91.272s] [ext: omni.ui.scene-1.5.18] shutdown
+[91.433s] [ext: omni.command.usd-1.0.2] shutdown
+[91.592s] [ext: omni.physx.tensors-0.1.0] shutdown
+[91.595s] [ext: omni.physx-104.2.4-5.1] shutdown
+2023-07-31 21:59:31 [91,582ms] [Warning] [carb] Plugin interface for a client: carb.scripting-python.plugin was already released.
+[91.757s] [ext: omni.kit.viewport.legacy_gizmos-1.0.10] shutdown
+[91.915s] [ext: omni.kit.hydra_texture-1.0.11] shutdown
+[92.081s] [ext: omni.kit.manipulator.selector-1.0.1] shutdown
+[92.247s] [ext: omni.debugdraw-0.1.1] shutdown
+[92.406s] [ext: omni.hydra.engine.stats-1.0.0] shutdown
+[92.565s] [ext: omni.graph.core-2.65.4] shutdown
+[92.565s] [ext: omni.kit.menu.create-1.0.8] shutdown
+[92.721s] [ext: omni.kit.menu.utils-1.4.7] shutdown
+2023-07-31 21:59:32 [92,750ms] [Warning] [omni.ext._impl._internal] omni.kit.menu.utils-1.4.7 -> <class 'omni.kit.menu.utils.scripts.debug_window.MenuUtilsDebugExtension'>: extension object is still alive, something holds a reference on it. References: ["[0]:type: <class 'frame'>, id: 140495335398384"]
+[92.916s] [ext: omni.kit.usd.layers-2.0.11] shutdown
+[93.078s] [ext: omni.usd-1.6.30] shutdown
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned snapshot handle 4294967296 (/tmp/carb.9ZsEry/options.28x36.png)
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned snapshot handle 4294967297 (/isaac-sim/kit/resources/icons/lights/distant_light.png)
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned snapshot handle 4294967298 (/isaac-sim/kit/resources/icons/lights/dome_light.png)
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned snapshot handle 4294967299 (/isaac-sim/kit/resources/icons/lights/cylinder_light.png)
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned snapshot handle 4294967300 (/isaac-sim/kit/resources/icons/lights/disk_light.png)
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned snapshot handle 4294967301 (/isaac-sim/kit/resources/icons/sounds/listener.png)
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned snapshot handle 4294967302 (/isaac-sim/kit/resources/icons/lights/sphere_light.png)
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned snapshot handle 4294967303 (/isaac-sim/kit/resources/icons/lights/rect_light.png)
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned snapshot handle 4294967304 (/isaac-sim/kit/resources/icons/sounds/sound.png)
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned snapshot handle 4294967305 (/tmp/carb.9ZsEry/navtree.40x40.png)
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned snapshot handle 4294967306 (/tmp/carb.9ZsEry/search.32x32.png)
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned snapshot handle 4294967307 (/tmp/carb.9ZsEry/options.40x40.png)
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned snapshot handle 4294967308 (/tmp/carb.9ZsEry/thumbnail.32x28.png)
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned snapshot handle 4294967309 (http://omniverse-content-staging.s3-us-west-2.amazonaws.com/Assets/Isaac/2022.2.1/Isaac/Environments/Grid/Materials/Textures/radialFalloffGrid_v02.png)
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned asset 4294967296 (/tmp/carb.9ZsEry/options.28x36.png)
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned asset 4294967297 (/isaac-sim/kit/resources/icons/lights/distant_light.png)
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned asset 4294967298 (/isaac-sim/kit/resources/icons/lights/rect_light.png)
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned asset 4294967299 (/isaac-sim/kit/resources/icons/lights/sphere_light.png)
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned asset 4294967300 (/isaac-sim/kit/resources/icons/lights/cylinder_light.png)
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned asset 4294967301 (/isaac-sim/kit/resources/icons/lights/disk_light.png)
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned asset 4294967302 (/isaac-sim/kit/resources/icons/lights/dome_light.png)
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned asset 4294967303 (/isaac-sim/kit/resources/icons/sounds/sound.png)
+2023-07-31 21:59:33 [93,485ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned asset 4294967304 (/isaac-sim/kit/resources/icons/sounds/listener.png)
+2023-07-31 21:59:33 [93,486ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned asset 4294967305 (/tmp/carb.9ZsEry/navtree.40x40.png)
+2023-07-31 21:59:33 [93,486ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned asset 4294967306 (/tmp/carb.9ZsEry/search.32x32.png)
+2023-07-31 21:59:33 [93,486ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned asset 4294967307 (/tmp/carb.9ZsEry/options.40x40.png)
+2023-07-31 21:59:33 [93,486ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned asset 4294967308 (/tmp/carb.9ZsEry/thumbnail.32x28.png)
+2023-07-31 21:59:33 [93,486ms] [Warning] [carb.assets.plugin] Evicting asset type c1237a43d569db21 v0.1 orphaned asset 4294967309 (http://omniverse-content-staging.s3-us-west-2.amazonaws.com/Assets/Isaac/2022.2.1/Isaac/Environments/Grid/Materials/Textures/radialFalloffGrid_v02.png)
+[93.656s] [ext: omni.kit.widget.nucleus_connector-1.0.3] shutdown
+2023-07-31 21:59:33 [93,679ms] [Warning] [omni.ext._impl._internal] omni.kit.widget.nucleus_connector-1.0.3 -> <class 'omni.kit.widget.nucleus_connector.extension.NucleusConnectorExtension'>: extension object is still alive, something holds a reference on it. References: ["[0]:type: <class 'method'>, id: 140509909956800"]
+[93.844s] [ext: omni.kit.window.popup_dialog-2.0.16] shutdown
+[93.996s] [ext: omni.kit.widget.searchfield-1.0.10] shutdown
+[94.151s] [ext: omni.kit.ui_test-1.2.9] shutdown
+[94.305s] [ext: omni.kit.widget.prompt-1.0.5] shutdown
+[94.453s] [ext: omni.kit.widget.filebrowser-2.3.10] shutdown
+[94.604s] [ext: omni.kit.widget.path_field-2.0.4] shutdown
+[94.758s] [ext: omni.ui_query-1.1.1] shutdown
+[94.912s] [ext: omni.kit.widget.settings-1.0.1] shutdown
+[95.064s] [ext: omni.kit.widget.spinner-1.0.4] shutdown
+[95.212s] [ext: omni.kit.widget.versioning-1.3.8] shutdown
+[95.358s] [ext: omni.ui-2.14.4] shutdown
+[95.504s] [ext: omni.kit.renderer.imgui-0.0.0] shutdown
+[95.663s] [ext: omni.kit.renderer.capture-0.0.0] shutdown
+[95.811s] [ext: omni.kit.renderer.core-0.0.0] shutdown
+2023-07-31 21:59:35 [95,943ms] [Warning] [omni.kit.renderer.plugin] Found 5 dangling textures
+[95.960s] [ext: omni.appwindow-1.0.1] shutdown
+[96.104s] [ext: omni.kit.loop-isaac-1.0.0] shutdown
+[96.253s] [ext: omni.convexdecomposition-104.2.4-5.1] shutdown
+2023-07-31 21:59:36 [96,242ms] [Warning] [carb] Plugin interface for a client: carb.scripting-python.plugin was already released.
+[96.407s] [ext: omni.localcache-0.0.0] shutdown
+[96.555s] [ext: omni.kvdb-0.0.0] shutdown
+[96.699s] [ext: omni.physics.tensors-0.1.0] shutdown
+[96.845s] [ext: omni.usdphysics-104.2.4-5.1] shutdown
+[96.845s] [ext: omni.usd.schema.physx-0.0.0] shutdown
+[96.989s] [ext: omni.usd.schema.physics-1.0.0] shutdown
+[97.132s] [ext: omni.uiaudio-1.0.0] shutdown
+[97.278s] [ext: omni.kit.audiodeviceenum-1.0.0] shutdown
+[97.423s] [ext: carb.audio-0.1.0] shutdown
+[97.423s] [ext: omni.kit.renderer.init-0.0.0] shutdown
+[97.423s] [ext: carb.windowing.plugins-1.0.0] shutdown
+[97.424s] [ext: omni.hydra.rtx-0.1.0] shutdown
+2023-07-31 21:59:37 [97,416ms] [Warning] [carb] [Plugin: rtx.scenedb.plugin] Module /isaac-sim/kit/extscore/omni.hydra.rtx/bin/deps/librtx.scenedb.plugin.so remained loaded after unload request
+[97.434s] [ext: omni.volume-0.1.0] shutdown
+[97.603s] [ext: omni.hydra.pxr-1.1.2] shutdown
+[97.747s] [ext: omni.hydra.usdrt_delegate-4.3.2] shutdown
+[97.749s] [ext: omni.hydra.scene_delegate-0.3.0] shutdown
+[97.749s] [ext: omni.gpucompute.plugins-0.0.0] shutdown
+[97.749s] [ext: omni.gpu_foundation-0.0.0] shutdown
+[97.897s] [ext: omni.usd.core-1.0.4] shutdown
+[97.897s] [ext: omni.kit.collaboration.channel_manager-1.0.9] shutdown
+[98.043s] [ext: omni.client-0.1.1] shutdown
+[98.188s] [ext: omni.assets.plugins-0.0.0] shutdown
+[98.189s] [ext: omni.mdl-0.1.0] shutdown
+[98.333s] [ext: omni.mdl.neuraylib-0.1.0] shutdown
+[98.478s] [ext: omni.iray.libs-0.0.0] shutdown
+[98.502s] [ext: omni.kit.commands-1.4.5] shutdown
+[98.647s] [ext: omni.kit.actions.core-1.0.0] shutdown
+[98.789s] [ext: omni.kit.async_engine-0.0.0] shutdown
+[98.930s] [ext: omni.kit.numpy.common-0.1.0] shutdown
+[99.073s] [ext: omni.graph.tools-1.17.2] shutdown
+[99.213s] [ext: omni.kit.pip_archive-0.0.0] shutdown
+[99.346s] [ext: omni.kit.pipapi-0.0.0] shutdown
+[99.462s] [ext: omni.kit.usd_undo-0.1.2] shutdown
+[99.583s] [ext: omni.rtx.shadercache-1.0.0] shutdown
+[99.702s] [ext: omni.stats-0.0.0] shutdown
+[99.820s] [ext: omni.timeline-1.0.5] shutdown
+[99.936s] [ext: omni.usd.schema.omniscripting-1.0.0] shutdown
+[100.057s] [ext: omni.usd.schema.omnigraph-1.0.0] shutdown
+[100.175s] [ext: omni.usd.schema.audio-0.0.0] shutdown
+[100.292s] [ext: omni.usd.schema.geospatial-0.0.0] shutdown
+[100.412s] [ext: omni.usd.schema.semantics-0.0.0] shutdown
+[100.527s] [ext: omni.usd.schema.anim-0.0.0] shutdown
+[100.646s] [ext: omni.usd.libs-1.0.0] shutdown
+[100.805s] [ext: omni.usd.config-1.0.0] shutdown
+[100.921s] [ext: omni.activity.core-1.0.1] shutdown
+2023-07-31 21:59:40 [101,020ms] [Warning] [omni.core.ITypeFactory] Module /isaac-sim/kit/exts/omni.activity.core/bin/libomni.activity.core.plugin.so remained loaded after unload request.
+[101.034s] [ext: omni.inspect-1.0.1] shutdown
+[101.147s] [ext: omni.kit.clipboard-1.0.0] shutdown
+[101.259s] [ext: omni.kit.search_core-1.0.2] shutdown
+Simulation App Shutdown Complete
