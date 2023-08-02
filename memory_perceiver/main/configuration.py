@@ -38,7 +38,7 @@ class Config:
     sepformer_rate = 8000
     sample_per_frame = 1920
     sample_rate = fps * sample_per_frame
-    body_parts = {'observations':4, 'expectation':1, 'past_actions':1}
+    body_parts = {'observations':4} #, 'expectation':1, 'past_actions':1}
     body_outputs = {'actions_mean':1, 'actions_std':1}
     seq_byte_size = 19012
     reward_byte_size = 21
