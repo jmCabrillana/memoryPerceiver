@@ -320,17 +320,16 @@ class PerceiverIO(nn.Module):
 
         # Reset memory for new lifelong learning
 
-        device =  self.cross_mem.device
         max_batch_size, mem_size, queries_dim = self.cross_mem.shape
         _, cmem_size, _ = self.cross_cmem.shape
         if indexes is None:
             indexes=torch.arange(max_batch_size)
-        self.cross_mem[indexes] = torch.zeros(len(indexes), mem_size, queries_dim, device=device)
-        self.cross_cmem[indexes] = torch.zeros(len(indexes), cmem_size, queries_dim, device=device)
+        self.cross_mem[indexes] *= 0
+        self.cross_cmem[indexes] *= 0
         for i in range(self.depth):
             if ( i % 2 == 1):
-                self.layers_mem[i//2][indexes] = torch.zeros(len(indexes), mem_size, queries_dim, device=device)
-                self.layers_cmem[i//2][indexes] = torch.zeros(len(indexes), cmem_size, queries_dim, device=device)
+                self.layers_mem[i//2][indexes] *= 0
+                self.layers_cmem[i//2][indexes] *= 0
 
     def return_memories(self, device=torch.device('cpu')):
         return {'cross_mem':self.cross_mem.to(device), 'cross_cmem':self.cross_cmem.to(device), 
