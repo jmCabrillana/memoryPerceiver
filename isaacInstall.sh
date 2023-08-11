@@ -8,7 +8,8 @@ mkdir memory_perceiver/main/monitor
 apt-get install curl tar
 curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-417.0.1-linux-x86_64.tar.gz
 tar -xf google-cloud-cli-417.0.1-linux-x86_64.tar.gz 
-./google-cloud-sdk/install.sh --disable-prompts
+CLOUDSDK_CORE_DISABLE_PROMPTS=1 ./google-cloud-sdk/install.sh
+./google-cloud-sdk/bin/gcloud --quiet auth activate-service-account --key-file=/isaac-sim/memoryPerceiver/turnkey-setup-356207-eaf9509e1a1f.json
 rm google-cloud-cli-417.0.1-linux-x86_64.tar.gz 
 cd OmniIsaacGymEnvs
 /isaac-sim/python.sh -m pip install -e .
