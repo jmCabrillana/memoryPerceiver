@@ -13,6 +13,8 @@ CLOUDSDK_CORE_DISABLE_PROMPTS=1 ./google-cloud-sdk/install.sh
 rm google-cloud-cli-417.0.1-linux-x86_64.tar.gz 
 cd OmniIsaacGymEnvs
 /isaac-sim/python.sh -m pip install -e .
+sed -i '128,135s/^/#/' /isaac-sim/kit/exts/omni.kit.widget.toolbar/omni/kit/widget/toolbar/builtin_tools/play_button_group.py
+sed -i '127a\        pass' /isaac-sim/kit/exts/omni.kit.widget.toolbar/omni/kit/widget/toolbar/builtin_tools/play_button_group.py
 export ACCEPT_EULA=Y
 export ISAAC_JUPYTER_KERNEL=1
 #./google-cloud-sdk/bin/gcloud --quiet config set project turnkey-setup-356207
