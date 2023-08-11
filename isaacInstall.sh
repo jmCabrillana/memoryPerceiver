@@ -13,4 +13,8 @@ CLOUDSDK_CORE_DISABLE_PROMPTS=1 ./google-cloud-sdk/install.sh
 rm google-cloud-cli-417.0.1-linux-x86_64.tar.gz 
 cd OmniIsaacGymEnvs
 /isaac-sim/python.sh -m pip install -e .
+export ACCEPT_EULA=Y
+export ISAAC_JUPYTER_KERNEL=1
+#./google-cloud-sdk/bin/gcloud --quiet config set project turnkey-setup-356207
+#  ./google-cloud-sdk/bin/gcloud storage cp --recursive  gs://karagoz_persistence_1/data_test .
 #git token: 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
