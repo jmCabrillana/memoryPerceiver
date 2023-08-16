@@ -5,7 +5,7 @@ mkdir memory_perceiver/main/outputs
 mkdir memory_perceiver/main/monitor
 /isaac-sim/python.sh -m pip install torch torchvision torchaudio
 /isaac-sim/python.sh -m pip install -r requirements.txt
-apt-get install curl tar -y
+apt-get install curl tar screen -y
 curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-417.0.1-linux-x86_64.tar.gz
 tar -xf google-cloud-cli-417.0.1-linux-x86_64.tar.gz 
 CLOUDSDK_CORE_DISABLE_PROMPTS=1 ./google-cloud-sdk/install.sh
