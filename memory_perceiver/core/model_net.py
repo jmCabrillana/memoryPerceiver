@@ -136,6 +136,11 @@ class AttentionMemory(nn.Module):
         h = self.heads
         _, cmem_len, _ = cmem.shape
 
+        """
+        move new_cmem, new_mem before
+        to improve memory
+        """
+
         q = self.to_q(x)
         if(use_x):
             full_input = torch.concat([cmem, mem, x], dim=1)
