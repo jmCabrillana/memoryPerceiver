@@ -30,18 +30,31 @@ import numpy as np
 
 # cf = Config()
 
+" Isaac"
+
 class Config:
 
-    # Sampling configuration
+    # Sampling and dimensconfiguration
 
-    fps = 32
-    sepformer_rate = 8000
+    frames = 32
     sample_per_frame = 1920
-    sample_rate = fps * sample_per_frame
-    body_parts = {'observations':4 } #, 'returns':1, 'past_actions':1}
-    body_outputs = {'actions':1}
-    seq_byte_size = 19012
-    reward_byte_size = 21
+    sample_rate = frames * sample_per_frame
+    frames_future = 8
+    len_video_frame = 1824  # 456*256/(8*8)
+    len_audio_frame = 120   # 1920/16
+
+    # Dimension configuration
+
+    query_dim = 832
+    video_latent_dim = 256
+    audio_latent_dim = 560
+    batch_size = 1
+
+    len_video = frames*len_video_frame
+    len_audio = frames*len_audio_frame
+    len_audio_raw = len_audio*sample_per_frame
+    video_future = frames_future*len_video_frame
+    audio_future = frames_future*len_audio_frame
 
     # Model dim configuration
 
@@ -50,6 +63,8 @@ class Config:
     query_dim = 832
     video_latent_dim = 256
     audio_latent_dim = 560
+    body_parts = {'observations':4 } #, 'returns':1, 'past_actions':1}
+    body_outputs = {'actions':1}
 
     
 
