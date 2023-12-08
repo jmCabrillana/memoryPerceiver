@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from einops import rearrange, repeat
+from einops import repeat
 
 def buffer_padding(buffer, dim, default_value=None, frames=32, numEnvs=1):
     

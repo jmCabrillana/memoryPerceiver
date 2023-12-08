@@ -1,6 +1,12 @@
+import torch
+from einops import rearrange, repeat
+from torch import nn, einsum
+from torch.distributions import Normal, MultivariateNormal
 
+from memoryPerceiver.memory_perceiver.core.model_net import PerceiverIO
+from memoryPerceiver.memory_perceiver.processing.vectorize import input_to_tensor, fourier_encode
 
-def create_model(cf, device=device):
+def create_model(cf, device):
 
     # Projection to return modalities, enhancement
 
@@ -50,7 +56,7 @@ def create_model(cf, device=device):
     return model
 
 class ActorCritic(nn.Module):
-    def __init__(self, state_dim, action_dim, hidden_dim=64):
+    def __init__(self, state_dim, action_dim, device, hidden_dim=64):
         super(ActorCritic, self).__init__()
         self.state_dim = state_dim
         self.action_dim = action_dim
@@ -107,8 +113,6 @@ class ActorCritic(nn.Module):
     
     def instanciate_actions(action):
         pass     
-    
-
 
     def compute_loss( ):
         pass
