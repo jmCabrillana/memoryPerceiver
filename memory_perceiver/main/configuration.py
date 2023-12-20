@@ -1,8 +1,3 @@
-import os
-import os.path as osp
-import sys
-import numpy as np
-
 # class Config:
 
 #     # Sampling configuration
@@ -34,7 +29,7 @@ import numpy as np
 
 class Config:
 
-    # Sampling and dimensconfiguration
+    # Sampling and input/output configuration
 
     frames = 32
     sample_per_frame = 1920
@@ -43,29 +38,22 @@ class Config:
     len_video_frame = 1824  # 456*256/(8*8)
     len_audio_frame = 120   # 1920/16
 
-    # Dimension configuration
+    # Model dimension configuration
 
     query_dim = 832
     video_latent_dim = 256
     audio_latent_dim = 560
+    depth = 2
     batch_size = 1
+    body_parts = {'observations': 4} #, 'returns':1, 'past_actions':1}
+    body_outputs = {'actions': 1}
+
+    # Resulting total length (input / output)
 
     len_video = frames*len_video_frame
     len_audio = frames*len_audio_frame
     len_audio_raw = len_audio*sample_per_frame
     video_future = frames_future*len_video_frame
-    audio_future = frames_future*len_audio_frame
-
-    # Model dim configuration
-
-    len_video_frame = 1824  # 456*256/(8*8)
-    len_audio_frame = 120  # 1920/16
-    query_dim = 832
-    video_latent_dim = 256
-    audio_latent_dim = 560
-    body_parts = {'observations':4 } #, 'returns':1, 'past_actions':1}
-    body_outputs = {'actions':1}
-
-    
+    audio_future = frames_future*len_audio_frame   
 
 cf = Config()

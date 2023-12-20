@@ -30,16 +30,15 @@ def update_buffers(buff, dict, frames=32):
 def calculate_returns(mem_rewards, death_index, gamma=0.99):
     sim_duration, numEnvs = mem_rewards.size()
     returns_estimates = torch.zeros_like(mem_rewards)
-    for env_idx in range(numEnvs):
-        sum = 0.0
-        for t in reversed(range(sim_duration)):
-            # If the agent is reset, set to 0
-            if t in death_index[env_idx]:
-                sum = 0
+    sum = torch.zeros_like(mem_rewards[0])
+    
+    for t in reversed(range(sim_duration)):
+        # If the agent is reset, set to 0
+        sum *= 1-death_index[:, t]
 
-            # Reverse calcualtion of returns
-            sum = gamma*sum + mem_rewards[t, env_idx]
-            returns_estimates[t, env_idx] = sum
+        # Reverse calcualtion of returns
+        sum = gamma*sum + mem_rewards[t, :]
+        returns_estimates[t, :] = sum
         
     return returns_estimates
 
@@ -47,20 +46,18 @@ def calculate_returns(mem_rewards, death_index, gamma=0.99):
 def calculate_gae(mem_rewards, mem_values, death_index, gamma=0.99, gae_lambda=0.95):
     sim_duration, numEnvs = mem_rewards.size()
     gae_estimates = torch.zeros_like(mem_rewards)
+    gae = torch.zeros_like(mem_rewards[0])
+    
+    for t in reversed(range(sim_duration)):
+        # If the agent is reset, set GAE to 0
+        gae *= 1-death_index[:, t]
 
-    for env_idx in range(numEnvs):
-        gae = 0.0 
-        for t in reversed(range(sim_duration)):
-            # If the agent is reset, set GAE to 0
-            if t in death_index[env_idx]:
-                gae = 0.0
-                
-            # Calculate the TD error and gae
-            if t == sim_duration-1:
-                delta_t = mem_values[t, env_idx]  
-            else:
-                delta_t= mem_rewards[t, env_idx] + gamma * mem_values[t+1, env_idx] - mem_values[t, env_idx]
-            gae_estimates[t, env_idx] = delta_t + gamma * gae_lambda * gae
+        # Calculate the TD error and gae
+        if t == sim_duration-1:
+            delta_t = mem_values[t, :]  
+        else:
+            delta_t= mem_rewards[t, :] + gamma * mem_values[t+1, :] - mem_values[t, :]
+        gae_estimates[t, :] = delta_t + gamma * gae_lambda * gae
         
     return gae_estimates
 
@@ -71,3 +68,9 @@ def update_lr(current_lr, kl_div, kl_threshold=0.024, min_lr=1e-6, max_lr=1e-2):
     if kl_div < (0.5 * kl_threshold):
         lr = min(current_lr * 1.5, max_lr)
     return lr    
+
+def init_history(history_keys):
+    history = { key: torch.zeros(sim_duration, numEnvs) for key in history_keys}
+    history['actions'] = torch.zeros(sim_duration, numEnvs, action_dim)
+    history['generator'] = torch.zeros(sim_duration)
+    return history
