@@ -2,8 +2,7 @@ import torch
 from einops import repeat, rearrange
 
 from memoryPerceiver.memory_perceiver.processing.vectorize import fourier_encode
-
-from model_net import PerceiverIO
+from memoryPerceiver.memory_perceiver.core.model_net import PerceiverIO
 
 def create_multimodal_perceiver(cf, device):
 
