@@ -69,7 +69,7 @@ def update_lr(current_lr, kl_div, kl_threshold=0.024, min_lr=1e-6, max_lr=1e-2):
         lr = min(current_lr * 1.5, max_lr)
     return lr    
 
-def init_history(history_keys):
+def init_history(history_keys, sim_duration, numEnvs, action_dim):
     history = { key: torch.zeros(sim_duration, numEnvs) for key in history_keys}
     history['actions'] = torch.zeros(sim_duration, numEnvs, action_dim)
     history['generator'] = torch.zeros(sim_duration)
