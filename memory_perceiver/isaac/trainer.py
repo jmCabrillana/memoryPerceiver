@@ -2,6 +2,12 @@ import torch
 import numpy as np
 from einops import repeat
 
+def init_history(history_keys, sim_duration, numEnvs, action_dim, device):
+    history = { key: torch.zeros(sim_duration, numEnvs, device=device) for key in history_keys}
+    history['actions'] = torch.zeros(sim_duration, numEnvs, action_dim, device=device)
+    history['generator'] = torch.zeros(sim_duration, 816, dtype=torch.uint8) # must be on cpu
+    return history
+
 def buffer_padding(buffer, dim, default_value=None, frames=32, numEnvs=1):
     
     # zero padding then transform: t b (d) -> b t (d)
@@ -23,7 +29,7 @@ def update_buffer(buff, key, element, frames=32):
         buff[key].pop(0)
 
 def update_buffers(buff, dict, frames=32):
-    for key, element in dict:
+    for key, element in dict.items():
         update_buffer(buff, key, element, frames)
 
 
@@ -34,7 +40,7 @@ def calculate_returns(mem_rewards, death_index, gamma=0.99):
     
     for t in reversed(range(sim_duration)):
         # If the agent is reset, set to 0
-        sum *= 1-death_index[:, t]
+        sum *= 1-death_index[t, :]
 
         # Reverse calcualtion of returns
         sum = gamma*sum + mem_rewards[t, :]
@@ -50,7 +56,7 @@ def calculate_gae(mem_rewards, mem_values, death_index, gamma=0.99, gae_lambda=0
     
     for t in reversed(range(sim_duration)):
         # If the agent is reset, set GAE to 0
-        gae *= 1-death_index[:, t]
+        gae *= 1-death_index[t, :]
 
         # Calculate the TD error and gae
         if t == sim_duration-1:
@@ -68,9 +74,3 @@ def update_lr(current_lr, kl_div, kl_threshold=0.024, min_lr=1e-6, max_lr=1e-2):
     if kl_div < (0.5 * kl_threshold):
         lr = min(current_lr * 1.5, max_lr)
     return lr    
-
-def init_history(history_keys, sim_duration, numEnvs, action_dim):
-    history = { key: torch.zeros(sim_duration, numEnvs) for key in history_keys}
-    history['actions'] = torch.zeros(sim_duration, numEnvs, action_dim)
-    history['generator'] = torch.zeros(sim_duration)
-    return history

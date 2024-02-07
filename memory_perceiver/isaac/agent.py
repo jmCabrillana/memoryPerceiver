@@ -41,7 +41,7 @@ class ActorCriticSimple(ActorCritic):
                                     ).to(device)
         
     def act(self, states):
-        state = states['observations'][:,-1] # ? d=1 ou 0
+        state = states['observations'][:,-1] # last time
 
         # Actor
 
@@ -77,6 +77,13 @@ class ActorCriticSimple(ActorCritic):
         values = rearrange(values,  'b 1 -> b')
 
         return logprobs, values, entropies, dist
+    
+    def instanciate_actions(self, actions, **kwargs):
+        dt=1
+        if 'dt' in kwargs:
+            dt = kwargs['dt']
+        actions_star = repeat(actions, 'b d -> t b d', t=dt)
+        return actions_star
     
 class ActorCriticPerceiver(ActorCritic):
     def __init__(self, cf, device):
