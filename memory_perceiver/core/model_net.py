@@ -272,7 +272,7 @@ class PerceiverIO(nn.Module):
 
         b, *_, device, dtype = *data.shape, data.device, data.dtype
         data.to(device)
-        sum_aux_loss = torch.tensor(0, requires_grad = True, device=device, dtype=dtype);
+        sum_aux_loss = torch.tensor(0, requires_grad = True, device=device, dtype=dtype)
         x = repeat(self.latents, 'n d -> b n d', b = b)
 
         # Cross attention on input
@@ -282,6 +282,7 @@ class PerceiverIO(nn.Module):
                                                 cmem = self.cross_cmem[:b, ...].clone().detach(), 
                                                 mask = mask, 
                                                 special_compression = self.special_compression)
+        data = data.cpu()
         if update_mem:
             self.cross_cmem[:b, ...] = new_cmem.clone().detach()
         x = attn + x

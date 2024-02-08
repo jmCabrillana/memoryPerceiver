@@ -44,9 +44,11 @@ class Config:
     video_latent_dim = 256
     audio_latent_dim = 560
     depth = 2
-    batch_size = 1
+    batch_size = 2
     body_parts = {'observations': 4} #, 'returns':1, 'past_actions':1}
     body_outputs = {'actions': 1}
+    has_video = True
+    has_audio = True
 
     # Resulting total length (input / output)
 

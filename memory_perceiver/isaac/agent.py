@@ -5,7 +5,7 @@ from torch.distributions import Normal, MultivariateNormal
 
 from memoryPerceiver.memory_perceiver.core.model_net import PerceiverIO
 from memoryPerceiver.memory_perceiver.processing.vectorize import input_to_tensor
-import memoryPerceiver.memory_perceiver.core.model_wrapper as mw
+from memoryPerceiver.memory_perceiver.core.model_wrapper import create_multimodal_perceiver
 
 class ActorCritic(nn.Module):
     def __init__(self):
@@ -88,9 +88,9 @@ class ActorCriticSimple(ActorCritic):
 class ActorCriticPerceiver(ActorCritic):
     def __init__(self, cf, device):
         super().__init__()
-        self.cf = cf
+        self.body_parts = cf.body_parts
         self.hidden_dim = 64
-        self.actor = mw.create_multimodal_perceiver(cf, device)
+        self.actor = create_multimodal_perceiver(cf, device)
         self.critic = nn.Sequential(nn.Linear(4, self.hidden_dim),
                                     nn.ReLU(),
                                     nn.Linear(self.hidden_dim, self.hidden_dim),
@@ -99,13 +99,13 @@ class ActorCriticPerceiver(ActorCritic):
                                     ).to(device)
         
     def act(self, states):
-        state = states['observations'][:,-1] # ? d=1 ou 0
-        batch = input_to_tensor(states, self.actor.modality, self.cf.body_parts)
+        device = states['observations'].device
+        input = input_to_tensor(states, self.actor.modality, self.body_parts, device=device)
         
 
         # Actor
 
-        actions_tmp = torch.tanh(self.actor(state))
+        actions_tmp = torch.tanh(self.actor(input))
         actions_mean,  = actions_tmp[:, 0:self.action_dim], 
         actions_var = ((1+actions_tmp[:, self.action_dim:2*self.action_dim+1])/4+1e-5)**2
         dist = MultivariateNormal(actions_mean, torch.diag_embed(actions_var))
@@ -144,7 +144,3 @@ class ActorCriticPerceiver(ActorCritic):
             dt = kwargs['dt']
         actions_star = repeat(actions, 'b d -> t b d', t=dt)
         return actions_star
-
-# model = ActorCritic(4 ,1)
-# model_student = ActorCritic(4 ,1)
-# model.act(torch.randn(8, 4, device=device))

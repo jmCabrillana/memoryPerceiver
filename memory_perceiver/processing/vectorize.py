@@ -11,9 +11,10 @@ def fourier_encode(x, max_freq, num_bands = 4):
 
 
 
-def input_to_tensor(media, latents, body_parts=None):
-    # Check everything is on the same device:
-    deviceEval = media['video'].device
+def input_to_tensor(media, latents, body_parts=None, device='cpu'):
+    # Set everything to the same device:
+    deviceEval = device
+
     for key, latent in latents.items():
         latents[key]=latent.to(deviceEval)
     for key, modality in media.items():
