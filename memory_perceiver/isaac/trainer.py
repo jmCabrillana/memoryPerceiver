@@ -67,6 +67,13 @@ def calculate_gae(mem_rewards, mem_values, death_index, gamma=0.99, gae_lambda=0
         
     return gae_estimates
 
+def create_mask(birth_time, sim_step, frames=32):
+        numEnvs = birth_time.size()
+        past_horizon=torch.max(-frames*torch.ones(numEnvs), 
+                                torch.min(sim_step-birth_time, -1*torch.ones(numEnvs)))
+        mask = repeat(torch.arrange(frames), '... -> b ...', b=numEnvs) < repeat(past_horizon, '... -> ... t', t=nb_frames)
+        return mask
+
 def update_lr(current_lr, kl_div, kl_threshold=0.024, min_lr=1e-6, max_lr=1e-2):
     lr = current_lr
     if kl_div > (2.0 * kl_threshold):
@@ -74,3 +81,4 @@ def update_lr(current_lr, kl_div, kl_threshold=0.024, min_lr=1e-6, max_lr=1e-2):
     if kl_div < (0.5 * kl_threshold):
         lr = min(current_lr * 1.5, max_lr)
     return lr    
+    
