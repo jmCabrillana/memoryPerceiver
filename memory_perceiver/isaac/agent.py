@@ -5,7 +5,7 @@ from torch.distributions import Normal, MultivariateNormal
 
 from memoryPerceiver.memory_perceiver.core.model_net import PerceiverIO
 from memoryPerceiver.memory_perceiver.processing.vectorize import input_to_tensor
-from memoryPerceiver.memory_perceiver.core.model_wrapper import create_multimodal_perceiver
+from memoryPerceiver.memory_perceiver.core.model_wrapper import create_multimodal_perceiver, output_projection
 
 class ActorCritic(nn.Module):
     def __init__(self):
@@ -104,61 +104,51 @@ class ActorCriticPerceiver(ActorCritic):
 
     def net_inference(self, states):
         device = states['observations'].device
-        input = input_to_tensor(states, self.actor.modality, self.body_parts, device='cpu').to(device)
-        x, _ = self.actor(input)
-        output = {}
-        output['audio'] = rearrange(self.actor.projections['audio'](
-                            x[:, :self.audio_future, :]), "b t t1 -> b (t t1)" )
-        start_modality = self.audio_future
-        for part in self.body_outputs.keys():
-            output[part] = self.actor.projections[part](
-                x[:, start_modality:start_modality+self.frames_future, :] )
-            start_modality += self.frames_future
+        input = input_to_tensor(states, self.actor.modality, self.body_parts, device=device)
+        x, _ = self.actor(input, queries=self.actor.queries)
+        output = output_projection(self.actor, x, self.body_outputs, 
+                          self.frames_future, self.audio_future)
         return output
         
     def act(self, states):
+        
+        # Critic
 
-        # Net
-
-        output = self.net_inference(states)
+        values = self.critic(states['observations'][:,-1])
+        values = rearrange(values,  'b 1 -> b')
 
         # Actor
 
-        actions_tmp1, actions_tmp2 = torch.split(torch.tanh(output['actions']), 2, dim=1)
-        actions_mean = torch.cat(actions_tmp1.mean(dim=1), actions_tmp2.mean(dim=1), dim=-1)
-        actions_var_tmp = torch.cat(actions_tmp1.var(dim=1), actions_tmp2.var(dim=1), dim=-1)
+        output = self.net_inference(states)
+        dim_t = output['actions'].size()[1]
+        actions_tmp1, actions_tmp2 = torch.split(torch.tanh(output['actions']), dim_t//2, dim=1)
+        actions_mean = torch.cat((actions_tmp1.mean(dim=1), actions_tmp2.mean(dim=1)), dim=-1)
+        actions_var_tmp = torch.cat((actions_tmp1.var(dim=1), actions_tmp2.var(dim=1)), dim=-1)
         actions_var = ((1+actions_var_tmp)/4+1e-5)
         dist = MultivariateNormal(actions_mean, torch.diag_embed(actions_var))
         actions = dist.sample()
         logprobs = dist.log_prob(actions)
 
+        return actions.detach(), logprobs.detach(), values.detach(), dist
+
+    def evaluate(self, states, actions):
+        
         # Critic
 
         values = self.critic(states['observations'][:,-1])
         values = rearrange(values,  'b 1 -> b')
 
-        return actions.detach(), logprobs.detach(), values.detach(), dist
-
-    def evaluate(self, states, actions):
-
-        # Net
-
-        output = self.net_inference(states)
-
         # Actor
 
-        actions_tmp1, actions_tmp2 = torch.split(torch.tanh(output['actions']), 2, dim=1)
-        actions_mean = torch.cat(actions_tmp1.mean(dim=1), actions_tmp2.mean(dim=1), dim=-1)
-        actions_var_tmp = torch.cat(actions_tmp1.var(dim=1), actions_tmp2.var(dim=1), dim=-1)
+        output = self.net_inference(states)
+        dim_t = output['actions'].size()[1]
+        actions_tmp1, actions_tmp2 = torch.split(torch.tanh(output['actions']), dim_t//2, dim=1)
+        actions_mean = torch.cat((actions_tmp1.mean(dim=1), actions_tmp2.mean(dim=1)), dim=-1)
+        actions_var_tmp = torch.cat((actions_tmp1.var(dim=1), actions_tmp2.var(dim=1)), dim=-1)
         actions_var = ((1+actions_var_tmp)/4+1e-5)
         dist = MultivariateNormal(actions_mean, torch.diag_embed(actions_var))
         logprobs = dist.log_prob(actions)
         entropies = dist.entropy() 
-
-        # Critic
-
-        values = self.critic(states['observations'][:,-1])
-        values = rearrange(values,  'b 1 -> b')
 
         return logprobs, values, entropies, dist
     
@@ -166,7 +156,8 @@ class ActorCriticPerceiver(ActorCritic):
         dt=8
         if 'dt' in kwargs:
             dt = kwargs['dt']
-        t = torch.linspace(0,1,dt)
-        action1, action2 = torch.split(actions, 2, dim=-1)
+        t = torch.linspace(0, 1, dt)
+        dim_d = actions.size()[-1]
+        action1, action2 = torch.split(actions, dim_d//2, dim=-1)
         actions_star = einsum('t, b d -> t b d', t, action1) + einsum('t, b d -> t b d', 1-t, action2)
         return actions_star

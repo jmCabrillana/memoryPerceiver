@@ -282,7 +282,7 @@ class PerceiverIO(nn.Module):
                                                 cmem = self.cross_cmem[:b, ...].clone().detach(), 
                                                 mask = mask, 
                                                 special_compression = self.special_compression)
-        data = data.cpu()
+        data = data.cpu() # to save gpu memory
         if update_mem:
             self.cross_cmem[:b, ...] = new_cmem.clone().detach()
         x = attn + x

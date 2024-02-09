@@ -52,13 +52,13 @@ def create_multimodal_perceiver(cf, device):
 
     return model
 
-def output_projection(model, x, cf):
+def output_projection(model, x, body_outputs, frames_future, audio_future):
     output = {}
     output['audio'] = rearrange(model.projections['audio'](
-        x[:, :cf.audio_future, :]), "b t t1 -> b (t t1)" )
-    start_modality = cf.audio_future
-    for part in cf.body_outputs.keys():
+        x[:, :audio_future, :]), "b t t1 -> b (t t1)" )
+    start_modality = audio_future
+    for part in body_outputs.keys():
         output[part] = model.projections[part](
-            x[:, start_modality:start_modality+cf.frames_future, :] )
-        start_modality += cf.frames_future
+            x[:, start_modality:start_modality+frames_future, :] )
+        start_modality += frames_future
     return output
