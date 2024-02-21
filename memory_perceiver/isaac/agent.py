@@ -156,7 +156,7 @@ class ActorCriticPerceiver(ActorCritic):
         dt=8
         if 'dt' in kwargs:
             dt = kwargs['dt']
-        t = torch.linspace(0, 1, dt)
+        t = torch.linspace(0, 1, dt, device=actions.device)
         dim_d = actions.size()[-1]
         action1, action2 = torch.split(actions, dim_d//2, dim=-1)
         actions_star = einsum('t, b d -> t b d', t, action1) + einsum('t, b d -> t b d', 1-t, action2)

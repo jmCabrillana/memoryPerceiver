@@ -31,7 +31,7 @@ class Config:
 
     # Sampling and input/output configuration
 
-    frames = 32
+    frames = 8
     sample_per_frame = 1920
     sample_rate = frames * sample_per_frame
     frames_future = 8
@@ -56,6 +56,9 @@ class Config:
     len_audio = frames*len_audio_frame
     len_audio_raw = len_audio*sample_per_frame
     video_future = frames_future*len_video_frame
-    audio_future = frames_future*len_audio_frame   
+    audio_future = frames_future*len_audio_frame 
+
+    # PPO
+    dim_actions_ppo = 2 * body_outputs['actions']
 
 cf = Config()
