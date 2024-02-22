@@ -108,7 +108,14 @@ class ActorCriticPerceiver(ActorCritic):
         x, _ = self.actor(input, queries=self.actor.queries)
         output = output_projection(self.actor, x, self.body_outputs, 
                           self.frames_future, self.audio_future)
-        return output
+        dim_t = output['actions'].size()[1]
+        actions_tmp1, actions_tmp2 = torch.split(torch.tanh(output['actions']), dim_t//2, dim=1)
+        actions_mean = torch.cat((actions_tmp1.mean(dim=1), actions_tmp2.mean(dim=1)), dim=-1)
+        actions_var_tmp1, actions_var_tmp2 = torch.split(torch.tanh(output['actions_variance']), dim_t//2, dim=1)
+        actions_var_tmp = torch.cat((actions_var_tmp1.mean(dim=1), actions_var_tmp2.mean(dim=1)), dim=-1)
+        actions_var = ((1+actions_var_tmp)/4+1e-5)**2
+        dist = MultivariateNormal(actions_mean, torch.diag_embed(actions_var))
+        return dist
         
     def act(self, states):
         
@@ -119,13 +126,7 @@ class ActorCriticPerceiver(ActorCritic):
 
         # Actor
 
-        output = self.net_inference(states)
-        dim_t = output['actions'].size()[1]
-        actions_tmp1, actions_tmp2 = torch.split(torch.tanh(output['actions']), dim_t//2, dim=1)
-        actions_mean = torch.cat((actions_tmp1.mean(dim=1), actions_tmp2.mean(dim=1)), dim=-1)
-        actions_var_tmp = torch.cat((actions_tmp1.var(dim=1), actions_tmp2.var(dim=1)), dim=-1)
-        actions_var = ((1+actions_var_tmp)/4+1e-5)
-        dist = MultivariateNormal(actions_mean, torch.diag_embed(actions_var))
+        dist = self.net_inference(states)
         actions = dist.sample()
         logprobs = dist.log_prob(actions)
 
@@ -140,13 +141,7 @@ class ActorCriticPerceiver(ActorCritic):
 
         # Actor
 
-        output = self.net_inference(states)
-        dim_t = output['actions'].size()[1]
-        actions_tmp1, actions_tmp2 = torch.split(torch.tanh(output['actions']), dim_t//2, dim=1)
-        actions_mean = torch.cat((actions_tmp1.mean(dim=1), actions_tmp2.mean(dim=1)), dim=-1)
-        actions_var_tmp = torch.cat((actions_tmp1.var(dim=1), actions_tmp2.var(dim=1)), dim=-1)
-        actions_var = ((1+actions_var_tmp)/4+1e-5)
-        dist = MultivariateNormal(actions_mean, torch.diag_embed(actions_var))
+        dist = self.net_inference(states)
         logprobs = dist.log_prob(actions)
         entropies = dist.entropy() 
 

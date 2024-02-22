@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from einops import repeat
+from einops import repeat, rearrange
 
 def init_history(history_keys, sim_duration, numEnvs, action_dim, device):
     history = { key: torch.zeros(sim_duration, numEnvs, device=device) for key in history_keys}
@@ -17,10 +17,9 @@ def buffer_padding(buffer, dim, default_value=None, frames=32, numEnvs=1):
     if default_value is None:
         padding = torch.zeros([pad0, numEnvs]+dim, device=device)
     else:
-        padding = repeat(default_value, ' ... -> t0 b ...', t0=pad0, b=numEnvs).to(device)
-    res = torch.swapaxes( 
-            torch.cat([ padding, buffer ])
-            , 0, 1)
+        padding = repeat(default_value, '... -> t0 b ...', t0=pad0, b=numEnvs).to(device)
+    res = torch.cat([ padding, buffer ])
+    res = rearrange(res, 't b ... -> b t ...')
     return res
 
 def update_buffer(buff, key, element, frames=32):
@@ -68,10 +67,9 @@ def calculate_gae(mem_rewards, mem_values, death_index, gamma=0.99, gae_lambda=0
     return gae_estimates
 
 def create_mask(birth_time, sim_step, frames=32):
-        numEnvs = birth_time.size()
-        past_horizon=torch.max(-frames*torch.ones(numEnvs), 
-                                torch.min(sim_step-birth_time, -1*torch.ones(numEnvs)))
-        mask = repeat(torch.arrange(frames), '... -> b ...', b=numEnvs) < repeat(past_horizon, '... -> ... t', t=nb_frames)
+        numEnvs = birth_time.size()[0]
+        past_horizon=frames - (sim_step-birth_time+1)
+        mask = repeat(torch.arange(frames), '... -> b ...', b=numEnvs) < repeat(past_horizon, '... -> ... t', t=frames)
         return mask
 
 def update_lr(current_lr, kl_div, kl_threshold=0.024, min_lr=1e-6, max_lr=1e-2):

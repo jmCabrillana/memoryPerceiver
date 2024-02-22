@@ -34,7 +34,7 @@ class Config:
     frames = 8
     sample_per_frame = 1920
     sample_rate = frames * sample_per_frame
-    frames_future = 8
+    frames_future = 2
     len_video_frame = 1824  # 456*256/(8*8)
     len_audio_frame = 120   # 1920/16
 
@@ -46,7 +46,7 @@ class Config:
     depth = 2
     batch_size = 2
     body_parts = {'observations': 4} #, 'returns':1, 'past_actions':1}
-    body_outputs = {'actions': 1}
+    body_outputs = {'actions': 1, 'actions_variance':1}
     has_video = True
     has_audio = True
 
