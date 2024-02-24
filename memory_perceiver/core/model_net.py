@@ -103,10 +103,9 @@ class Attention(nn.Module):
         sim = einsum('b i d, b j d -> b i j', q, k) * self.scale
 
         if exists(mask):
-            mask = rearrange(mask, 'b ... -> b (...)')
             max_neg_value = -torch.finfo(sim.dtype).max
             mask = repeat(mask, 'b j -> (b h) () j', h = h)
-            sim.masked_fill_(~mask, max_neg_value)
+            sim.masked_fill_(mask, max_neg_value)
 
         # attention, what we cannot get enough of
         attn = sim.softmax(dim = -1)
@@ -156,10 +155,9 @@ class AttentionMemory(nn.Module):
         sim = einsum('b i d, b j d -> b i j', q, k) * self.scale
 
         if exists(mask):
-            mask = rearrange(mask, 'b ... -> b (...)')
             max_neg_value = -torch.finfo(sim.dtype).max
             mask = repeat(mask, 'b j -> (b h) () j', h = h)
-            sim.masked_fill_(~mask, max_neg_value)
+            sim.masked_fill_(mask, max_neg_value)
 
         # Attention, what we cannot get enough of
 
@@ -298,7 +296,9 @@ class PerceiverIO(nn.Module):
                 attn, new_mem, new_cmem, aux_loss = self.attn_layers[i](x, 
                                                                         mem = self.layers_mem[i//2][:b, ...].clone().detach(), 
                                                                         cmem = self.layers_cmem[i//2][:b, ...].clone().detach(),
-                                                                        nb_compressed = int(self.latents.shape[1]/self.compression_ratio))
+                                                                        nb_compressed = int(self.latents.shape[1]/self.compression_ratio),
+                                                                        mask=mask
+                                                                        )
                 if update_mem:
                     self.layers_mem[i//2][:b, ...], self.layers_cmem[i//2][:b, ...] = new_mem.clone().detach(), new_cmem.clone().detach()
                 sum_aux_loss= sum_aux_loss + aux_loss
