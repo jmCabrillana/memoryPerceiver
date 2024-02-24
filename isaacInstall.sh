@@ -15,6 +15,7 @@ cd OmniIsaacGymEnvs
 /isaac-sim/python.sh -m pip install -e .
 sed -i '128,135s/^/#/' /isaac-sim/kit/exts/omni.kit.widget.toolbar/omni/kit/widget/toolbar/builtin_tools/play_button_group.py
 sed -i '127a\        pass' /isaac-sim/kit/exts/omni.kit.widget.toolbar/omni/kit/widget/toolbar/builtin_tools/play_button_group.py
+cat /isaac-sim/memoryPerceiver/memory_perceiver/isaac/camera_missing.txt >> /isaac-sim/exts/omni.isaac.core/omni/isaac/core/utils/torch/rotations.py
 export ACCEPT_EULA=Y
 export ISAAC_JUPYTER_KERNEL=1
 #./google-cloud-sdk/bin/gcloud --quiet config set project turnkey-setup-356207
