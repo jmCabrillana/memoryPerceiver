@@ -140,11 +140,19 @@ class AttentionMemory(nn.Module):
         to improve memory
         """
 
+        # New memories
+
+        new_mem = torch.cat([mem[:, nb_compressed:, :], x[:, 0:nb_compressed, :]], dim=1)
+        to_compress = mem[:, 0:nb_compressed, :]
+        if( special_compression != None ):
+            to_compress = mem[:, special_compression, :]
+        new_cmem = self.compress_mem(cmem, to_compress)
+
         q = self.to_q(x)
         if(use_x):
-            full_input = torch.concat([cmem, mem, x], dim=1)
+            full_input = torch.concat([new_cmem, new_mem, x], dim=1)
         else:
-            full_input = torch.concat([cmem, mem], dim=1)
+            full_input = torch.concat([new_cmem, new_mem], dim=1)
         full_input = default(full_input, x)
         k, v = self.to_kv(full_input).chunk(2, dim = -1)
 
@@ -166,19 +174,11 @@ class AttentionMemory(nn.Module):
         out = einsum('b i j, b j d -> b i d', attn, v)
         out = rearrange(out, '(b h) n d -> b n (h d)', h = h)
 
-        # Memory
-
-        new_mem = torch.cat([mem[:, nb_compressed:, :], x[:, 0:nb_compressed, :]], dim=1).clone()
-        to_compress = mem[:, 0:nb_compressed, :].clone()
-        if( special_compression != None ):
-            to_compress = mem[:, special_compression, :].clone()
-        new_cmem = self.compress_mem(cmem.detach(), to_compress.detach())
-
         # Auxiliary loss
         
         self.to_kv.weight.detach_()
 
-        cmem_k, cmem_v = self.to_kv(new_cmem).chunk(2, dim=-1)
+        cmem_k, cmem_v = self.to_kv(new_cmem.detach()).chunk(2, dim=-1)
         cmem_k, cmem_v = map(lambda t: rearrange(t, 'b n (h d) -> (b h) n d', h = h), (cmem_k, cmem_v))
 
         old_mem_k, old_mem_v = map(lambda x: x[:, :cmem_len+nb_compressed, :].clone(), (k, v))
