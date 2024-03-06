@@ -43,8 +43,8 @@ class Config:
     query_dim = 832
     video_latent_dim = 256
     audio_latent_dim = 560
-    depth = 2
-    batch_size = 2
+    depth = 1
+    batch_size = 3
     body_parts = {'observations': 4} #, 'returns':1, 'past_actions':1}
     body_outputs = {'actions': 1, 'actions_variance':1}
     has_video = True
@@ -59,6 +59,7 @@ class Config:
     audio_future = frames_future*len_audio_frame 
 
     # PPO
-    dim_actions_ppo = 2 * body_outputs['actions']
+    dim_actions = body_outputs['actions']
+    dim_actions_ppo =  body_outputs['actions'] # *2
 
 cf = Config()

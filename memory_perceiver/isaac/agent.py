@@ -24,7 +24,7 @@ class ActorCriticSimple(ActorCritic):
     def __init__(self, cf, device):
         super().__init__()
         self.state_dim = cf.body_parts['observations']
-        self.action_dim = cf.body_outputs['actions']
+        self.action_dim = cf.dim_actions
         self.hidden_dim = 64
         self.actor = nn.Sequential( nn.Linear(self.state_dim, self.hidden_dim),
                                     nn.ReLU(),
@@ -32,7 +32,7 @@ class ActorCriticSimple(ActorCritic):
                                     nn.ReLU(),
                                     nn.Linear(self.hidden_dim, 2*self.action_dim)
                                     ).to(device)
-
+        self.actor.reset_memories = lambda *args, **kwargs: None
         self.critic = nn.Sequential(nn.Linear(self.state_dim, self.hidden_dim),
                                     nn.ReLU(),
                                     nn.Linear(self.hidden_dim, self.hidden_dim),
