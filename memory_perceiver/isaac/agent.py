@@ -23,7 +23,7 @@ class ActorCritic(nn.Module):
 class ActorCriticSimple(ActorCritic):
     def __init__(self, cf, device):
         super().__init__()
-        self.state_dim = cf.body_parts['observations']
+        self.state_dim = len(cf.body_parts)
         self.action_dim = cf.dim_actions
         self.hidden_dim = 64
         self.actor = nn.Sequential( nn.Linear(self.state_dim, self.hidden_dim),
@@ -88,8 +88,8 @@ class ActorCriticSimple(ActorCritic):
 class ActorCriticPerceiver(ActorCritic):
     def __init__(self, cf, device):
         super().__init__()
-        self.body_parts = cf.body_parts
-        self.body_outputs = cf.body_outputs
+        self.dim_observations = len(cf.body_parts)
+        self.dim_actions = cf.dim_actions_ppo
         self.frames_future = cf.frames_future
         self.audio_future = cf.audio_future
         self.hidden_dim = 64
@@ -104,10 +104,20 @@ class ActorCriticPerceiver(ActorCritic):
 
     def net_inference(self, states):
         device = states['observations'].device
+        dim_observation = len()
+        for i, obs in enumerate(self.body_parts.keys()):
+            states[obs] = states['observations'][:, :, i:i+1]
         input = input_to_tensor(states, self.actor.modality, self.body_parts, device=device)
         x, _ = self.actor(input, queries=self.actor.queries)
         output = output_projection(self.actor, x, self.body_outputs, 
                           self.frames_future, self.audio_future)
+        actions = []
+        actions_var = []
+        for i in range(self.dim_actions):
+            actions.append(output['action_'+str(i)])
+            actions_var.append(output['action_variance_'+str(i)])
+        actions = rearrange(actions, 'd b t () -> b t d')
+        actions_var = rearrange(actions_var, 'd b t () -> b t d')
         dim_t = output['actions'].size()[1]
         actions_tmp1, actions_tmp2 = torch.split(torch.tanh(output['actions']), dim_t//2, dim=1)
         actions_mean = torch.cat((actions_tmp1.mean(dim=1), actions_tmp2.mean(dim=1)), dim=-1)
