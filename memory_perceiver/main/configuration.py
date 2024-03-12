@@ -39,9 +39,9 @@ class Config:
     len_audio_frame = 120   # 1920/16
 
     # PPO
-    dim_observations = 4
-    dim_actions = 1
-    dim_actions_ppo = 1 # *2
+    dim_observations = 87
+    dim_actions = 21
+    dim_actions_ppo = 2*21 # *2
 
     # Model dimension configuration
 

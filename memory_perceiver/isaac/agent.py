@@ -23,7 +23,7 @@ class ActorCritic(nn.Module):
 class ActorCriticSimple(ActorCritic):
     def __init__(self, cf, device):
         super().__init__()
-        self.state_dim = len(cf.body_parts)
+        self.state_dim = cf.dim_observations
         self.action_dim = cf.dim_actions
         self.hidden_dim = 64
         self.actor = nn.Sequential( nn.Linear(self.state_dim, self.hidden_dim),
@@ -88,13 +88,15 @@ class ActorCriticSimple(ActorCritic):
 class ActorCriticPerceiver(ActorCritic):
     def __init__(self, cf, device):
         super().__init__()
-        self.dim_observations = len(cf.body_parts)
-        self.dim_actions = cf.dim_actions_ppo
         self.frames_future = cf.frames_future
         self.audio_future = cf.audio_future
+        self.dim_observations = cf.dim_observations
+        self.dim_actions = cf.dim_actions
+        self.body_parts = cf.body_parts
+        self.body_outputs = cf.body_outputs
         self.hidden_dim = 64
         self.actor = create_multimodal_perceiver(cf, device)
-        self.critic = nn.Sequential(nn.Linear(4, self.hidden_dim),
+        self.critic = nn.Sequential(nn.Linear(cf.dim_observations, self.hidden_dim),
                                     nn.ReLU(),
                                     nn.Linear(self.hidden_dim, self.hidden_dim),
                                     nn.ReLU(),
@@ -104,9 +106,8 @@ class ActorCriticPerceiver(ActorCritic):
 
     def net_inference(self, states):
         device = states['observations'].device
-        dim_observation = len()
-        for i, obs in enumerate(self.body_parts.keys()):
-            states[obs] = states['observations'][:, :, i:i+1]
+        for i in range(self.dim_observations):
+            states['observation_'+str(i)] = states['observations'][:, :, i:i+1]
         input = input_to_tensor(states, self.actor.modality, self.body_parts, device=device)
         x, _ = self.actor(input, queries=self.actor.queries)
         output = output_projection(self.actor, x, self.body_outputs, 
@@ -118,10 +119,10 @@ class ActorCriticPerceiver(ActorCritic):
             actions_var.append(output['action_variance_'+str(i)])
         actions = rearrange(actions, 'd b t () -> b t d')
         actions_var = rearrange(actions_var, 'd b t () -> b t d')
-        dim_t = output['actions'].size()[1]
-        actions_tmp1, actions_tmp2 = torch.split(torch.tanh(output['actions']), dim_t//2, dim=1)
+        dim_t = actions.size()[1]
+        actions_tmp1, actions_tmp2 = torch.split(torch.tanh(actions), dim_t//2, dim=1)
         actions_mean = torch.cat((actions_tmp1.mean(dim=1), actions_tmp2.mean(dim=1)), dim=-1)
-        actions_var_tmp1, actions_var_tmp2 = torch.split(torch.tanh(output['actions_variance']), dim_t//2, dim=1)
+        actions_var_tmp1, actions_var_tmp2 = torch.split(torch.tanh(actions_var), dim_t//2, dim=1)
         actions_var_tmp = torch.cat((actions_var_tmp1.mean(dim=1), actions_var_tmp2.mean(dim=1)), dim=-1)
         actions_var = ((1+actions_var_tmp)/4+1e-5)**2
         dist = MultivariateNormal(actions_mean, torch.diag_embed(actions_var))
