@@ -100,6 +100,8 @@ class ActorCriticPerceiver(ActorCritic):
                                     nn.ReLU(),
                                     nn.Linear(self.hidden_dim, self.hidden_dim),
                                     nn.ReLU(),
+                                    nn.Linear(self.hidden_dim, self.hidden_dim),
+                                    nn.ReLU(),
                                     nn.Linear(self.hidden_dim, 1)
                                     ).to(device)
         
