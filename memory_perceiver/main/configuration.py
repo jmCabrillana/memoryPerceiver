@@ -31,39 +31,39 @@ class Config:
 
     # Sampling and input/output configuration
 
-    frames = 8
+    frames = 4
     sample_per_frame = 1920
-    sample_rate = frames * sample_per_frame
     frames_future = 2
     len_video_frame = 1824  # 456*256/(8*8)
     len_audio_frame = 120   # 1920/16
+    sample_rate = frames * sample_per_frame
+    len_video = frames*len_video_frame
+    len_audio = frames*len_audio_frame
+    len_audio_raw = len_audio*sample_per_frame
+    video_future = frames_future*len_video_frame
+    audio_future = frames_future*len_audio_frame 
 
     # PPO
     dim_observations = 87
     dim_actions = 21
     dim_actions_ppo = 2*21 # *2
+    
+    # Critic dimension
+    critic_layers = 2
 
     # Model dimension configuration
 
     query_dim = 832
     video_latent_dim = 256
     audio_latent_dim = 560
-    depth = 1
-    batch_size = 3
+    depth = 2
+    batch_size = 4
     body_parts =  {'observation_' + str(i): 1 for i in range(dim_observations)}
     body_outputs = {'action_' + str(i): 1 for i in range(dim_actions)}
     actions_variance = {'action_variance_' + str(i): 1 for i in range(dim_actions)}
     body_outputs.update(actions_variance)
     has_video = True
     has_audio = True
-
-    # Resulting total length (input / output)
-
-    len_video = frames*len_video_frame
-    len_audio = frames*len_audio_frame
-    len_audio_raw = len_audio*sample_per_frame
-    video_future = frames_future*len_video_frame
-    audio_future = frames_future*len_audio_frame 
 
 
 cf = Config()
