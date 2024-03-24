@@ -139,7 +139,7 @@ class ActorCriticPerceiver(ActorCritic):
 
         # Actor
 
-        dist, new_memories = self.net_inference(states)
+        dist, new_memories = self.net_inference(states, memories)
         actions = dist.sample()
         logprobs = dist.log_prob(actions)
 

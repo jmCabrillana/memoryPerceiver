@@ -81,9 +81,9 @@ def copy_memories(memories):
     layers_cmem = [memories['layers_cmem'].clone().detach().to(device) for layer_cmem in layers_cmem]
     return {'cross_cmem':cross_cmem, 'layers_mem':layers_mem, 'layers_cmem':layers_cmem}
 
-def create_memories(model, batch_size, device=torch.device('cpu')):
-    cross_cmem = torch.zeros(batch_size, cmem_size, queries_dim, device=device)
+def create_memories(model, batch_size, device=torch.device('cpu'), mem_size=1024, cmem_size=1024):
     depth, mem_size, cmem_size, queries_dim = model.depth, model.mem_size, model.cmem_size, model.queries_dim
+    cross_cmem = torch.zeros(batch_size, cmem_size, queries_dim, device=device)
     layers_mem = torch.zeros(batch_size, depth//2, mem_size, queries_dim, device=device)
     layers_cmem = torch.zeros(batch_size, depth//2, cmem_size, queries_dim, device=device)
     return {'cross_cmem':cross_cmem, 'layers_mem':layers_mem, 'layers_cmem':layers_cmem}

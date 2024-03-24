@@ -216,6 +216,9 @@ class PerceiverIO(nn.Module):
     ):
         super().__init__()
         latent_dim = queries_dim
+        self.queries_dim = queries_dim
+        self.mem_size = mem_size
+        self.cmem_size = cmem_size
         self.depth = depth
         self.latents = nn.Parameter(torch.randn(num_latents, latent_dim, device=device))
         self.special_compression = special_compression
