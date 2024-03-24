@@ -34,7 +34,6 @@ def create_multimodal_perceiver(cf, device):
             device=device,
             projection_parameters = projection_parameters,
             modality_parameters = modality_parameters,
-            max_batch_size = cf.batch_size
         )
     model = model.to(device)
 
@@ -62,3 +61,30 @@ def output_projection(model, x, body_outputs, frames_future, audio_future):
             x[:, start_modality:start_modality+frames_future, :] )
         start_modality += frames_future
     return output
+
+def reset_memories(memories, indexes=None):
+
+    # Reset memory for new lifelong learning
+
+    batch_size, depth, mem_size, queries_dim = memories['layers_mem'].shape
+    _, cmem_size, _ = memories['cross_cmem'].shape
+    if indexes is None:
+        indexes=torch.arange(batch_size)
+    memories['cross_cmem'][indexes] *= 0
+    memories['layers_mem'][indexes] *= 0
+    memories['layers_cmem'][indexes] *= 0
+
+def copy_memories(memories):
+    device = memories['cross_cmem'].device
+    cross_cmem = memories['cross_cmem'].clone().detach().to(device)
+    layers_mem = [memories['layers_mem'].clone().detach().to(device) for layer_mem in layers_mem]
+    layers_cmem = [memories['layers_cmem'].clone().detach().to(device) for layer_cmem in layers_cmem]
+    return {'cross_cmem':cross_cmem, 'layers_mem':layers_mem, 'layers_cmem':layers_cmem}
+
+def create_memories(model, batch_size, device=torch.device('cpu')):
+    cross_cmem = torch.zeros(batch_size, cmem_size, queries_dim, device=device)
+    depth, mem_size, cmem_size, queries_dim = model.depth, model.mem_size, model.cmem_size, model.queries_dim
+    layers_mem = torch.zeros(batch_size, depth//2, mem_size, queries_dim, device=device)
+    layers_cmem = torch.zeros(batch_size, depth//2, cmem_size, queries_dim, device=device)
+    return {'cross_cmem':cross_cmem, 'layers_mem':layers_mem, 'layers_cmem':layers_cmem}
+

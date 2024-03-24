@@ -11,10 +11,10 @@ class ActorCritic(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def act(self, states):
+    def act(self, states, memories):
         pass
 
-    def evaluate(self, states, actions):
+    def evaluate(self, states, actions, memories):
         pass
 
     def instanciate_actions(self, actions, **kwargs):
@@ -40,7 +40,7 @@ class ActorCriticSimple(ActorCritic):
                                     nn.Linear(self.hidden_dim, 1)
                                     ).to(device)
         
-    def act(self, states):
+    def act(self, states, memories):
         state = states['observations'][:,-1] # last time
 
         # Actor
@@ -57,9 +57,9 @@ class ActorCriticSimple(ActorCritic):
         values = self.critic(state)
         values = rearrange(values,  'b 1 -> b')
 
-        return actions.detach(), logprobs.detach(), values.detach(), dist
+        return actions.detach(), logprobs.detach(), values.detach(), dist, None
 
-    def evaluate(self, states, actions):
+    def evaluate(self, states, actions, memories):
         state = states['observations'][:,-1] # ? d=1 ou 0
 
         # Actor
@@ -76,7 +76,7 @@ class ActorCriticSimple(ActorCritic):
         values = self.critic(state)
         values = rearrange(values,  'b 1 -> b')
 
-        return logprobs, values, entropies, dist
+        return logprobs, values, entropies, dist, None
     
     def instanciate_actions(self, actions, **kwargs):
         dt=1
@@ -106,12 +106,12 @@ class ActorCriticPerceiver(ActorCritic):
                                     ).to(device)
         
 
-    def net_inference(self, states):
+    def net_inference(self, states, memories):
         device = states['observations'].device
         for i in range(self.dim_observations):
             states['observation_'+str(i)] = states['observations'][:, :, i:i+1]
         input = input_to_tensor(states, self.actor.modality, self.body_parts, device=device)
-        x, _ = self.actor(input, queries=self.actor.queries)
+        x, new_memories, _ = self.actor(input, memories, queries=self.actor.queries)
         output = output_projection(self.actor, x, self.body_outputs, 
                           self.frames_future, self.audio_future)
         actions = []
@@ -128,9 +128,9 @@ class ActorCriticPerceiver(ActorCritic):
         actions_var_tmp = torch.cat((actions_var_tmp1.mean(dim=1), actions_var_tmp2.mean(dim=1)), dim=-1)
         actions_var = ((1+actions_var_tmp)/4+1e-5)**2
         dist = MultivariateNormal(actions_mean, torch.diag_embed(actions_var))
-        return dist
+        return dist, new_memories
         
-    def act(self, states):
+    def act(self, states, memories):
         
         # Critic
 
@@ -139,13 +139,13 @@ class ActorCriticPerceiver(ActorCritic):
 
         # Actor
 
-        dist = self.net_inference(states)
+        dist, new_memories = self.net_inference(states)
         actions = dist.sample()
         logprobs = dist.log_prob(actions)
 
-        return actions.detach(), logprobs.detach(), values.detach(), dist
+        return actions.detach(), logprobs.detach(), values.detach(), dist, new_memories
 
-    def evaluate(self, states, actions):
+    def evaluate(self, states, actions, memories):
         
         # Critic
 
@@ -154,11 +154,11 @@ class ActorCriticPerceiver(ActorCritic):
 
         # Actor
 
-        dist = self.net_inference(states)
+        dist, new_memories = self.net_inference(states, memories)
         logprobs = dist.log_prob(actions)
         entropies = dist.entropy() 
 
-        return logprobs, values, entropies, dist
+        return logprobs, values, entropies, dist, new_memories
     
     def instanciate_actions(self, actions, **kwargs):
         dt=8

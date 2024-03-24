@@ -209,7 +209,6 @@ class PerceiverIO(nn.Module):
         latent_dim_head = 64,
         mem_size = 1024,
         cmem_size = 1024,
-        max_batch_size = 5,
         special_compression = None,
         compression_ratio = 4,
         modality_parameters = None,
@@ -222,8 +221,6 @@ class PerceiverIO(nn.Module):
         self.special_compression = special_compression
         self.compression_ratio = compression_ratio
 
-        self.cross_mem = torch.zeros(max_batch_size, mem_size, queries_dim, device=device)
-        self.cross_cmem = torch.zeros(max_batch_size, cmem_size, queries_dim, device=device)
         self.cross_attn = PreNormMem(latent_dim, 
                                 AttentionMemory(latent_dim, 
                                                 queries_dim, 
@@ -245,8 +242,6 @@ class PerceiverIO(nn.Module):
                 self.attn_layers.append(
                     PreNormMem(latent_dim, AttentionMemory(latent_dim, heads = latent_heads, dim_head = latent_dim_head)),
                 )
-                self.layers_mem.append(torch.zeros(max_batch_size, mem_size, queries_dim, device=device))
-                self.layers_cmem.append(torch.zeros(max_batch_size, cmem_size, queries_dim, device=device))
             self.ff_layers.append(
                 PreNormContext(latent_dim, FeedForward(latent_dim)),
             )
@@ -264,7 +259,7 @@ class PerceiverIO(nn.Module):
         for part, params in projection_parameters.items():
             self.projections[part] = nn.Linear(queries_dim, params, device=device)
 
-    def forward(self, data, mask = None, queries = None, update_mem=True):
+    def forward(self, data, memories, mask = None, queries = None, update_mem=True):
 
         # init data
 
@@ -272,35 +267,38 @@ class PerceiverIO(nn.Module):
         data.to(device)
         sum_aux_loss = torch.tensor(0, requires_grad = True, device=device, dtype=dtype)
         x = repeat(self.latents, 'n d -> b n d', b = b)
+        new_memories = {}
 
         # Cross attention on input
 
         attn, _, new_cmem, aux_loss = self.cross_attn(x, 
                                                 mem = data, 
-                                                cmem = self.cross_cmem[:b, ...].clone().detach(), 
+                                                cmem = memories['cross_cmem'].clone().detach(), 
                                                 mask = mask, 
                                                 special_compression = self.special_compression)
         data = data.cpu() # to save gpu memory
         if update_mem:
-            self.cross_cmem[:b, ...] = new_cmem.clone().detach()
+            new_cross_cmem = new_cmem.clone().detach()
         x = attn + x
         x = self.cross_ff(x) + x
         sum_aux_loss= sum_aux_loss + aux_loss
 
         # layers
 
+        new_layers_mem = torch.zeros(b, self.depth//2, self.mem_size, self.queries_dim, device=device)
+        new_layers_cmem = torch.zeros(b, self.depth//2, self.cmem_size, self.queries_dim, device=device)
         for i in range(self.depth):
             if ( i % 2 == 0):
-                attn = self.attn_layers[i](x)
+                attn = self.attn_layers[i](x, mask=mask)
             if ( i % 2 == 1):
                 attn, new_mem, new_cmem, aux_loss = self.attn_layers[i](x, 
-                                                                        mem = self.layers_mem[i//2][:b, ...].clone().detach(), 
-                                                                        cmem = self.layers_cmem[i//2][:b, ...].clone().detach(),
+                                                                        mem = self.layers_mem[:, i//2].clone().detach(), 
+                                                                        cmem = self.layers_cmem[:, i//2].clone().detach(),
                                                                         nb_compressed = int(self.latents.shape[1]/self.compression_ratio),
                                                                         mask=mask
                                                                         )
                 if update_mem:
-                    self.layers_mem[i//2][:b, ...], self.layers_cmem[i//2][:b, ...] = new_mem.clone().detach(), new_cmem.clone().detach()
+                    new_layers_mem[:, i//2], new_layers_cmem[:, i//2] = new_mem.clone().detach(), new_cmem.clone().detach()
                 sum_aux_loss= sum_aux_loss + aux_loss
             x = attn + x
             x = self.ff_layers[i](x) + x
@@ -320,32 +318,8 @@ class PerceiverIO(nn.Module):
 
         # final linear out
 
-        return output, sum_aux_loss
+        memories = {'cross_cmem':new_cross_cmem, 'layers_mem':new_layers_mem, 'layers_cmem':new_layers_cmem}
+        return output, memories, sum_aux_loss
 
-    def reset_memories(self, indexes=None):
 
-        # Reset memory for new lifelong learning
-
-        max_batch_size, mem_size, queries_dim = self.cross_mem.shape
-        _, cmem_size, _ = self.cross_cmem.shape
-        if indexes is None:
-            indexes=torch.arange(max_batch_size)
-        self.cross_mem[indexes] *= 0
-        self.cross_cmem[indexes] *= 0
-        for i in range(self.depth):
-            if ( i % 2 == 1):
-                self.layers_mem[i//2][indexes] *= 0
-                self.layers_cmem[i//2][indexes] *= 0
-
-    def return_memories(self, device=torch.device('cpu')):
-        return {'cross_mem':self.cross_mem.to(device), 'cross_cmem':self.cross_cmem.to(device), 
-                'layers_mem':[layer_mem.to(device) for layer_mem in self.layers_mem], 
-                'layers_cmem':[layer_cmem.to(device) for layer_cmem in self.layers_cmem] }
-
-    def load_memories(self, dict):
-        device = self.cross_mem.device
-        self.cross_mem = dict['cross_mem'].clone().detach().to(device)
-        self.cross_cmem = dict['cross_cmem'].clone().detach().to(device)
-        self.layers_mem = [layer_mem.clone().detach().to(device) for layer_mem in dict['layers_mem']]
-        self.layers_cmem = [layer_cmem.clone().detach().to(device) for layer_cmem in dict['layers_cmem']]
 
