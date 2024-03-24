@@ -1,0 +1,39 @@
+
+
+def rot_matrices_to_quats(rotation_matrices: np.ndarray, device=None) -> np.ndarray:
+    """Vectorized version of converting rotation matrices to quaternions
+
+    Args:
+        rotation_matrices (np.ndarray): N Rotation matrices with shape (N, 3, 3) or (3, 3)
+
+    Returns:
+        np.ndarray: quaternion representation of the rotation matrices (N, 4) or (4,) - scalar first
+    """
+    device = rotation_matrices.device
+    rot = Rotation.from_matrix(rotation_matrices.cpu().numpy())
+    result = rot.as_quat()
+    if len(result.shape) == 1:
+        result = result[[3, 0, 1, 2]]
+    else:
+        result = result[:, [3, 0, 1, 2]]
+    return torch.from_numpy(result).float().to(device)
+
+
+def quats_to_rot_matrices(quaternions: np.ndarray, device=None) -> np.ndarray:
+    """Vectorized version of converting quaternions to rotation matrices
+
+    Args:
+        quaternions (np.ndarray): quaternions with shape (N, 4) or (4,) and scalar first
+
+    Returns:
+        np.ndarray: N Rotation matrices with shape (N, 3, 3) or (3, 3)
+    """
+    device = quaternions.device
+    quaternions = quaternions.cpu().numpy()
+    if len(quaternions.shape) == 1:
+        q = quaternions[[1, 2, 3, 0]]
+    else:
+        q = quaternions[:, [1, 2, 3, 0]]
+    rot = Rotation.from_quat(q)
+    result = rot.as_matrix()
+    return torch.from_numpy(result).float().to(device)

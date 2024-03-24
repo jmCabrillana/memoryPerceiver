@@ -23,8 +23,8 @@ class ActorCritic(nn.Module):
 class ActorCriticSimple(ActorCritic):
     def __init__(self, cf, device):
         super().__init__()
-        self.state_dim = cf.body_parts['observations']
-        self.action_dim = cf.body_outputs['actions']
+        self.state_dim = cf.dim_observations
+        self.action_dim = cf.dim_actions
         self.hidden_dim = 64
         self.actor = nn.Sequential( nn.Linear(self.state_dim, self.hidden_dim),
                                     nn.ReLU(),
@@ -32,7 +32,7 @@ class ActorCriticSimple(ActorCritic):
                                     nn.ReLU(),
                                     nn.Linear(self.hidden_dim, 2*self.action_dim)
                                     ).to(device)
-
+        self.actor.reset_memories = lambda *args, **kwargs: None
         self.critic = nn.Sequential(nn.Linear(self.state_dim, self.hidden_dim),
                                     nn.ReLU(),
                                     nn.Linear(self.hidden_dim, self.hidden_dim),
@@ -88,13 +88,17 @@ class ActorCriticSimple(ActorCritic):
 class ActorCriticPerceiver(ActorCritic):
     def __init__(self, cf, device):
         super().__init__()
-        self.body_parts = cf.body_parts
-        self.body_outputs = cf.body_outputs
         self.frames_future = cf.frames_future
         self.audio_future = cf.audio_future
+        self.dim_observations = cf.dim_observations
+        self.dim_actions = cf.dim_actions
+        self.body_parts = cf.body_parts
+        self.body_outputs = cf.body_outputs
         self.hidden_dim = 64
         self.actor = create_multimodal_perceiver(cf, device)
-        self.critic = nn.Sequential(nn.Linear(4, self.hidden_dim),
+        self.critic = nn.Sequential(nn.Linear(cf.dim_observations, self.hidden_dim),
+                                    nn.ReLU(),
+                                    nn.Linear(self.hidden_dim, self.hidden_dim),
                                     nn.ReLU(),
                                     nn.Linear(self.hidden_dim, self.hidden_dim),
                                     nn.ReLU(),
@@ -104,11 +108,27 @@ class ActorCriticPerceiver(ActorCritic):
 
     def net_inference(self, states):
         device = states['observations'].device
+        for i in range(self.dim_observations):
+            states['observation_'+str(i)] = states['observations'][:, :, i:i+1]
         input = input_to_tensor(states, self.actor.modality, self.body_parts, device=device)
         x, _ = self.actor(input, queries=self.actor.queries)
         output = output_projection(self.actor, x, self.body_outputs, 
                           self.frames_future, self.audio_future)
-        return output
+        actions = []
+        actions_var = []
+        for i in range(self.dim_actions):
+            actions.append(output['action_'+str(i)])
+            actions_var.append(output['action_variance_'+str(i)])
+        actions = rearrange(actions, 'd b t () -> b t d')
+        actions_var = rearrange(actions_var, 'd b t () -> b t d')
+        dim_t = actions.size()[1]
+        actions_tmp1, actions_tmp2 = torch.split(torch.tanh(actions), dim_t//2, dim=1)
+        actions_mean = torch.cat((actions_tmp1.mean(dim=1), actions_tmp2.mean(dim=1)), dim=-1)
+        actions_var_tmp1, actions_var_tmp2 = torch.split(torch.tanh(actions_var), dim_t//2, dim=1)
+        actions_var_tmp = torch.cat((actions_var_tmp1.mean(dim=1), actions_var_tmp2.mean(dim=1)), dim=-1)
+        actions_var = ((1+actions_var_tmp)/4+1e-5)**2
+        dist = MultivariateNormal(actions_mean, torch.diag_embed(actions_var))
+        return dist
         
     def act(self, states):
         
@@ -119,13 +139,7 @@ class ActorCriticPerceiver(ActorCritic):
 
         # Actor
 
-        output = self.net_inference(states)
-        dim_t = output['actions'].size()[1]
-        actions_tmp1, actions_tmp2 = torch.split(torch.tanh(output['actions']), dim_t//2, dim=1)
-        actions_mean = torch.cat((actions_tmp1.mean(dim=1), actions_tmp2.mean(dim=1)), dim=-1)
-        actions_var_tmp = torch.cat((actions_tmp1.var(dim=1), actions_tmp2.var(dim=1)), dim=-1)
-        actions_var = ((1+actions_var_tmp)/4+1e-5)
-        dist = MultivariateNormal(actions_mean, torch.diag_embed(actions_var))
+        dist = self.net_inference(states)
         actions = dist.sample()
         logprobs = dist.log_prob(actions)
 
@@ -140,13 +154,7 @@ class ActorCriticPerceiver(ActorCritic):
 
         # Actor
 
-        output = self.net_inference(states)
-        dim_t = output['actions'].size()[1]
-        actions_tmp1, actions_tmp2 = torch.split(torch.tanh(output['actions']), dim_t//2, dim=1)
-        actions_mean = torch.cat((actions_tmp1.mean(dim=1), actions_tmp2.mean(dim=1)), dim=-1)
-        actions_var_tmp = torch.cat((actions_tmp1.var(dim=1), actions_tmp2.var(dim=1)), dim=-1)
-        actions_var = ((1+actions_var_tmp)/4+1e-5)
-        dist = MultivariateNormal(actions_mean, torch.diag_embed(actions_var))
+        dist = self.net_inference(states)
         logprobs = dist.log_prob(actions)
         entropies = dist.entropy() 
 
@@ -156,7 +164,7 @@ class ActorCriticPerceiver(ActorCritic):
         dt=8
         if 'dt' in kwargs:
             dt = kwargs['dt']
-        t = torch.linspace(0, 1, dt)
+        t = torch.linspace(0, 1, dt, device=actions.device)
         dim_d = actions.size()[-1]
         action1, action2 = torch.split(actions, dim_d//2, dim=-1)
         actions_star = einsum('t, b d -> t b d', t, action1) + einsum('t, b d -> t b d', 1-t, action2)
