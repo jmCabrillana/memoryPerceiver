@@ -295,8 +295,8 @@ class PerceiverIO(nn.Module):
                 attn = self.attn_layers[i](x, mask=mask)
             if ( i % 2 == 1):
                 attn, new_mem, new_cmem, aux_loss = self.attn_layers[i](x, 
-                                                                        mem = self.layers_mem[:, i//2].clone().detach(), 
-                                                                        cmem = self.layers_cmem[:, i//2].clone().detach(),
+                                                                        mem = memories['layers_mem'][:, i//2].clone().detach(), 
+                                                                        cmem = memories['layers_cmem'][:, i//2].clone().detach(),
                                                                         nb_compressed = int(self.latents.shape[1]/self.compression_ratio),
                                                                         mask=mask
                                                                         )
