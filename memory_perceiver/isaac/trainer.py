@@ -5,7 +5,7 @@ from einops import repeat, rearrange
 def init_history(history_keys, sim_duration, numEnvs, action_dim, device):
     history = { key: torch.zeros(sim_duration, numEnvs, device=device) for key in history_keys}
     history['actions'] = torch.zeros(sim_duration, numEnvs, action_dim, device=device)
-    history['generator'] = torch.zeros(sim_duration, 816, dtype=torch.uint8) # must be on cpu
+    history['generator'] = torch.zeros(sim_duration, torch.cuda.device_count(), 816, dtype=torch.uint8) # must be on cpu
     return history
 
 def buffer_padding(buffer, dim, default_value=None, frames=32, numEnvs=1):
