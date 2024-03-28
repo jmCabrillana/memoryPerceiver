@@ -11,10 +11,7 @@ class ActorCritic(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def act(self, states, memories):
-        pass
-
-    def evaluate(self, states, actions, memories):
+    def forward(self, states, memories, old_actions=None):
         pass
 
     def instanciate_actions(self, actions, **kwargs):
@@ -40,8 +37,13 @@ class ActorCriticSimple(ActorCritic):
                                     nn.Linear(self.hidden_dim, 1)
                                     ).to(device)
         
-    def act(self, states, memories):
+    def forward(self, states, memories, old_actions=None):
         state = states['observations'][:,-1] # last time
+        
+        # Critic
+
+        values = self.critic(state)
+        values = rearrange(values,  'b 1 -> b')
 
         # Actor
 
@@ -49,34 +51,18 @@ class ActorCriticSimple(ActorCritic):
         actions_mean,  = actions_tmp[:, 0:self.action_dim], 
         actions_var = ((1+actions_tmp[:, self.action_dim:2*self.action_dim+1])/4+1e-5)**2
         dist = MultivariateNormal(actions_mean, torch.diag_embed(actions_var))
-        actions = dist.sample()
-        logprobs = dist.log_prob(actions)
-
-        # Critic
-
-        values = self.critic(state)
-        values = rearrange(values,  'b 1 -> b')
-
-        return actions.detach(), logprobs.detach(), values.detach(), dist, None
-
-    def evaluate(self, states, actions, memories):
-        state = states['observations'][:,-1] # ? d=1 ou 0
-
-        # Actor
-
-        actions_tmp = torch.tanh(self.actor(state))
-        actions_mean,  = actions_tmp[:, 0:self.action_dim], 
-        actions_var = ((1+actions_tmp[:, self.action_dim:2*self.action_dim+1])/4+1e-5)**2
-        dist = MultivariateNormal(actions_mean, torch.diag_embed(actions_var))
-        logprobs = dist.log_prob(actions)
-        entropies = dist.entropy() 
-
-        # Critic
-
-        values = self.critic(state)
-        values = rearrange(values,  'b 1 -> b')
-
-        return logprobs, values, entropies, dist, None
+        
+        # Act
+        if old_actions is None:  
+            actions = dist.sample()
+            logprobs = dist.log_prob(actions)
+            return actions.detach(), logprobs.detach(), values.detach(), None
+        # Evaluate
+        else:  
+            logprobs = dist.log_prob(old_actions)
+            entropies = dist.entropy() 
+            return logprobs, values, entropies, None
+            
     
     def instanciate_actions(self, actions, **kwargs):
         dt=1
@@ -105,8 +91,18 @@ class ActorCriticPerceiver(ActorCritic):
                                     nn.Linear(self.hidden_dim, 1)
                                     ).to(device)
         
+        
+    def forward(self, states, memories, old_actions=None):
+        
+        # Critic
 
-    def net_inference(self, states, memories):
+        values = self.critic(states['observations'][:,-1])
+        values = rearrange(values,  'b 1 -> b')
+
+        # Actor
+        
+        ## Net inference
+        
         device = states['observations'].device
         for i in range(self.dim_observations):
             states['observation_'+str(i)] = states['observations'][:, :, i:i+1]
@@ -126,39 +122,21 @@ class ActorCriticPerceiver(ActorCritic):
         actions_mean = torch.cat((actions_tmp1.mean(dim=1), actions_tmp2.mean(dim=1)), dim=-1)
         actions_var_tmp1, actions_var_tmp2 = torch.split(torch.tanh(actions_var), dim_t//2, dim=1)
         actions_var_tmp = torch.cat((actions_var_tmp1.mean(dim=1), actions_var_tmp2.mean(dim=1)), dim=-1)
-        actions_var = ((1+actions_var_tmp)/1+1e-4)**2 
+        actions_var = ((1+actions_var_tmp)/4+1e-5)**2 
         dist = MultivariateNormal(actions_mean, torch.diag_embed(actions_var))
-        return dist, new_memories
+
+        ## result
         
-    def act(self, states, memories):
-        
-        # Critic
-
-        values = self.critic(states['observations'][:,-1])
-        values = rearrange(values,  'b 1 -> b')
-
-        # Actor
-
-        dist, new_memories = self.net_inference(states, memories)
-        actions = dist.sample()
-        logprobs = dist.log_prob(actions)
-
-        return actions.detach(), logprobs.detach(), values.detach(), dist, new_memories
-
-    def evaluate(self, states, actions, memories):
-        
-        # Critic
-
-        values = self.critic(states['observations'][:,-1])
-        values = rearrange(values,  'b 1 -> b')
-
-        # Actor
-
-        dist, new_memories = self.net_inference(states, memories)
-        logprobs = dist.log_prob(actions)
-        entropies = dist.entropy() 
-
-        return logprobs, values, entropies, dist, new_memories
+        # Act
+        if old_actions is None:  
+            actions = dist.sample()
+            logprobs = dist.log_prob(actions)
+            return actions.detach(), logprobs.detach(), values.detach(), new_memories
+        # Evaluate
+        else:  
+            logprobs = dist.log_prob(old_actions)
+            entropies = dist.entropy() 
+            return logprobs, values, entropies, new_memories
     
     def instanciate_actions(self, actions, **kwargs):
         dt=8

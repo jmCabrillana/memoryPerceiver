@@ -57,7 +57,7 @@ def input_to_tensor(media, latents, body_parts=None, device='cpu'):
 
         # Add encoding
 
-        latents_video = repeat(latents['video'], '... -> b h w t ...', b=b, h=h, w=w, t=t)
+        latents_video = repeat(latents['video'], '... -> b h w t ...', b=b, h=h, w=w, t=t).to(deviceEval)
         video = torch.cat([video, latents_video], dim=-1)
 
         # Back to normal dimension order and flatten
@@ -87,7 +87,7 @@ def input_to_tensor(media, latents, body_parts=None, device='cpu'):
 
         # Add encoding
 
-        latents_audio = repeat(latents['audio'], '... -> b t ...', b=b, t=t)
+        latents_audio = repeat(latents['audio'], '... -> b t ...', b=b, t=t).to(deviceEval)
         audio = torch.cat([audio, latents_audio], dim=-1)
         multi_mod = torch.cat([multi_mod, audio], dim=1)
 
@@ -114,7 +114,7 @@ def input_to_tensor(media, latents, body_parts=None, device='cpu'):
 
             # Add encoding
 
-            part_encodings = repeat(latents[part], '... -> b t ...', b=b, t=t)
+            part_encodings = repeat(latents[part], '... -> b t ...', b=b, t=t).to(deviceEval)
             body_part = torch.cat([body_part, part_encodings], dim=-1)
             body = torch.cat([body, body_part], dim=1)
         multi_mod = torch.cat([multi_mod, body], dim=1)

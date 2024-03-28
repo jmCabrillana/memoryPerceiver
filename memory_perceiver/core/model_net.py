@@ -176,7 +176,7 @@ class AttentionMemory(nn.Module):
 
         # Auxiliary loss
         
-        self.to_kv.weight.detach_()
+        self.to_kv.weight.detach()
 
         cmem_k, cmem_v = self.to_kv(new_cmem.detach()).chunk(2, dim=-1)
         cmem_k, cmem_v = map(lambda t: rearrange(t, 'b n (h d) -> (b h) n d', h = h), (cmem_k, cmem_v))
@@ -312,6 +312,7 @@ class PerceiverIO(nn.Module):
 
         # make sure queries contain batch dimension
 
+        queries = queries.to(device)
         if queries.ndim == 2:
             queries = repeat(queries, 'n d -> b n d', b = b)
 
@@ -322,6 +323,7 @@ class PerceiverIO(nn.Module):
         # final linear out
 
         memories = {'cross_cmem':new_cross_cmem, 'layers_mem':new_layers_mem, 'layers_cmem':new_layers_cmem}
+        
         return output, memories, sum_aux_loss
 
 
