@@ -58,7 +58,7 @@ class Config:
     dim_actions_ppo = 2*21 # *2
     
     # Critic dimension
-    critic_layers = 2
+    critic_layers = 4
 
     # Model dimension configuration
 
