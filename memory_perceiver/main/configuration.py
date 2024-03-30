@@ -34,7 +34,16 @@ class Config:
     frames = 2
     sample_per_frame = 1920
     frames_future = 2
-    len_video_frame = 1824  # 456*256/(8*8)
+    width = 456
+    height = 264
+    patch_audio = 16
+    patch_width = 12
+    patch_height = 12
+    bands_fourier = 128
+    bands_video = 32
+    bands_video_t = 4
+    channels = 3
+    len_video_frame = 836 # 836 = 456*264/(12*12) # 1824 # 456*256/(8*8)
     len_audio_frame = 120   # 1920/16
     sample_rate = frames * sample_per_frame
     len_video = frames*len_video_frame
@@ -54,10 +63,8 @@ class Config:
     # Model dimension configuration
 
     query_dim = 832
-    video_latent_dim = 256
-    audio_latent_dim = 560
     depth = 2
-    batch_size = 6
+    batch_size = 8
     body_parts =  {'observation_' + str(i): 1 for i in range(dim_observations)}
     body_outputs = {'action_' + str(i): 1 for i in range(dim_actions)}
     actions_variance = {'action_variance_' + str(i): 1 for i in range(dim_actions)}

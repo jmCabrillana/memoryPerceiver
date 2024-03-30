@@ -11,15 +11,16 @@ def fourier_encode(x, max_freq, num_bands = 4):
 
 
 
-def input_to_tensor(media, latents, body_parts=None, device='cpu'):
+def input_to_tensor(media, latents, body_parts=None, device='cpu', 
+                    height=8, width=8, bands_video=64, bands_video_t=64):
+    
     # Set everything to the same device:
-    deviceEval = device
 
     for key, latent in latents.items():
-        latents[key]=latent.to(deviceEval)
+        latents[key]=latent.to(device)
     for key, modality in media.items():
-        media[key]=modality.to(deviceEval)
-    multi_mod = torch.tensor([], device=deviceEval)
+        media[key]=modality.to(device)
+    multi_mod = torch.tensor([], device=device)
 
     #=======#
     # Video Encoding
@@ -28,7 +29,7 @@ def input_to_tensor(media, latents, body_parts=None, device='cpu'):
     if 'video' in media:
         video = media['video']
         b, c, t, h0, w0 = video.shape # [colors, time, height, width]
-        h1, w1 = 8, 8
+        h1, w1 = height, width
         h, w =  int(h0/h1), int(w0/w1)
         
         # Space to depth
@@ -37,27 +38,27 @@ def input_to_tensor(media, latents, body_parts=None, device='cpu'):
 
         # Width position encoding
 
-        pos = fourier_encode(torch.linspace(-1, 1, w), w/2, num_bands=64).to(deviceEval)
+        pos = fourier_encode(torch.linspace(-1, 1, w), w/2, num_bands=bands_video).to(device)
         pos = repeat(pos, '... -> b t h ...', b=b, t=t, h=h)
         video = torch.cat([video, pos], dim=-1)
 
         # Height position encoding
 
         video = rearrange(video, "b t h w d -> b w t h d")
-        pos = fourier_encode(torch.linspace(-1, 1, h), h/2, num_bands=64).to(deviceEval)
+        pos = fourier_encode(torch.linspace(-1, 1, h), h/2, num_bands=bands_video).to(device)
         pos = repeat(pos, '... -> b w t ...', b=b, w=w, t=t)
         video = torch.cat([video, pos], dim=-1)
 
         # Time axis position encoding
 
         video = rearrange(video, "b w t h d -> b h w t d")
-        pos = fourier_encode(torch.linspace(-1, 1, t), t/2, num_bands=64).to(deviceEval)
+        pos = fourier_encode(torch.linspace(-1, 1, t), t/2, num_bands=bands_video_t).to(device)
         pos = repeat(pos, '... -> b h w ...', b=b, h=h, w=w)
         video = torch.cat([video, pos], dim=-1)
 
         # Add encoding
 
-        latents_video = repeat(latents['video'], '... -> b h w t ...', b=b, h=h, w=w, t=t).to(deviceEval)
+        latents_video = repeat(latents['video'], '... -> b h w t ...', b=b, h=h, w=w, t=t).to(device)
         video = torch.cat([video, latents_video], dim=-1)
 
         # Back to normal dimension order and flatten
@@ -81,13 +82,13 @@ def input_to_tensor(media, latents, body_parts=None, device='cpu'):
 
         # Time axis postion encoding
 
-        pos = fourier_encode(torch.linspace(-1, 1, t), t/2, num_bands=128).to(deviceEval)
+        pos = fourier_encode(torch.linspace(-1, 1, t), t/2, num_bands=128).to(device)
         pos = repeat(pos, '... -> b ...', b=b)
         audio = torch.cat([audio, pos], dim=-1)
 
         # Add encoding
 
-        latents_audio = repeat(latents['audio'], '... -> b t ...', b=b, t=t).to(deviceEval)
+        latents_audio = repeat(latents['audio'], '... -> b t ...', b=b, t=t).to(device)
         audio = torch.cat([audio, latents_audio], dim=-1)
         multi_mod = torch.cat([multi_mod, audio], dim=1)
 
@@ -101,20 +102,20 @@ def input_to_tensor(media, latents, body_parts=None, device='cpu'):
     #                  out['smplx_expr'], out['cam_trans'], out['bbox']
 
     if body_parts is not None:
-        body = torch.tensor([], device=deviceEval)
+        body = torch.tensor([], device=device)
         for part in body_parts.keys():
 
             b, t, _ = media[part].shape 
 
             # Time axis postion encoding
 
-            pos = fourier_encode(torch.linspace(-1, 1, t), t/2, num_bands=128).to(deviceEval)
+            pos = fourier_encode(torch.linspace(-1, 1, t), t/2, num_bands=128).to(device)
             pos = repeat(pos, '... -> b ...', b=b)
             body_part = torch.cat([media[part], pos], dim=-1)
 
             # Add encoding
 
-            part_encodings = repeat(latents[part], '... -> b t ...', b=b, t=t).to(deviceEval)
+            part_encodings = repeat(latents[part], '... -> b t ...', b=b, t=t).to(device)
             body_part = torch.cat([body_part, part_encodings], dim=-1)
             body = torch.cat([body, body_part], dim=1)
         multi_mod = torch.cat([multi_mod, body], dim=1)

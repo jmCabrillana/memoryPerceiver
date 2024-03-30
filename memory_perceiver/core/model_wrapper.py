@@ -9,15 +9,16 @@ def create_multimodal_perceiver(cf, device):
     # Projection to return modalities, enhancement
 
     modality_parameters = {}
-    modality_parameters['audio'] = cf.audio_latent_dim
-    modality_parameters['video'] = cf.video_latent_dim
+    modality_parameters['audio'] = cf.query_dim - 2*cf.bands_fourier - cf.patch_audio
+    modality_parameters['video'] =  cf.query_dim - 2*cf.bands_video_t - 2*2*cf.bands_video \
+                                  - cf.patch_height*cf.patch_width*cf.channels
     for part, params in cf.body_parts.items():
-        modality_parameters[part] = cf.query_dim - 2*128 - params
+        modality_parameters[part] = cf.query_dim - 2*cf.bands_fourier - params
     for part, params in cf.body_outputs.items():
-        modality_parameters[part] = cf.query_dim - 2*128 - params
+        modality_parameters[part] = cf.query_dim - 2*cf.bands_fourier - params
 
     projection_parameters = dict(cf.body_outputs)
-    projection_parameters.update({'audio': 16})
+    projection_parameters.update({'audio': cf.patch_audio})
 
     # Input compression
 

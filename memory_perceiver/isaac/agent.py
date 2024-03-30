@@ -80,6 +80,8 @@ class ActorCriticPerceiver(ActorCritic):
         self.dim_actions = cf.dim_actions
         self.body_parts = cf.body_parts
         self.body_outputs = cf.body_outputs
+        self.patch_height, self.patch_width, self.bands_video, self.bands_video_t = \
+            cf.patch_height, cf.patch_width, cf.bands_video, cf.bands_video_t
         self.hidden_dim = 64
         self.actor = create_multimodal_perceiver(cf, device)
         self.critic = nn.Sequential(nn.Linear(cf.dim_observations, self.hidden_dim),
@@ -106,7 +108,8 @@ class ActorCriticPerceiver(ActorCritic):
         device = states['observations'].device
         for i in range(self.dim_observations):
             states['observation_'+str(i)] = states['observations'][:, :, i:i+1]
-        input = input_to_tensor(states, self.actor.modality, self.body_parts, device=device)
+        input = input_to_tensor(states, self.actor.modality, self.body_parts, device=device,
+            height=self.patch_height, width=self.patch_width, bands_video=self.bands_video, bands_video_t=self.bands_video_t)
         x, new_memories, _ = self.actor(input, memories, queries=self.actor.queries)
         output = output_projection(self.actor, x, self.body_outputs, 
                           self.frames_future, self.audio_future)
