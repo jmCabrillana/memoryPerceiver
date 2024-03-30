@@ -31,7 +31,7 @@ class Config:
 
     # Sampling and input/output configuration
 
-    frames = 4
+    frames = 2
     sample_per_frame = 1920
     frames_future = 2
     len_video_frame = 1824  # 456*256/(8*8)
@@ -57,7 +57,7 @@ class Config:
     video_latent_dim = 256
     audio_latent_dim = 560
     depth = 2
-    batch_size = 4
+    batch_size = 6
     body_parts =  {'observation_' + str(i): 1 for i in range(dim_observations)}
     body_outputs = {'action_' + str(i): 1 for i in range(dim_actions)}
     actions_variance = {'action_variance_' + str(i): 1 for i in range(dim_actions)}

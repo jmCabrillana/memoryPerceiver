@@ -122,7 +122,7 @@ class ActorCriticPerceiver(ActorCritic):
         actions_mean = torch.cat((actions_tmp1.mean(dim=1), actions_tmp2.mean(dim=1)), dim=-1)
         actions_var_tmp1, actions_var_tmp2 = torch.split(torch.tanh(actions_var), dim_t//2, dim=1)
         actions_var_tmp = torch.cat((actions_var_tmp1.mean(dim=1), actions_var_tmp2.mean(dim=1)), dim=-1)
-        actions_var = ((1+actions_var_tmp)/4+1e-5)**2 
+        actions_var = ((1+actions_var_tmp)/2+1e-4)**2 
         dist = MultivariateNormal(actions_mean, torch.diag_embed(actions_var))
 
         ## result

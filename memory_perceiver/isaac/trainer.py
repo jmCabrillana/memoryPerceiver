@@ -1,23 +1,25 @@
 import torch
 import numpy as np
+import os
+import random
 from einops import repeat, rearrange
 
-def init_history(history_keys, sim_duration, numEnvs, action_dim, device):
-    history = { key: torch.zeros(sim_duration, numEnvs, device=device) for key in history_keys}
-    history['actions'] = torch.zeros(sim_duration, numEnvs, action_dim, device=device)
+def init_history(history_keys, sim_duration, num_envs, action_dim, device):
+    history = { key: torch.zeros(sim_duration, num_envs, device=device) for key in history_keys}
+    history['actions'] = torch.zeros(sim_duration, num_envs, action_dim, device=device)
     history['generator'] = torch.zeros(sim_duration, torch.cuda.device_count(), 816, dtype=torch.uint8) # must be on cpu
     return history
 
-def buffer_padding(buffer, dim, default_value=None, frames=32, numEnvs=1):
+def buffer_padding(buffer, dim, default_value=None, frames=32, num_envs=1):
     
     # zero padding then transform: t b (d) -> b t (d)
 
     device = buffer.device
     pad0 = np.max([0, frames-len(buffer)])
     if default_value is None:
-        padding = torch.zeros([pad0, numEnvs]+dim, device=device)
+        padding = torch.zeros([pad0, num_envs]+dim, device=device)
     else:
-        padding = repeat(default_value, '... -> t0 b ...', t0=pad0, b=numEnvs).to(device)
+        padding = repeat(default_value, '... -> t0 b ...', t0=pad0, b=num_envs).to(device)
     res = torch.cat([ padding, buffer ])
     res = rearrange(res, 't b ... -> b t ...')
     return res
@@ -33,7 +35,7 @@ def update_buffers(buff, dict, frames=32):
 
 
 def calculate_returns(mem_rewards, death_index, gamma=0.99):
-    sim_duration, numEnvs = mem_rewards.size()
+    sim_duration, num_envs = mem_rewards.size()
     returns_estimates = torch.zeros_like(mem_rewards)
     sum = torch.zeros_like(mem_rewards[0])
     
@@ -49,7 +51,7 @@ def calculate_returns(mem_rewards, death_index, gamma=0.99):
 
 
 def calculate_gae(mem_rewards, mem_values, death_index, gamma=0.99, gae_lambda=0.95):
-    sim_duration, numEnvs = mem_rewards.size()
+    sim_duration, num_envs = mem_rewards.size()
     gae_estimates = torch.zeros_like(mem_rewards)
     gae = torch.zeros_like(mem_rewards[0])
     
@@ -67,9 +69,9 @@ def calculate_gae(mem_rewards, mem_values, death_index, gamma=0.99, gae_lambda=0
     return gae_estimates
 
 def create_mask(birth_time, sim_step, frames=32):
-        numEnvs = birth_time.size()[0]
+        num_envs = birth_time.size()[0]
         past_horizon=frames - (sim_step-birth_time+1)
-        mask = repeat(torch.arange(frames), '... -> b ...', b=numEnvs) < repeat(past_horizon, '... -> ... t', t=frames)
+        mask = repeat(torch.arange(frames), '... -> b ...', b=num_envs) < repeat(past_horizon, '... -> ... t', t=frames)
         return mask
 
 def update_lr(current_lr, kl_div, kl_threshold=0.024, min_lr=1e-6, max_lr=1e-2):
@@ -79,4 +81,11 @@ def update_lr(current_lr, kl_div, kl_threshold=0.024, min_lr=1e-6, max_lr=1e-2):
     if kl_div < (0.5 * kl_threshold):
         lr = min(current_lr * 1.5, max_lr)
     return lr    
-    
+
+def set_seeds(seed):
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
