@@ -10,7 +10,7 @@ def two_levels_plot(data, ax, fig, horizon, path):
     fig.savefig(path)
 
 class Plotter:
-    def __init__(self, path_plots='/isaac-sim/memoryPerceiver/memory_perceiver/main/', titles=[]):
+    def __init__(self, path_plots='/isaac-sim/memoryPerceiver/memory_perceiver/main/plots/', titles=[]):
         self.path_plots = path_plots
         self.titles=titles
         self.figs=[]
