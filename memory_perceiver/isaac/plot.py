@@ -15,10 +15,12 @@ class Plotter:
         self.titles=titles
         self.figs=[]
         self.axes=[]
-        for i in range(len(titles)):
+        self.data={}
+        for title in titles:
             fig, axe = plt.subplots(figsize=(8, 6))
             self.figs.append(fig)
             self.axes.append(axe)
+            self.data[title] = []
 
         
     def plot_all(self, series):

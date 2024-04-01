@@ -29,7 +29,7 @@
 
 class Config:
 
-    # Sampling and input/output configuration
+    # Input / Outputs
 
     frames = 2
     sample_per_frame = 1920
@@ -48,7 +48,7 @@ class Config:
     sample_rate = frames * sample_per_frame
     len_video = frames*len_video_frame
     len_audio = frames*len_audio_frame
-    len_audio_raw = len_audio*sample_per_frame
+    len_audio_raw = frames*sample_per_frame
     video_future = frames_future*len_video_frame
     audio_future = frames_future*len_audio_frame 
 
@@ -56,21 +56,33 @@ class Config:
     dim_observations = 87
     dim_actions = 21
     dim_actions_ppo = 2*21 # *2
-    
-    # Critic dimension
-    critic_layers = 4
+    sim_duration = 260
+    num_envs = 8
+    learning_rate = 1e-4
+    accumulation_steps = 2
+    c_entropy = 0.05   # 0.01 to 0.05
+    c_critic=0.2       # 0.5 to 2
+    student_update_step = 1
+    eps=1e-9
+    c_gamma=0.99
+    c_lambda=0.95
+    c_grad_norm=0.1  # 0.1 to 1.0
+    eps_clip=0.2
+    render = True
 
     # Model dimension configuration
 
+    critic_layers = 4
     query_dim = 832
     depth = 2
-    batch_size = 8
+    batch_size = num_envs
     body_parts =  {'observation_' + str(i): 1 for i in range(dim_observations)}
     body_outputs = {'action_' + str(i): 1 for i in range(dim_actions)}
     actions_variance = {'action_variance_' + str(i): 1 for i in range(dim_actions)}
     body_outputs.update(actions_variance)
     has_video = True
     has_audio = True
+    path_model = 'weights/humanoid.pt'
 
 
 cf = Config()

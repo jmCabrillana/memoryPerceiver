@@ -1,0 +1,301 @@
+from os.path import join, dirname
+import os
+import sys
+from copy import deepcopy
+from hydra import initialize, compose
+from omegaconf import DictConfig
+import numpy as np
+import torchshow as ts
+import torchvision
+
+import torch
+from torch import autocast
+from torch.cuda.amp import GradScaler
+from torch.nn import DataParallel
+import torch.nn.functional as F
+from einops import rearrange
+
+sys.path.append(join(dirname(dirname(os.getcwd()))))
+sys.path.append(os.getcwd())
+
+from omniisaacgymenvs.utils.hydra_cfg.hydra_utils import *
+from omniisaacgymenvs.utils.hydra_cfg.reformat import omegaconf_to_dict, print_dict
+from omniisaacgymenvs.utils.task_util import initialize_task
+from omniisaacgymenvs.envs.vec_env_rlgames import VecEnvRLGames
+
+from memoryPerceiver.memory_perceiver.main.configuration import cf
+from memoryPerceiver.memory_perceiver.core.model_wrapper import create_memories, reset_memories
+import memoryPerceiver.memory_perceiver.isaac.trainer as tr
+from memoryPerceiver.memory_perceiver.isaac.plot import Plotter
+from memoryPerceiver.memory_perceiver.isaac.agent import ActorCritic, ActorCriticSimple, ActorCriticPerceiver
+
+
+def init_process(cf, cfg, rank, size, fn, backend='gloo'):
+    """ Initialize the distributed environment. """
+    os.environ['MASTER_ADDR'] = '127.0.0.1'
+    os.environ['MASTER_PORT'] = '29500'
+    dist.init_process_group(backend, rank=rank, world_size=size)
+    run(cf, cfg, rank, size)
+
+def average_gradients(model, size, group):
+    for param in model.parameters():
+        dist.all_reduce(param.grad.data, op=dist.ReduceOp.SUM, group=group)
+        param.grad.data /= size
+
+def run(cf, cfg: DictConfig, rank, size):
+    cfg_dict = omegaconf_to_dict(cfg)
+    env = VecEnvRLGames(headless=cfg.headless, sim_device=cfg.device_id, enable_viewport=cfg.enable_viewport)
+    
+    if rank == 0:
+        # !!! Load isaac modules after the variables
+        from omni.isaac.core.utils.torch.maths import set_seed
+        import omni.usd
+        from omni.isaac.core.utils.extensions import enable_extension
+        from omni.isaac.core.utils.stage import open_stage, save_stage
+        enable_extension("omni.isaac.sensor")
+
+    cf.num_envs = cf.num_envs/(size-1) if rank > 0
+    plotter = Plotter(titles=['loss_actor', 'loss_critic', 'returns'])
+    history_keys = ['actions', 'values', 'logprobs', 'returns', 'rewards', 'advantages', 'death_index', 'generator']
+    history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, device)
+    previous_history = deepcopy(history)
+    buffer = {'video':[], 'audio':[], 'obs':[], 'rewards':[], 'actions_star':[]}
+    memories = create_memories(model.module.actor, cf.num_envs, device=device)
+    last_memories = torch.zeros_like(memories['cross_cmem'], device=device)
+
+    if rank == 0:
+        cfg.seed = set_seed(cfg.seed, torch_deterministic=cfg.torch_deterministic)
+        cfg_dict['seed'] = cfg.seed  # sets seed. if seed is -1 will pick a random one
+        task = initialize_task(cfg_dict, env)
+    if rank > 0:
+        optimizer = torch.optim.Adam(model_student.parameters(), lr=cf.learning_rate)
+        scaler = GradScaler()
+    sim_count, sim_step = -1, 0
+    is_inference=False  # Will switch to True immediately
+    
+    while env._simulation_app.is_running():
+        if env._world.is_playing():
+            # if env._world.current_time_step_index == 0 or \
+            # env._world.current_time_step_index % sim_duration == 0:
+            if env.sim_frame_count % cf.sim_duration == 0:
+                
+                ### Plots
+
+                if sim_count % 6 == 1 and len(plotter.data['loss_actor'])>0:
+                    plotter.plot_all([(plotter.data['loss_actor'], 160), (plotter.data['loss_critic'], 160), plotter.data['returns']])
+
+                ### Initialization
+
+                sim_count+=1
+                is_inference = not is_inference
+                if rank == 0:
+                    env._world.reset(soft=False)
+                
+                print('$$$$$$$$$$$ CUMUL REWARD $$$$$$$$$$$')
+                if len(history['rewards'])>0:
+                    print(history['rewards'].sum())
+                if is_inference:
+                    print('PLAY')
+                    if rank > 0
+                        print("MEM: ", F.mse_loss(last_memories, memories['cross_cmem']).item())
+                        if sim_count == 0 and os.path.exists(cf.path_model):
+                            model.module.load_state_dict(torch.load(cf.path_model))
+                            model_student.module.load_state_dict(torch.load(cf.path_model))
+                        else:
+                            if sim_count % cf.student_update_step*2 == 0:
+                                model.module.load_state_dict(model_student.module.state_dict())
+                        torch.save(model_student.module.state_dict(), cf.path_model)
+                        model.eval()
+                else:
+                    print('REPLAY')
+                    * SCATTER rewards, values, death_index
+                    if rank > 0:
+                        last_memories = memories['cross_cmem'].clone()
+                        model_student.train() 
+                        optimizer.zero_grad()
+                    previous_history = deepcopy(history)
+                    previous_history['returns'] = tr.calculate_returns(history['rewards'], history['death_index'], gamma=cf.c_gamma)
+                    previous_history['advantages'] = tr.calculate_gae(history['rewards'], history['values'], 
+                                                        history['death_index'], gamma=cf.c_gamma, gae_lambda=cf.c_lambda)
+                    plotter.data['returns'].append(previous_history['returns'][1, :].mean().item())
+                    
+                if rank > 0:
+                    reset_memories(memories)
+                tr.set_seeds(sim_count//2)
+                print("SEED: ", sim_count//2)
+                full_video = []
+                birth_time = torch.zeros(cf.num_envs)
+                for key in buffer.keys():
+                    buffer[key]=[]
+                history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, device)
+                backward_count= 0
+                sim_step = 0
+
+            ### Get agent observations 
+
+            if rank == 0:
+                all_obs = env._task.get_observations()['articulation_view']
+                obs = all_obs['obs_buf'].clone()    # (num_envs, d)
+                video = all_obs['video_buf'].clone()  # (num_envs, 256, 456, 3)
+                #ts.save(video[0], '/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/live.jpg')
+                full_video.append(video.cpu())
+                env._task.calculate_metrics()       
+                reward=env._task.rew_buf.clone()    # (num_envs, 1)
+                tr.update_buffers(buffer, {'obs': obs, 'video': video, 'rewards': reward}, frames=cf.frames)
+                history['rewards'][sim_step] = reward
+            * SCATTER buffer (obs, video)
+
+            ### Reset memory at death and record 
+
+            if rank == 0:
+                reset_indexes = []
+                for agent_i in range(cf.num_envs):
+                    if env._task.reset_buf[agent_i].item() == 1:
+                        reset_indexes.append(agent_i)
+                        birth_time[agent_i] = sim_step
+
+                        # Update death dictionnary during inference
+
+                        if is_inference:
+                            history['death_index'][sim_step, agent_i]=1
+            * SCATTER indexes and bith_time
+            if rank > 0:
+                reset_memories(memories, indexes=reset_indexes)
+
+            ### Agent
+            
+            if rank > 0:
+                if len(buffer['actions_star'])==0 :
+
+                    ## Process inputs
+
+                    states={}
+                    mask = tr.create_mask(birth_time, sim_step, frames=cf.frames)
+                    states['observations'] = tr.buffer_padding(torch.stack(buffer['obs']), [cf.dim_observations],
+                                                                num_envs=cf.num_envs, frames=cf.frames)
+                    states['observations'][mask] *= 0
+                    states['video'] = torch.zeros(cf.num_envs, cf.frames, cf.height, cf.width, 3, device=device)
+                    # states['video'] = tr.buffer_padding(torch.stack(buffer['video']), [cf.height, cf.width, 3], num_envs=cf.num_envs, frames=cf.frames)
+                    states['video'][mask] *= 0
+                    states['video'] = rearrange(states['video'], 'b t h w c -> b c t h w')
+                    states['audio'] = torch.zeros(cf.num_envs, cf.frames*1920, device=device)
+
+                    ## Inference, save history and memory update
+
+                    if is_inference:
+                        history['generator'][sim_step, rank] = torch.cuda.get_rng_state(rank).clone() 
+                        with autocast(device_type='cuda', dtype=torch.float16):
+                            actions, logprobs, values, memories = model(states, memories)   
+                        history['actions'][sim_step] = actions  
+                        history['logprobs'][sim_step] = logprobs 
+                        history['values'][sim_step] = values     
+                    else:
+                        actions, logprobs, values = [previous_history[key][sim_step].to(device_agents) \
+                                                    for key in ['actions', 'logprobs', 'values']]
+                                        
+
+                    ## Backward pass
+
+                    if not is_inference:
+
+                        with autocast(device_type='cuda', dtype=torch.float16):
+                            returns = previous_history['returns'][sim_step].to(device_agents)
+                            advantages = previous_history['advantages'][sim_step].to(device_agents)
+                            new_logprobs, new_values, entropies, _ = model_student(states, memories, actions)
+                            torch.cuda.set_rng_state(previous_history['generator'][sim_step, rank], device=rank)
+                            _, _, _, memories = model(states, memories) 
+                            
+
+                            # Loss
+                            ratios = torch.exp(new_logprobs - logprobs)
+                            surr1 = ratios * advantages
+                            surr2 = torch.clamp(ratios, 1-cf.eps_clip, 1+cf.eps_clip) * advantages
+                            loss_actor = -(torch.min(surr1, surr2)).mean()
+                            loss_entropy = -cf.c_entropy * entropies.mean()
+                            loss_critic = cf.c_critic * F.mse_loss(new_values, returns)
+                            loss =  (loss_actor + loss_critic + loss_entropy) / cf.accumulation_steps
+                        * ALL REDUCE on scaled loss
+                        scaler.scale(loss).backward()
+                        backward_count += 1
+
+
+                        # Step optimizer
+
+                        if backward_count % cf.accumulation_steps == 0 and backward_count != 0:
+                            scaler.unscale_(optimizer)
+                            torch.nn.utils.clip_grad_norm_(model_student.parameters(), cf.c_grad_norm)
+                            average_gradients(model, size-1, range(1, size)):
+                            scaler.step(optimizer)
+                            scaler.update()
+                            optimizer.zero_grad()
+
+                            # Reinitialize
+                            backward_count = 0
+
+
+                        plotter.data['loss_actor'].append(loss_actor.item())
+                        plotter.data['loss_critic'].append(loss_critic.item())
+
+                    # Update buffers
+
+                    actions_star = model.module.instanciate_actions(actions, dt=cf.frames_future)
+                    buffer['actions_star'] += list(torch.unbind( actions_star ))
+
+
+            # Act(num_envs, 1)
+
+            * GATHER actions_star to 0
+            if rank == 0:
+                if(len(buffer['actions_star'])>0):
+                    action = buffer['actions_star'].pop(0)
+                    action = torch.clamp(action, min=-1, max=1)
+                else:
+                    action = torch.dzeros(cf.num_envs, 1)
+
+                # Step environment
+
+                if sim_step == 0:
+                    env._task.post_reset()
+                env._task.pre_physics_step(action.to(task.rl_device))
+                env._world.step(render=cf.render)
+                env.sim_frame_count += 1
+                env._task.post_physics_step()
+
+                if sim_count % 10 == 0 and env.sim_frame_count % cf.sim_duration == 256:
+                    torchvision.io.write_video('/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/test_'  + str(sim_count) + '_vid_.mp4', 
+                                                torch.stack(full_video)[:,1], 8*cf.frames)
+
+            sim_step+=1
+
+            else:
+                env._world.step(render=cf.render)
+
+    if rank == 0:
+        env._simulation_app.close()
+
+
+if __name__ == "__main__":
+
+    num_gpus=torch.cuda.device_count()
+    device_cpu = torch.device("cpu")
+    device = torch.device(0 if torch.cuda.is_available() else "cpu")
+    device_agents = torch.device(1 if num_gpus>1 else 0)
+    devices_agents = [torch.device(i) for i in range(min(1, num_gpus-1), num_gpus)]
+    torch.use_deterministic_algorithms(False)
+    torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.deterministic = False
+    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+    with initialize(config_path="memoryPerceiver/OmniIsaacGymEnvs/omniisaacgymenvs/cfg"):
+        cfg = compose(config_name="config", overrides=["task=Humanoid", "headless=True", "enable_viewport=True",
+                        "num_envs="+str(cf.num_envs), "imgWidth="+str(cf.width), "imgHeight="+str(cf.height)])
+
+    size = 2
+    processes = []
+    mp.set_start_method("spawn")
+    for rank in range(size):
+        p = mp.Process(target=init_process, args=(cf, cfg, rank, size, run))
+        p.start()
+        processes.append(p)
+
+    for p in processes:
+        p.join()
