@@ -7,13 +7,14 @@ from omegaconf import DictConfig
 import numpy as np
 import torchshow as ts
 import torchvision
+from einops import rearrange
 
 import torch
 from torch import autocast
 from torch.cuda.amp import GradScaler
-from torch.nn import DataParallel
 import torch.nn.functional as F
-from einops import rearrange
+import torch.distributed as dist
+import torch.multiprocessing as mp
 
 sys.path.append(join(dirname(dirname(os.getcwd()))))
 sys.path.append(os.getcwd())
@@ -30,19 +31,28 @@ from memoryPerceiver.memory_perceiver.isaac.plot import Plotter
 from memoryPerceiver.memory_perceiver.isaac.agent import ActorCritic, ActorCriticSimple, ActorCriticPerceiver
 
 
-def init_process(cf, cfg, rank, size, fn, backend='gloo'):
-    """ Initialize the distributed environment. """
+"""def init_process(cf, cfg, rank, size, fn, backend='gloo'):
     os.environ['MASTER_ADDR'] = '127.0.0.1'
     os.environ['MASTER_PORT'] = '29500'
     dist.init_process_group(backend, rank=rank, world_size=size)
-    run(cf, cfg, rank, size)
+    run(cf, cfg, rank, size)"""
+
+def setup(rank, size):
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '12355'
+    dist.init_process_group("nccl", rank=rank, world_size=size)
 
 def average_gradients(model, size, group):
     for param in model.parameters():
         dist.all_reduce(param.grad.data, op=dist.ReduceOp.SUM, group=group)
         param.grad.data /= size
 
-def run(cf, cfg: DictConfig, rank, size):
+def isaac_training(cf, cfg: DictConfig, rank, size):
+
+    setup(rank, size)
+    group_agents = dist.new_group(list(range(1,size)))
+    device = torch.device(rank)
+
     cfg_dict = omegaconf_to_dict(cfg)
     env = VecEnvRLGames(headless=cfg.headless, sim_device=cfg.device_id, enable_viewport=cfg.enable_viewport)
     
@@ -53,8 +63,11 @@ def run(cf, cfg: DictConfig, rank, size):
         from omni.isaac.core.utils.extensions import enable_extension
         from omni.isaac.core.utils.stage import open_stage, save_stage
         enable_extension("omni.isaac.sensor")
+    if rank > 0:
+        model = ActorCriticPerceiver(cf, rank)
+        model_student = ActorCriticPerceiver(cf, rank)
 
-    cf.num_envs = cf.num_envs/(size-1) if rank > 0
+    cf.num_envs = cf.num_envs/(size-1) if rank > 0 else cf.num_envs
     plotter = Plotter(titles=['loss_actor', 'loss_critic', 'returns'])
     history_keys = ['actions', 'values', 'logprobs', 'returns', 'rewards', 'advantages', 'death_index', 'generator']
     history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, device)
@@ -73,7 +86,7 @@ def run(cf, cfg: DictConfig, rank, size):
     sim_count, sim_step = -1, 0
     is_inference=False  # Will switch to True immediately
     
-    while env._simulation_app.is_running():
+    while env._simulation_app.is_running() and sim_count < 6:
         if env._world.is_playing():
             # if env._world.current_time_step_index == 0 or \
             # env._world.current_time_step_index % sim_duration == 0:
@@ -96,7 +109,7 @@ def run(cf, cfg: DictConfig, rank, size):
                     print(history['rewards'].sum())
                 if is_inference:
                     print('PLAY')
-                    if rank > 0
+                    if rank > 0:
                         print("MEM: ", F.mse_loss(last_memories, memories['cross_cmem']).item())
                         if sim_count == 0 and os.path.exists(cf.path_model):
                             model.module.load_state_dict(torch.load(cf.path_model))
@@ -108,7 +121,7 @@ def run(cf, cfg: DictConfig, rank, size):
                         model.eval()
                 else:
                     print('REPLAY')
-                    * SCATTER rewards, values, death_index
+                    # SCATTER rewards, death_index (values already ok)
                     if rank > 0:
                         last_memories = memories['cross_cmem'].clone()
                         model_student.train() 
@@ -158,7 +171,7 @@ def run(cf, cfg: DictConfig, rank, size):
 
                         if is_inference:
                             history['death_index'][sim_step, agent_i]=1
-            * SCATTER indexes and bith_time
+            * SCATTER indexes and birth_time
             if rank > 0:
                 reset_memories(memories, indexes=reset_indexes)
 
@@ -190,7 +203,7 @@ def run(cf, cfg: DictConfig, rank, size):
                         history['logprobs'][sim_step] = logprobs 
                         history['values'][sim_step] = values     
                     else:
-                        actions, logprobs, values = [previous_history[key][sim_step].to(device_agents) \
+                        actions, logprobs, values = [previous_history[key][sim_step].to(device) \
                                                     for key in ['actions', 'logprobs', 'values']]
                                         
 
@@ -199,10 +212,10 @@ def run(cf, cfg: DictConfig, rank, size):
                     if not is_inference:
 
                         with autocast(device_type='cuda', dtype=torch.float16):
-                            returns = previous_history['returns'][sim_step].to(device_agents)
-                            advantages = previous_history['advantages'][sim_step].to(device_agents)
+                            returns = previous_history['returns'][sim_step].to(device)
+                            advantages = previous_history['advantages'][sim_step].to(device)
                             new_logprobs, new_values, entropies, _ = model_student(states, memories, actions)
-                            torch.cuda.set_rng_state(previous_history['generator'][sim_step, rank], device=rank)
+                            torch.cuda.set_rng_state(previous_history['generator'][sim_step, rank], device=device)
                             _, _, _, memories = model(states, memories) 
                             
 
@@ -214,7 +227,6 @@ def run(cf, cfg: DictConfig, rank, size):
                             loss_entropy = -cf.c_entropy * entropies.mean()
                             loss_critic = cf.c_critic * F.mse_loss(new_values, returns)
                             loss =  (loss_actor + loss_critic + loss_entropy) / cf.accumulation_steps
-                        * ALL REDUCE on scaled loss
                         scaler.scale(loss).backward()
                         backward_count += 1
 
@@ -223,8 +235,8 @@ def run(cf, cfg: DictConfig, rank, size):
 
                         if backward_count % cf.accumulation_steps == 0 and backward_count != 0:
                             scaler.unscale_(optimizer)
+                            average_gradients(model, size-1, range(1, size)) # ALL REDUCE on scaled loss
                             torch.nn.utils.clip_grad_norm_(model_student.parameters(), cf.c_grad_norm)
-                            average_gradients(model, size-1, range(1, size)):
                             scaler.step(optimizer)
                             scaler.update()
                             optimizer.zero_grad()
@@ -256,22 +268,21 @@ def run(cf, cfg: DictConfig, rank, size):
 
                 if sim_step == 0:
                     env._task.post_reset()
-                env._task.pre_physics_step(action.to(task.rl_device))
+                env._task.pre_physics_step(action.to(task.device))
                 env._world.step(render=cf.render)
                 env.sim_frame_count += 1
+                sim_step+=1
                 env._task.post_physics_step()
 
                 if sim_count % 10 == 0 and env.sim_frame_count % cf.sim_duration == 256:
                     torchvision.io.write_video('/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/test_'  + str(sim_count) + '_vid_.mp4', 
                                                 torch.stack(full_video)[:,1], 8*cf.frames)
-
-            sim_step+=1
-
-            else:
-                env._world.step(render=cf.render)
+        else:
+            env._world.step(render=cf.render)
 
     if rank == 0:
         env._simulation_app.close()
+    dist.destroy_process_group()
 
 
 if __name__ == "__main__":
@@ -293,7 +304,7 @@ if __name__ == "__main__":
     processes = []
     mp.set_start_method("spawn")
     for rank in range(size):
-        p = mp.Process(target=init_process, args=(cf, cfg, rank, size, run))
+        p = mp.Process(target=init_process, args=(cf, cfg, rank, size, isaac_training))
         p.start()
         processes.append(p)
 
