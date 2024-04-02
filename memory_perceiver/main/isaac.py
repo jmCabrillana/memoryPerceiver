@@ -47,6 +47,29 @@ def average_gradients(model, size, group):
         dist.all_reduce(param.grad.data, op=dist.ReduceOp.SUM, group=group)
         param.grad.data /= size
 
+def scatter_dummy_src(tensor_batch, rank, size, swap_axes=False):
+    #  split batch at 0 to 1, ..., size-1
+    if rank == 0:
+        tensor_list = list(torch.split(tensor_batch, size))
+        tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
+        dummy_dst = torch.zeros_like(tensor_list[0], device=0)
+        dist.scatter(dummy_dst, tensor_list, 0)
+    if rank > 0:
+        dist.scatter(tensor_batch, None, 0)
+
+def gather_dummy_src(tensor, rank, size):
+    #  gather and batch 1, ..., size-1 to 0
+    if rank > 0:
+        dist.gather(tensor, None, 0)
+    if rank == 0:
+        tensor_list = list(torch.split(tensor, size))
+        tensor_list.insert(0, torch.zeros_like(tensor, device=0))
+        dummy_src = torch.zeros_like(tensor, device=0)
+        dist.gather(dummy_src, tensor_list, 0)
+        tensor_list.pop(0)
+        tensor = torch.stack(tensor_list)
+    
+
 def isaac_training(cf, cfg: DictConfig, rank, size):
 
     setup(rank, size)
@@ -121,7 +144,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                         model.eval()
                 else:
                     print('REPLAY')
-                    # SCATTER rewards, death_index (values already ok)
+                    scatter_dummy_src(history['death_index'], rank, size-1, swap_axes=True)
                     if rank > 0:
                         last_memories = memories['cross_cmem'].clone()
                         model_student.train() 
@@ -154,31 +177,36 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 full_video.append(video.cpu())
                 env._task.calculate_metrics()       
                 reward=env._task.rew_buf.clone()    # (num_envs, 1)
-                tr.update_buffers(buffer, {'obs': obs, 'video': video, 'rewards': reward}, frames=cf.frames)
                 history['rewards'][sim_step] = reward
-            * SCATTER buffer (obs, video)
+            for x in [obs, video, reward]:
+                scatter_dummy_src(x, rank, size-1) 
+            tr.update_buffers(buffer, {'obs': obs, 'video': video, 'rewards': reward}, frames=cf.frames)
 
             ### Reset memory at death and record 
 
+            reset_indexes = torch.zeros(cf.num_envs)
             if rank == 0:
-                reset_indexes = []
                 for agent_i in range(cf.num_envs):
                     if env._task.reset_buf[agent_i].item() == 1:
-                        reset_indexes.append(agent_i)
+                        reset_indexes[agent_i] = 1
                         birth_time[agent_i] = sim_step
 
                         # Update death dictionnary during inference
 
                         if is_inference:
                             history['death_index'][sim_step, agent_i]=1
-            * SCATTER indexes and birth_time
+            scatter_dummy_src(reset_indexes, rank, size-1) 
+            scatter_dummy_src(birth_time, rank, size-1) 
+            reset_indexes_list = torch.nonzero(reset_indexes) \
+                                    .flatten().tolist()
             if rank > 0:
-                reset_memories(memories, indexes=reset_indexes)
+                reset_memories(memories, indexes=reset_indexes_list)
 
             ### Agent
             
-            if rank > 0:
-                if len(buffer['actions_star'])==0 :
+            
+            if len(buffer['actions_star'])==0 :
+                if rank > 0:
 
                     ## Process inputs
 
@@ -191,7 +219,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                     # states['video'] = tr.buffer_padding(torch.stack(buffer['video']), [cf.height, cf.width, 3], num_envs=cf.num_envs, frames=cf.frames)
                     states['video'][mask] *= 0
                     states['video'] = rearrange(states['video'], 'b t h w c -> b c t h w')
-                    states['audio'] = torch.zeros(cf.num_envs, cf.frames*1920, device=device)
+                    states['audio'] = torch.zeros(cf.num_envs, cf.len_audio_raw, device=device)
 
                     ## Inference, save history and memory update
 
@@ -235,7 +263,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
 
                         if backward_count % cf.accumulation_steps == 0 and backward_count != 0:
                             scaler.unscale_(optimizer)
-                            average_gradients(model, size-1, range(1, size)) # ALL REDUCE on scaled loss
+                            average_gradients(model, size-1, group_agents) # ALL REDUCE on scaled loss
                             torch.nn.utils.clip_grad_norm_(model_student.parameters(), cf.c_grad_norm)
                             scaler.step(optimizer)
                             scaler.update()
@@ -251,12 +279,15 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                     # Update buffers
 
                     actions_star = model.module.instanciate_actions(actions, dt=cf.frames_future)
-                    buffer['actions_star'] += list(torch.unbind( actions_star ))
+                    gather_dummy_src(actions_star, 0, size-1)
+                if rank == 0:
+                    actions_star = torch.zeros(cf.num_envs, cf.dim_actions)
+                    gather_dummy_src(actions_star, 0, size-1)
+                buffer['actions_star'] += list(torch.unbind( actions_star ))
 
 
             # Act(num_envs, 1)
 
-            * GATHER actions_star to 0
             if rank == 0:
                 if(len(buffer['actions_star'])>0):
                     action = buffer['actions_star'].pop(0)
@@ -288,10 +319,6 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
 if __name__ == "__main__":
 
     num_gpus=torch.cuda.device_count()
-    device_cpu = torch.device("cpu")
-    device = torch.device(0 if torch.cuda.is_available() else "cpu")
-    device_agents = torch.device(1 if num_gpus>1 else 0)
-    devices_agents = [torch.device(i) for i in range(min(1, num_gpus-1), num_gpus)]
     torch.use_deterministic_algorithms(False)
     torch.backends.cudnn.benchmark = True
     torch.backends.cudnn.deterministic = False
@@ -304,7 +331,7 @@ if __name__ == "__main__":
     processes = []
     mp.set_start_method("spawn")
     for rank in range(size):
-        p = mp.Process(target=init_process, args=(cf, cfg, rank, size, isaac_training))
+        p = mp.Process(target=isaac_training, args=(cf, cfg, rank, size))
         p.start()
         processes.append(p)
 

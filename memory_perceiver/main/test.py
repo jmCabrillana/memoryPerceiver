@@ -9,33 +9,64 @@ def setup(rank, size):
     os.environ['MASTER_PORT'] = '12355'
     dist.init_process_group("nccl", rank=rank, world_size=size)
 
+def scatter_dummy_src(tensor_batch, rank, size):
+    if rank == 0:
+        tensor_list = list(torch.split(tensor_batch, size))
+        tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
+        dummy_dst = torch.zeros_like(tensor_list[0], device=0)
+        dist.scatter(dummy_dst, tensor_list, 0)
+    if rank > 0:
+        dist.scatter(tensor_batch, None, 0)
+
+def gather_dummy_src(tensor, rank, size):
+    #  gather and batch 1, ..., size-1 to 0
+    if rank > 0:
+        dist.gather(tensor, None, 0)
+    if rank == 0:
+        tensor_list = list(torch.split(tensor, size))
+        tensor_list.insert(0, torch.zeros_like(tensor, device=0))
+        dummy_src = torch.zeros_like(tensor, device=0)
+        dist.gather(dummy_src, tensor_list, 0)
+        tensor_list.pop(0)
+        tensor = torch.stack(tensor_list)
+
 # Function to be run by each process
 def train(rank, size):
     
     # Initialize process group
     #dist.init_process_group(backend='nccl', init_method='env://')
     setup(rank, size)
-
-    """tensor_list = [torch.zeros(2, dtype=torch.int64).to(rank) for _ in range(2)]
-    tensor = torch.arange(2, dtype=torch.int64) + 1 * rank
-    tensor = tensor.to(rank)
-    dist.all_gather(tensor_list, tensor)
-    if rank == 0:
-        print(tensor_list)"""
     
+    """
     group1 = dist.new_group([1])
     tensor_dst = torch.zeros(2, device=rank, dtype=float)        
     if rank == 0:
         tensor_list = [torch.tensor([1,1], device=rank, dtype=float)]
         tensor_list.insert(0, torch.tensor([0,0], device=rank, dtype=float))
+        print(torch.stack(tensor_list).tolist())
         dist.scatter(tensor_dst, tensor_list, 0)
     else:
         dist.scatter(tensor_dst, None, 0)
     print("rank : ", rank, "  ", tensor_dst)
+    """
 
+    """
+    tensor_batch = torch.tensor([[4,7,8]], device=rank, dtype=float)
+    if rank > 0:
+        tensor_batch *= 0
+    scatter_dummy_src(tensor_batch, rank, size-1)
+    print("rank : ", rank, "  ", tensor_batch)
+    """
+
+    tensor = torch.tensor([[4,7,8]], device=rank, dtype=float)
+    if rank == 0:
+        tensor *= 0
+    gather_dummy_src(tensor, rank, size-1)
+    print("rank : ", rank, "  ", tensor)
 
     # Clean up process group
     dist.destroy_process_group()
+    
 
 if __name__ == '__main__':
     # Number of processes (assumed to be equal to the number of GPUs)
