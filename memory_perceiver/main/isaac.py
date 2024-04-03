@@ -62,9 +62,9 @@ def gather_dummy_src(tensor, rank, size):
     if rank > 0:
         dist.gather(tensor, None, 0)
     if rank == 0:
-        tensor_list = list(torch.split(tensor, size))
-        tensor_list.insert(0, torch.zeros_like(tensor, device=0))
-        dummy_src = torch.zeros_like(tensor, device=0)
+        tensor_list = list(torch.split(tensor, len(tensor)//size))
+        tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
+        dummy_src = torch.zeros_like(tensor_list[0], device=0)
         dist.gather(dummy_src, tensor_list, 0)
         tensor_list.pop(0)
         tensor = torch.stack(tensor_list)
