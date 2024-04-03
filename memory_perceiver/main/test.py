@@ -23,9 +23,9 @@ def gather_dummy_src(tensor, rank, size):
     if rank > 0:
         dist.gather(tensor, None, 0)
     if rank == 0:
-        tensor_list = list(torch.split(tensor, size))
-        tensor_list.insert(0, torch.zeros_like(tensor, device=0))
-        dummy_src = torch.zeros_like(tensor, device=0)
+        tensor_list = list(torch.split(tensor, len(tensor)//size))
+        tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
+        dummy_src = torch.zeros_like(tensor_list[0], device=0)
         dist.gather(dummy_src, tensor_list, 0)
         tensor_list.pop(0)
         tensor = torch.stack(tensor_list)
@@ -49,6 +49,7 @@ def train(rank, size):
         dist.scatter(tensor_dst, None, 0)
     print("rank : ", rank, "  ", tensor_dst)
     """
+    
 
     """
     tensor_batch = torch.tensor([[4,7,8]], device=rank, dtype=float)
@@ -57,12 +58,15 @@ def train(rank, size):
     scatter_dummy_src(tensor_batch, rank, size-1)
     print("rank : ", rank, "  ", tensor_batch)
     """
-
-    tensor = torch.tensor([[4,7,8]], device=rank, dtype=float)
+    
+    if rank > 0:
+        tensor = torch.tensor([[1,2,1],[4,4,4]], device=rank, dtype=float)
+        tensor *= rank
     if rank == 0:
-        tensor *= 0
+        tensor = torch.zeros(6, 3, device=rank, dtype=float)
     gather_dummy_src(tensor, rank, size-1)
     print("rank : ", rank, "  ", tensor)
+    
 
     # Clean up process group
     dist.destroy_process_group()
