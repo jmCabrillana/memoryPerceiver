@@ -82,7 +82,7 @@ class Config:
     body_outputs.update(actions_variance)
     has_video = True
     has_audio = True
-    path_model = 'weights/humanoid.pt'
+    path_model = '/isaac-sim/memoryPerceiver/memory_perceiver/main/weights/humanoid.pt'
 
 
 cf = Config()

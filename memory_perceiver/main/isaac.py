@@ -50,7 +50,7 @@ def average_gradients(model, size, group):
 def scatter_dummy_src(tensor_batch, rank, size, swap_axes=False):
     #  split batch at 0 to 1, ..., size-1
     if rank == 0:
-        tensor_list = list(torch.split(tensor_batch, size))
+        tensor_list = list(torch.split(tensor_batch, len(tensor_batch)//size))
         tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
         dummy_dst = torch.zeros_like(tensor_list[0], device=0)
         dist.scatter(dummy_dst, tensor_list, 0)
@@ -89,15 +89,19 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
     if rank > 0:
         model = ActorCriticPerceiver(cf, rank)
         model_student = ActorCriticPerceiver(cf, rank)
+        memories = create_memories(model.actor, cf.num_envs, device=device)
+        last_memories = torch.zeros_like(memories['cross_cmem'], device=device)
 
-    cf.num_envs = cf.num_envs/(size-1) if rank > 0 else cf.num_envs
+    cf.num_envs = cf.num_envs//(size-1) if rank > 0 else cf.num_envs
     plotter = Plotter(titles=['loss_actor', 'loss_critic', 'returns'])
     history_keys = ['actions', 'values', 'logprobs', 'returns', 'rewards', 'advantages', 'death_index', 'generator']
     history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, device)
     previous_history = deepcopy(history)
     buffer = {'video':[], 'audio':[], 'obs':[], 'rewards':[], 'actions_star':[]}
-    memories = create_memories(model.module.actor, cf.num_envs, device=device)
-    last_memories = torch.zeros_like(memories['cross_cmem'], device=device)
+    obs = torch.zeros(cf.num_envs, cf.dim_actions, device=rank)
+    video = torch.zeros(cf.num_envs, cf.height, cf.width, cf.channels, device=rank)
+    reward = torch.zeros(cf.num_envs, 1, device=rank)
+    actions_star = torch.zeros(cf.num_envs, cf.dim_actions, device=rank)
 
     if rank == 0:
         cfg.seed = set_seed(cfg.seed, torch_deterministic=cfg.torch_deterministic)
@@ -109,11 +113,21 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
     sim_count, sim_step = -1, 0
     is_inference=False  # Will switch to True immediately
     
-    while env._simulation_app.is_running() and sim_count < 6:
-        if env._world.is_playing():
-            # if env._world.current_time_step_index == 0 or \
-            # env._world.current_time_step_index % sim_duration == 0:
-            if env.sim_frame_count % cf.sim_duration == 0:
+    sim_running = torch.tensor(False, device=rank)
+    world_playing = torch.tensor(False, device=rank)
+    if rank == 0:
+        sim_running.fill_(env._simulation_app.is_running())
+    dist.broadcast(sim_running, src=0)
+    
+    
+    #while sim_running and sim_count < 6:
+    for jj in range(10):
+        if rank == 0:
+            world_playing.fill_(env._world.is_playing())
+        dist.broadcast(world_playing, src=0)
+        dist.broadcast(sim_running, src=0)
+        if world_playing:
+            if sim_step % cf.sim_duration == 0:
                 
                 ### Plots
 
@@ -135,12 +149,12 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                     if rank > 0:
                         print("MEM: ", F.mse_loss(last_memories, memories['cross_cmem']).item())
                         if sim_count == 0 and os.path.exists(cf.path_model):
-                            model.module.load_state_dict(torch.load(cf.path_model))
-                            model_student.module.load_state_dict(torch.load(cf.path_model))
+                            model.load_state_dict(torch.load(cf.path_model))
+                            model_student.load_state_dict(torch.load(cf.path_model))
                         else:
                             if sim_count % cf.student_update_step*2 == 0:
-                                model.module.load_state_dict(model_student.module.state_dict())
-                        torch.save(model_student.module.state_dict(), cf.path_model)
+                                model.load_state_dict(model_student.state_dict())
+                        torch.save(model_student.state_dict(), cf.path_model)
                         model.eval()
                 else:
                     print('REPLAY')
@@ -160,7 +174,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 tr.set_seeds(sim_count//2)
                 print("SEED: ", sim_count//2)
                 full_video = []
-                birth_time = torch.zeros(cf.num_envs)
+                birth_time = torch.zeros(cf.num_envs, device=rank)
                 for key in buffer.keys():
                     buffer[key]=[]
                 history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, device)
@@ -184,7 +198,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
 
             ### Reset memory at death and record 
 
-            reset_indexes = torch.zeros(cf.num_envs)
+            reset_indexes = torch.zeros(cf.num_envs, device=rank)
             if rank == 0:
                 for agent_i in range(cf.num_envs):
                     if env._task.reset_buf[agent_i].item() == 1:
@@ -278,11 +292,8 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
 
                     # Update buffers
 
-                    actions_star = model.module.instanciate_actions(actions, dt=cf.frames_future)
-                    gather_dummy_src(actions_star, 0, size-1)
-                if rank == 0:
-                    actions_star = torch.zeros(cf.num_envs, cf.dim_actions)
-                    gather_dummy_src(actions_star, 0, size-1)
+                    actions_star = model.instanciate_actions(actions, dt=cf.frames_future)
+                gather_dummy_src(actions_star, 0, size-1)
                 buffer['actions_star'] += list(torch.unbind( actions_star ))
 
 
@@ -305,11 +316,12 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 sim_step+=1
                 env._task.post_physics_step()
 
-                if sim_count % 10 == 0 and env.sim_frame_count % cf.sim_duration == 256:
+                if sim_count % 10 == 0 and env.sim_frame_count % cf.sim_duration == 256 and rank == 1:
                     torchvision.io.write_video('/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/test_'  + str(sim_count) + '_vid_.mp4', 
                                                 torch.stack(full_video)[:,1], 8*cf.frames)
         else:
-            env._world.step(render=cf.render)
+            if rank == 0:
+                env._world.step(render=cf.render)
 
     if rank == 0:
         env._simulation_app.close()
@@ -323,7 +335,7 @@ if __name__ == "__main__":
     torch.backends.cudnn.benchmark = True
     torch.backends.cudnn.deterministic = False
     os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
-    with initialize(config_path="memoryPerceiver/OmniIsaacGymEnvs/omniisaacgymenvs/cfg"):
+    with initialize(config_path="../../OmniIsaacGymEnvs/omniisaacgymenvs/cfg"):
         cfg = compose(config_name="config", overrides=["task=Humanoid", "headless=True", "enable_viewport=True",
                         "num_envs="+str(cf.num_envs), "imgWidth="+str(cf.width), "imgHeight="+str(cf.height)])
 
