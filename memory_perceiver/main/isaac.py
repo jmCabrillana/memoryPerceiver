@@ -1,6 +1,7 @@
 from os.path import join, dirname
 import os
 import sys
+import logging
 from copy import deepcopy
 from hydra import initialize, compose
 from omegaconf import DictConfig
@@ -29,6 +30,12 @@ from memoryPerceiver.memory_perceiver.core.model_wrapper import create_memories,
 import memoryPerceiver.memory_perceiver.isaac.trainer as tr
 from memoryPerceiver.memory_perceiver.isaac.plot import Plotter
 from memoryPerceiver.memory_perceiver.isaac.agent import ActorCritic, ActorCriticSimple, ActorCriticPerceiver
+
+# Configure logging
+log_file_path = '/isaac-sim/memoryPerceiver/memory_perceiver/main/log.txt'
+open(log_file_path, 'w').close()
+logging.basicConfig(filename=log_file_path, level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+sys.stderr = open(log_file_path, 'a')
 
 
 """def init_process(cf, cfg, rank, size, fn, backend='gloo'):
@@ -121,9 +128,10 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
     
     
     #while sim_running and sim_count < 6:
-    for jj in range(10):
+    while sim_running:
         if rank == 0:
             world_playing.fill_(env._world.is_playing())
+            sim_running.fill_(env._simulation_app.is_running())
         dist.broadcast(world_playing, src=0)
         dist.broadcast(sim_running, src=0)
         if world_playing:
@@ -154,7 +162,9 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                         else:
                             if sim_count % cf.student_update_step*2 == 0:
                                 model.load_state_dict(model_student.state_dict())
-                        torch.save(model_student.state_dict(), cf.path_model)
+                        dist.barrier()
+                        if rank == 1:
+                            torch.save(model_student.state_dict(), cf.path_model)
                         model.eval()
                 else:
                     print('REPLAY')
@@ -181,6 +191,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 backward_count= 0
                 sim_step = 0
 
+            print("rank ", rank, "step ", sim_step)
             ### Get agent observations 
 
             if rank == 0:
@@ -339,7 +350,7 @@ if __name__ == "__main__":
         cfg = compose(config_name="config", overrides=["task=Humanoid", "headless=True", "enable_viewport=True",
                         "num_envs="+str(cf.num_envs), "imgWidth="+str(cf.width), "imgHeight="+str(cf.height)])
 
-    size = 2
+    size = num_gpus
     processes = []
     mp.set_start_method("spawn")
     for rank in range(size):
