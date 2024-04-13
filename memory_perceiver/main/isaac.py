@@ -31,18 +31,17 @@ import memoryPerceiver.memory_perceiver.isaac.trainer as tr
 from memoryPerceiver.memory_perceiver.isaac.plot import Plotter
 from memoryPerceiver.memory_perceiver.isaac.agent import ActorCritic, ActorCriticSimple, ActorCriticPerceiver
 
-# Configure logging
-log_file_path = '/isaac-sim/memoryPerceiver/memory_perceiver/main/log.txt'
-open(log_file_path, 'w').close()
-logging.basicConfig(filename=log_file_path, level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-sys.stderr = open(log_file_path, 'a')
+"""
+log_path = '/isaac-sim/memoryPerceiver/memory_perceiver/main/outputs/isaac.log'
+#log_file = open(log_path, 'w').close()
+logging.basicConfig(filename=log_path, level=logging.DEBUG)
+log_handler = logging.FileHandler(log_path, mode='a')
+log_handler.setLevel(logging.DEBUG)
 
-
-"""def init_process(cf, cfg, rank, size, fn, backend='gloo'):
-    os.environ['MASTER_ADDR'] = '127.0.0.1'
-    os.environ['MASTER_PORT'] = '29500'
-    dist.init_process_group(backend, rank=rank, world_size=size)
-    run(cf, cfg, rank, size)"""
+# Redirect stdout and stderr to the logging handler
+sys.stdout = log_handler.stream
+#sys.stderr = log_handler.stream
+"""
 
 def setup(rank, size):
     os.environ['MASTER_ADDR'] = 'localhost'
@@ -84,21 +83,26 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
     device = torch.device(rank)
 
     cfg_dict = omegaconf_to_dict(cfg)
-    env = VecEnvRLGames(headless=cfg.headless, sim_device=cfg.device_id, enable_viewport=cfg.enable_viewport)
     
+
     if rank == 0:
+        print("rank ", rank, "before in env")
         # !!! Load isaac modules after the variables
+        env = VecEnvRLGames(headless=cfg.headless, sim_device=cfg.device_id, enable_viewport=cfg.enable_viewport)
         from omni.isaac.core.utils.torch.maths import set_seed
         import omni.usd
         from omni.isaac.core.utils.extensions import enable_extension
         from omni.isaac.core.utils.stage import open_stage, save_stage
         enable_extension("omni.isaac.sensor")
+        print("rank ", rank, "before out env")
     if rank > 0:
+        print("rank ", rank, "before model")
         model = ActorCriticPerceiver(cf, rank)
         model_student = ActorCriticPerceiver(cf, rank)
         memories = create_memories(model.actor, cf.num_envs, device=device)
         last_memories = torch.zeros_like(memories['cross_cmem'], device=device)
 
+    print("rank ", rank, "before init")
     cf.num_envs = cf.num_envs//(size-1) if rank > 0 else cf.num_envs
     plotter = Plotter(titles=['loss_actor', 'loss_critic', 'returns'])
     history_keys = ['actions', 'values', 'logprobs', 'returns', 'rewards', 'advantages', 'death_index', 'generator']
@@ -124,7 +128,10 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
     world_playing = torch.tensor(False, device=rank)
     if rank == 0:
         sim_running.fill_(env._simulation_app.is_running())
+    print("rank ", rank, "before fill")
     dist.broadcast(sim_running, src=0)
+
+    print("rank ", rank, "before while")
     
     
     #while sim_running and sim_count < 6:
@@ -340,6 +347,9 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
 
 
 if __name__ == "__main__":
+
+    log_path = '/isaac-sim/memoryPerceiver/memory_perceiver/main/outputs/isaac.log'
+    sys.stdout = open(log_path, 'w')
 
     num_gpus=torch.cuda.device_count()
     torch.use_deterministic_algorithms(False)
