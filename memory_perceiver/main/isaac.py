@@ -156,8 +156,9 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 if rank == 0:
                     env._world.reset(soft=False)
                 
-                print('$$$$$$$$$$$ CUMUL REWARD $$$$$$$$$$$')
+                
                 if len(history['rewards'])>0:
+                    print('$$$$$$$$$$$ CUMUL REWARD $$$$$$$$$$$')
                     print(history['rewards'].sum())
                 if is_inference:
                     print('PLAY')
@@ -169,7 +170,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                         else:
                             if sim_count % cf.student_update_step*2 == 0:
                                 model.load_state_dict(model_student.state_dict())
-                        dist.barrier()
+                        dist.barrier(group=group_agents)
                         if rank == 1:
                             torch.save(model_student.state_dict(), cf.path_model)
                         model.eval()
