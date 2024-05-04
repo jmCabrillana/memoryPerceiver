@@ -94,15 +94,12 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
         from omni.isaac.core.utils.extensions import enable_extension
         from omni.isaac.core.utils.stage import open_stage, save_stage
         enable_extension("omni.isaac.sensor")
-        print("rank ", rank, "before out env")
     if rank > 0:
-        print("rank ", rank, "before model")
         model = ActorCriticPerceiver(cf, rank)
         model_student = ActorCriticPerceiver(cf, rank)
         memories = create_memories(model.actor, cf.num_envs, device=device)
         last_memories = torch.zeros_like(memories['cross_cmem'], device=device)
 
-    print("rank ", rank, "before init")
     cf.num_envs = cf.num_envs//(size-1) if rank > 0 else cf.num_envs
     plotter = Plotter(titles=['loss_actor', 'loss_critic', 'returns'])
     history_keys = ['actions', 'values', 'logprobs', 'returns', 'rewards', 'advantages', 'death_index', 'generator']
@@ -128,11 +125,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
     world_playing = torch.tensor(False, device=rank)
     if rank == 0:
         sim_running.fill_(env._simulation_app.is_running())
-    print("rank ", rank, "before fill")
-    dist.broadcast(sim_running, src=0)
-
-    print("rank ", rank, "before while")
-    
+    dist.broadcast(sim_running, src=0)    
     
     #while sim_running and sim_count < 6:
     while sim_running:
@@ -213,6 +206,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 history['rewards'][sim_step] = reward
             for x in [obs, video, reward]:
                 scatter_dummy_src(x, rank, size-1) 
+            print("rank ", rank, "scatter ")
             tr.update_buffers(buffer, {'obs': obs, 'video': video, 'rewards': reward}, frames=cf.frames)
 
             ### Reset memory at death and record 
@@ -313,6 +307,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
 
                     actions_star = model.instanciate_actions(actions, dt=cf.frames_future)
                 gather_dummy_src(actions_star, 0, size-1)
+                print("rank: ", rank, "gather ")
                 buffer['actions_star'] += list(torch.unbind( actions_star ))
 
 
