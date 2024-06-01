@@ -11,3 +11,10 @@ tmux set-option history-limit 10000 \; new-window => more history, default 2000
 ^b c => new window
 ^b n => switch window
 ^b d => detach
+
+#Common errors
+- Duplicate driver files:
+    To verify the proper NVIDIA driver installation, only one of the following icd.d folders should contain nvidia_icd.json file:                
+    /etc/vulkan/icd.d: Location of ICDs installed from non-Linux-distribution-provided packages                                                  
+    /usr/share/vulkan/icd.d : Location of ICDs installed from Linux-distribution-provided packages  
+    >> Clear config in /etc/vulkan/icd.d/nvidia_icd.json
