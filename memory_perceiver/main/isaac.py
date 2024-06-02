@@ -112,7 +112,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
     previous_history = deepcopy(history)
     buffer = {'video':[], 'audio':[], 'obs':[], 'rewards':[], 'actions_star':[]}
     obs = torch.zeros(cf.num_envs, cf.dim_actions, device=rank)
-    video = torch.zeros(cf.num_envs, cf.height, cf.width, cf.channels, device=rank)
+    video = torch.zeros(cf.num_envs, cf.height, cf.width, cf.channels, device=rank, dtype=torch.uint8)
     reward = torch.zeros(cf.num_envs, 1, device=rank)
     actions_star = torch.zeros(cf.num_envs, cf.dim_actions, device=rank)
 
@@ -203,7 +203,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
             if rank == 0:
                 all_obs = env._task.get_observations()['articulation_view']
                 obs = all_obs['obs_buf'].clone()    # (num_envs, d)
-                #video = all_obs['video_buf'].clone()  # (num_envs, 256, 456, 3)
+                video = all_obs['video_buf'].clone()  # (num_envs, 256, 456, 3)
                 #ts.save(video[0], '/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/live.jpg')
                 #full_video.append(video.cpu())
                 env._task.calculate_metrics()       
