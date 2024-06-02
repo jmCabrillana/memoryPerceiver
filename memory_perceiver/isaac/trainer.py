@@ -69,10 +69,11 @@ def calculate_gae(mem_rewards, mem_values, death_index, gamma=0.99, gae_lambda=0
     return gae_estimates
 
 def create_mask(birth_time, sim_step, frames=32):
-        num_envs = birth_time.size()[0]
-        past_horizon=frames - (sim_step-birth_time+1)
-        mask = repeat(torch.arange(frames), '... -> b ...', b=num_envs) < repeat(past_horizon, '... -> ... t', t=frames)
-        return mask
+    device = birth_time.device
+    num_envs = birth_time.size()[0]
+    past_horizon=frames - (sim_step-birth_time+1)
+    mask = repeat(torch.arange(frames, device=device), '... -> b ...', b=num_envs) < repeat(past_horizon, '... -> ... t', t=frames)
+    return mask
 
 def update_lr(current_lr, kl_div, kl_threshold=0.024, min_lr=1e-6, max_lr=1e-2):
     lr = current_lr
