@@ -54,7 +54,7 @@ def average_gradients(model, size, group):
         param.grad.data /= size
 
 def scatter_dummy_src(tensor_batch, rank, size, swap_axes=False):
-    #  split batch at 0 to 1, ..., size-1
+    #  split batch at rank 0 to ranks  1, ..., size-1
     if rank == 0:
         tensor_list = list(torch.split(tensor_batch, len(tensor_batch)//size))
         tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
@@ -63,7 +63,6 @@ def scatter_dummy_src(tensor_batch, rank, size, swap_axes=False):
         tensor_list = None
         dst = tensor_batch
     dist.barrier()
-    print(rank, "*")
     dist.scatter(dst, tensor_list, 0)
 
 def gather_dummy_src(tensor, rank, size):
@@ -75,10 +74,11 @@ def gather_dummy_src(tensor, rank, size):
         tensor_list = list(torch.split(tensor, len(tensor)//size))
         tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
         src = torch.zeros_like(tensor_list[0], device=0)
-        # tensor_list.pop(0)
-        # tensor = torch.stack(tensor_list)
     dist.barrier()
     dist.gather(src, tensor_list, 0)
+    if rank == 0:
+        tensor_list.pop(0)
+        tensor = torch.stack(tensor_list)
     
 
 def isaac_training(cf, cfg: DictConfig, rank, size):
@@ -88,10 +88,9 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
     device = torch.device(rank)
 
     cfg_dict = omegaconf_to_dict(cfg)
+    cf.num_envs = cf.num_envs//(size-1) if rank > 0 else cf.num_envs
     
-
     if rank == 0:
-        print("rank ", rank, "before in env")
         # !!! Load isaac modules after the variables
         env = VecEnvRLGames(headless=cfg.headless, sim_device=cfg.device_id, enable_viewport=cfg.enable_viewport)
         from omni.isaac.core.utils.torch.maths import set_seed
@@ -105,16 +104,15 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
         memories = create_memories(model.actor, cf.num_envs, device=device)
         last_memories = torch.zeros_like(memories['cross_cmem'], device=device)
 
-    cf.num_envs = cf.num_envs//(size-1) if rank > 0 else cf.num_envs
     plotter = Plotter(titles=['loss_actor', 'loss_critic', 'returns'])
     history_keys = ['actions', 'values', 'logprobs', 'returns', 'rewards', 'advantages', 'death_index', 'generator']
     history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, device)
     previous_history = deepcopy(history)
     buffer = {'video':[], 'audio':[], 'obs':[], 'rewards':[], 'actions_star':[]}
-    obs = torch.zeros(cf.num_envs, cf.dim_actions, device=rank)
+    obs = torch.zeros(cf.num_envs, cf.dim_observations, device=rank)
     video = torch.zeros(cf.num_envs, cf.height, cf.width, cf.channels, device=rank, dtype=torch.uint8)
     reward = torch.zeros(cf.num_envs, 1, device=rank)
-    actions_star = torch.zeros(cf.num_envs, cf.dim_actions, device=rank)
+    actions_star = torch.zeros(cf.frames_future, cf.num_envs, cf.dim_actions, device=rank)
 
     if rank == 0:
         cfg.seed = set_seed(cfg.seed, torch_deterministic=cfg.torch_deterministic)
@@ -156,8 +154,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 
                 
                 if len(history['rewards'])>0:
-                    print('$$$$$$$$$$$ CUMUL REWARD $$$$$$$$$$$')
-                    print(history['rewards'].sum())
+                    print(f"$$$$$$$$$$$ CUMUL REWARD: {history['rewards'].sum().item()} $$$$$$$$$$$")
                 if is_inference:
                     print('PLAY')
                     if rank > 0:
@@ -197,7 +194,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 backward_count= 0
                 sim_step = 0
 
-            print("rank ", rank, "step ", sim_step)
+            print(f"{rank} step {sim_step}" )
             ### Get agent observations 
 
             if rank == 0:
@@ -213,7 +210,6 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
             scatter_dummy_src(obs, rank, size-1) 
             scatter_dummy_src(video, rank, size-1)
             scatter_dummy_src(reward, rank, size-1) 
-            print(rank, reward)
             tr.update_buffers(buffer, {'obs': obs, 'video': video, 'rewards': reward}, frames=cf.frames)
 
             ### Reset memory at death and record 
@@ -229,20 +225,14 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
 
                         if is_inference:
                             history['death_index'][sim_step, agent_i]=1
-            print("R ", rank, "A ")
             scatter_dummy_src(reset_indexes, rank, size-1) 
-            print("R ", rank, "B ")
             scatter_dummy_src(birth_time, rank, size-1) 
-            print("R ", rank, "C ")
             reset_indexes_list = torch.nonzero(reset_indexes) \
                                     .flatten().tolist()
             if rank > 0:
                 reset_memories(memories, indexes=reset_indexes_list)
 
-            print("rank ", rank, "SC ")
-
             ### Agent
-            
             
             if len(buffer['actions_star'])==0 :
                 if rank > 0:
@@ -251,6 +241,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
 
                     states={}
                     mask = tr.create_mask(birth_time, sim_step, frames=cf.frames)
+                    print(torch.stack(buffer['obs']).size())
                     states['observations'] = tr.buffer_padding(torch.stack(buffer['obs']), [cf.dim_observations],
                                                                 num_envs=cf.num_envs, frames=cf.frames)
                     states['observations'][mask] *= 0
@@ -318,8 +309,9 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                     # Update buffers
 
                     actions_star = model.instanciate_actions(actions, dt=cf.frames_future)
-                gather_dummy_src(actions_star, 0, size-1)
-                print("rank: ", rank, "gather ")
+                actions_star = rearrange(actions_star, 't b d -> b t d').contiguous()
+                gather_dummy_src(actions_star, rank, size-1)
+                actions_star = rearrange(actions_star, 'b t d -> t b d')
                 buffer['actions_star'] += list(torch.unbind( actions_star ))
 
 
@@ -339,12 +331,14 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 env._task.pre_physics_step(action.to(task.device))
                 env._world.step(render=cf.render)
                 env.sim_frame_count += 1
-                sim_step+=1
                 env._task.post_physics_step()
 
                 if sim_count % 10 == 0 and env.sim_frame_count % cf.sim_duration == 256 and rank == 1:
                     torchvision.io.write_video('/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/test_'  + str(sim_count) + '_vid_.mp4', 
                                                 torch.stack(full_video)[:,1], 8*cf.frames)
+            sim_step += 1
+            print(f"{rank} step {sim_step}")
+
         else:
             if rank == 0:
                 env._world.step(render=cf.render)
