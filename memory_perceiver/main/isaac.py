@@ -85,7 +85,9 @@ def gather_dummy_src(tensor, rank, size):
 def isaac_training(cf, cfg: DictConfig, rank, size):
 
     setup(rank, size)
-    group_agents = dist.new_group(list(range(1,size)))
+    process_agents = list(range(0, size-1))
+    process_sim = size-1
+    group_agents = dist.new_group(process_agents)
     device = torch.device(rank)
 
     cfg_dict = omegaconf_to_dict(cfg)
@@ -105,7 +107,6 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
         memories = create_memories(model.actor, cf.num_envs, device=device)
         last_memories = torch.zeros_like(memories['cross_cmem'], device=device)
 
-    plotter = Plotter(titles=['loss_actor', 'loss_critic', 'returns'])
     history_keys = ['actions', 'values', 'logprobs', 'returns', 'rewards', 'advantages', 'death_index', 'generator']
     history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, device)
     previous_history = deepcopy(history)
@@ -122,6 +123,8 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
     if rank > 0:
         optimizer = torch.optim.Adam(model_student.parameters(), lr=cf.learning_rate)
         scaler = GradScaler()
+        # if rank == 1:
+        #     plotter = Plotter(titles=['loss_actor', 'loss_critic', 'returns'])
     sim_count, sim_step = -1, 0
     is_inference=False  # Will switch to True immediately
     
@@ -143,8 +146,8 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 
                 ### Plots
 
-                if sim_count % 6 == 1 and len(plotter.data['loss_actor'])>0:
-                    plotter.plot_all([(plotter.data['loss_actor'], 160), (plotter.data['loss_critic'], 160), plotter.data['returns']])
+                # if rank == 1 and sim_count % 6 == 1 and len(plotter.data['loss_actor'])>0:
+                #     plotter.plot_all([(plotter.data['loss_actor'], 160), (plotter.data['loss_critic'], 160), plotter.data['returns']])
 
                 ### Initialization
 
@@ -159,14 +162,13 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 if is_inference:
                     print('PLAY')
                     if rank > 0:
-                        print("MEM: ", F.mse_loss(last_memories, memories['cross_cmem']).item())
+                        print(f"MEM:  {F.mse_loss(last_memories, memories['cross_cmem']).item()}")
                         if sim_count == 0 and os.path.exists(cf.path_model):
                             model.load_state_dict(torch.load(cf.path_model))
                             model_student.load_state_dict(torch.load(cf.path_model))
                         else:
                             if sim_count % cf.student_update_step*2 == 0:
                                 model.load_state_dict(model_student.state_dict())
-                        #print(f"{rank}d{model.critic.device}{model_student.critic.device}")
                         dist.barrier(group=group_agents)
                         if rank == 1:
                             torch.save(model_student.state_dict(), cf.path_model)
@@ -184,7 +186,8 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                     previous_history['returns'] = tr.calculate_returns(history['rewards'], history['death_index'], gamma=cf.c_gamma)
                     previous_history['advantages'] = tr.calculate_gae(history['rewards'], history['values'], 
                                                         history['death_index'], gamma=cf.c_gamma, gae_lambda=cf.c_lambda)
-                    plotter.data['returns'].append(previous_history['returns'][1, :].mean().item())
+                    # if rank == 1:
+                    #     plotter.data['returns'].append(previous_history['returns'][1, :].mean().item())
                     
                 if rank > 0:
                     reset_memories(memories)
@@ -311,9 +314,9 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                             # Reinitialize
                             backward_count = 0
 
-
-                        plotter.data['loss_actor'].append(loss_actor.item())
-                        plotter.data['loss_critic'].append(loss_critic.item())
+                        # if rank == 1:
+                        #     plotter.data['loss_actor'].append(loss_actor.item())
+                        #     plotter.data['loss_critic'].append(loss_critic.item())
 
                     # Update buffers
 
