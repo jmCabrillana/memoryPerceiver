@@ -56,10 +56,10 @@ class Config:
     dim_observations = 87
     dim_actions = 21
     dim_actions_ppo = 2*21 # *2
-    sim_duration = 260
+    sim_duration =  12 #260
     num_envs = 12
     learning_rate = 1e-4
-    accumulation_steps = 2
+    accumulation_steps = 1 #2
     c_entropy = 0.05   # 0.01 to 0.05
     c_critic=0.2       # 0.5 to 2
     student_update_step = 1

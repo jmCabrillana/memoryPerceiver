@@ -55,30 +55,32 @@ def average_gradients(model, size, group):
             param.grad.data /= size
 
 def scatter_dummy_src(tensor, rank, size):
-    #  split batch at rank 0 to ranks  1, ..., size-1
-    if rank == 0:
+    #  split batch at rank size-1 to ranks  0, ..., size-2
+    rank_src=size-1
+    if rank == rank_src:
         tensor_list = list(torch.split(tensor, len(tensor)//size))
-        tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
-        dst = torch.zeros_like(tensor_list[0], device=0)
-    if rank > 0:
+        tensor_list.append(torch.zeros_like(tensor_list[0], device=rank_src))
+        dst = torch.zeros_like(tensor_list[0], device=rank_src)
+    if rank < rank_src:
         tensor_list = None
         dst = tensor
     dist.barrier()
-    dist.scatter(dst, tensor_list, 0)
+    dist.scatter(dst, tensor_list, rank_src)
 
 def gather_dummy_src(tensor, rank, size):
     #  gather and batch 1, ..., size-1 to 0
-    if rank > 0:
+    rank_dst=size-1
+    if rank < rank_dst:
         src = tensor
         tensor_list = None
-    if rank == 0:
+    if rank == rank_dst:
         tensor_list = list(torch.split(tensor, len(tensor)//size))
-        tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
-        src = torch.zeros_like(tensor_list[0], device=0)
+        tensor_list.append(torch.zeros_like(tensor_list[0], device=rank_dst))
+        src = torch.zeros_like(tensor_list[0], device=rank_dst)
     dist.barrier()
-    dist.gather(src, tensor_list, 0)
-    if rank == 0:
-        tensor_list.pop(0)
+    dist.gather(src, tensor_list, rank_dst)
+    if rank == rank_dst:
+        tensor_list.pop()
         tensor = torch.stack(tensor_list)
     
 
@@ -93,15 +95,15 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
     cfg_dict = omegaconf_to_dict(cfg)
     cf.num_envs = cf.num_envs//(size-1) if rank > 0 else cf.num_envs
     
-    if rank == 0:
+    if rank == process_sim:
         # !!! Load isaac modules after the variables
-        env = VecEnvRLGames(headless=cfg.headless, sim_device=cfg.device_id, enable_viewport=cfg.enable_viewport)
+        env = VecEnvRLGames(headless=cfg.headless, sim_device=process_sim, enable_viewport=cfg.enable_viewport)
         from omni.isaac.core.utils.torch.maths import set_seed
         import omni.usd
         from omni.isaac.core.utils.extensions import enable_extension
         from omni.isaac.core.utils.stage import open_stage, save_stage
         enable_extension("omni.isaac.sensor")
-    if rank > 0:
+    if rank in process_agents:
         model = ActorCriticPerceiver(cf, rank)
         model_student = ActorCriticPerceiver(cf, rank)
         memories = create_memories(model.actor, cf.num_envs, device=device)
@@ -116,11 +118,11 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
     reward = torch.zeros(cf.num_envs, 1, device=rank)
     actions_star = torch.zeros(cf.frames_future, cf.num_envs, cf.dim_actions, device=rank)
 
-    if rank == 0:
+    if rank == process_sim:
         cfg.seed = set_seed(cfg.seed, torch_deterministic=cfg.torch_deterministic)
         cfg_dict['seed'] = cfg.seed  # sets seed. if seed is -1 will pick a random one
         task = initialize_task(cfg_dict, env)
-    if rank > 0:
+    if rank in process_agents:
         optimizer = torch.optim.Adam(model_student.parameters(), lr=cf.learning_rate)
         scaler = GradScaler()
         # if rank == 1:
@@ -130,13 +132,13 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
     
     sim_running = torch.tensor(False, device=rank)
     world_playing = torch.tensor(False, device=rank)
-    if rank == 0:
+    if rank == process_sim:
         sim_running.fill_(env._simulation_app.is_running())
-    dist.broadcast(sim_running, src=0)    
+    dist.broadcast(sim_running, src=process_sim)    
     
     #while sim_running and sim_count < 6:
     while sim_running:
-        if rank == 0:
+        if rank == process_sim:
             world_playing.fill_(env._world.is_playing())
             sim_running.fill_(env._simulation_app.is_running())
         dist.broadcast(world_playing, src=0)
@@ -153,7 +155,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
 
                 sim_count+=1
                 is_inference = not is_inference
-                if rank == 0:
+                if rank == process_sim:
                     env._world.reset(soft=False)
                 
                 
@@ -161,7 +163,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                     print(f"$$$ r{rank} CUMUL REWARD: {history['rewards'].sum().item()} $$$")
                 if is_inference:
                     print('PLAY')
-                    if rank > 0:
+                    if rank in process_agents:
                         print(f"MEM:  {F.mse_loss(last_memories, memories['cross_cmem']).item()}")
                         if sim_count == 0 and os.path.exists(cf.path_model):
                             model.load_state_dict(torch.load(cf.path_model))
@@ -170,7 +172,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                             if sim_count % cf.student_update_step*2 == 0:
                                 model.load_state_dict(model_student.state_dict())
                         dist.barrier(group=group_agents)
-                        if rank == 1:
+                        if rank == 0:
                             torch.save(model_student.state_dict(), cf.path_model)
                         model.eval()
                 else:
@@ -178,7 +180,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                     death_index_tmp = rearrange(history['death_index'], 't b -> b t').contiguous()
                     scatter_dummy_src(death_index_tmp, rank, size-1)
                     history['death_index'] = rearrange(death_index_tmp, 'b t -> t b')
-                    if rank > 0:
+                    if rank in process_agents:
                         last_memories = memories['cross_cmem'].clone()
                         model_student.train() 
                         optimizer.zero_grad()
@@ -186,10 +188,10 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                     previous_history['returns'] = tr.calculate_returns(history['rewards'], history['death_index'], gamma=cf.c_gamma)
                     previous_history['advantages'] = tr.calculate_gae(history['rewards'], history['values'], 
                                                         history['death_index'], gamma=cf.c_gamma, gae_lambda=cf.c_lambda)
-                    # if rank == 1:
+                    # if rank == 0:
                     #     plotter.data['returns'].append(previous_history['returns'][1, :].mean().item())
                     
-                if rank > 0:
+                if rank in process_agents:
                     reset_memories(memories)
                 tr.set_seeds(sim_count//2)
                 print(f"SEED: {sim_count//2}")
@@ -206,7 +208,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
 
             ### Get agent observations 
 
-            if rank == 0:
+            if rank == process_sim:
                 all_obs = env._task.get_observations()['articulation_view']
                 obs = all_obs['obs_buf'].clone()    # (num_envs, d)
                 video = all_obs['video_buf'].clone()  # (num_envs, 256, 456, 3)
@@ -226,7 +228,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
             ### Reset memory at death and record 
 
             reset_indexes = torch.zeros(cf.num_envs, device=rank)
-            if rank == 0:
+            if rank == process_sim:
                 for agent_i in range(cf.num_envs):
                     if env._task.reset_buf[agent_i].item() == 1:
                         reset_indexes[agent_i] = 1
@@ -240,7 +242,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
             scatter_dummy_src(birth_time, rank, size-1) 
             reset_indexes_list = torch.nonzero(reset_indexes) \
                                     .flatten().tolist()
-            if rank > 0:
+            if rank in process_agents:
                 reset_memories(memories, indexes=reset_indexes_list)
 
             print( f"{rank}B ")
@@ -248,7 +250,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
             ### Agent
             
             if len(buffer['actions_star'])==0 :
-                if rank > 0:
+                if rank in process_agents:
 
                     ## Process inputs
 
@@ -314,7 +316,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                             # Reinitialize
                             backward_count = 0
 
-                        # if rank == 1:
+                        # if rank == 0:
                         #     plotter.data['loss_actor'].append(loss_actor.item())
                         #     plotter.data['loss_critic'].append(loss_critic.item())
 
@@ -337,7 +339,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
             else:
                 action = torch.dzeros(cf.num_envs, 1)
 
-            if rank == 0:
+            if rank == process_sim:
 
                 # Step environment
 
@@ -348,17 +350,17 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 env.sim_frame_count += 1
                 env._task.post_physics_step()
 
-                if sim_count % 10 == 0 and env.sim_frame_count % cf.sim_duration == 256 and rank == 1:
-                    torchvision.io.write_video('/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/test_'  + str(sim_count) + '_vid_.mp4', 
-                                                torch.stack(full_video)[:,1], 8*cf.frames)
+            if sim_count % 10 == 0 and env.sim_frame_count % cf.sim_duration == 256 and rank == 0:
+                torchvision.io.write_video('/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/test_'  + str(sim_count) + '_vid_.mp4', 
+                                            torch.stack(full_video)[:,1], 8*cf.frames)
             sim_step += 1
             print( f"{rank}D ")
 
         else:
-            if rank == 0:
+            if rank == process_sim:
                 env._world.step(render=cf.render)
 
-    if rank == 0:
+    if rank == process_sim:
         env._simulation_app.close()
     dist.destroy_process_group()
 

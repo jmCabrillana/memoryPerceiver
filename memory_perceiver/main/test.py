@@ -52,7 +52,7 @@ def train(rank, size):
     print("rank : ", rank, "  ", tensor_dst)
     """
     
-
+    """
     if rank == 0:
         tensor_batch = torch.tensor([[1,1,2],
                                      [4,7,8],
@@ -64,6 +64,7 @@ def train(rank, size):
         tensor_batch = torch.zeros(2,3, device=rank, dtype=float)
     scatter_dummy_src(tensor_batch, rank, size-1)
     print("rank : ", rank, "  ", tensor_batch)
+    """
     
     """
     if rank > 0:
@@ -75,6 +76,18 @@ def train(rank, size):
     print("rank : ", rank, "  ", tensor)
     """
     
+    group_agents=dist.new_group(list(range(2)))
+    print(list(range(1,size)))
+    if rank > 0:
+        tensor = torch.tensor([[1,2,1],[3,3,3]], device=rank, dtype=float)
+        tensor *= rank
+    if rank == 0:
+        tensor = torch.zeros(2, 3, device=rank, dtype=float)
+    if rank <2:
+        dist.all_reduce(tensor, op=dist.ReduceOp.SUM, group=group_agents)
+        #dist.barrier(group_agents)
+    #dist.all_reduce(tensor, op=dist.ReduceOp.SUM)
+    print(f"{rank}: {tensor}")
 
     # Clean up process group
     dist.destroy_process_group()
