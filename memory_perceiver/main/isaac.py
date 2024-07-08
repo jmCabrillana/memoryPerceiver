@@ -51,44 +51,46 @@ def setup(rank, size):
 def average_gradients(model, size, group):
     for param in model.parameters():
         if param.grad is not None: # !!! Temporary, audio not linked to loss for now (modality/projection['audio']) !!!
+            last_device = param.device
             dist.all_reduce(param.grad.data, op=dist.ReduceOp.SUM, group=group)
             param.grad.data /= size
+            if dist.get_rank() !=  param.get_device():
+                print(f"{dist.get_rank()} -> {param.device}")
+                # sys.exit()
 
 def scatter_dummy_src(tensor, rank, size):
-    #  split batch at rank size-1 to ranks  0, ..., size-2
-    rank_src=size-1
-    if rank == rank_src:
+    #  split batch at rank 0 to ranks  1, ..., size-1
+    if rank == 0:
         tensor_list = list(torch.split(tensor, len(tensor)//size))
-        tensor_list.append(torch.zeros_like(tensor_list[0], device=rank_src))
-        dst = torch.zeros_like(tensor_list[0], device=rank_src)
-    if rank < rank_src:
+        tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
+        dst = torch.zeros_like(tensor_list[0], device=0)
+    if rank != 0:
         tensor_list = None
         dst = tensor
     dist.barrier()
-    dist.scatter(dst, tensor_list, rank_src)
+    dist.scatter(dst, tensor_list, src=0)
 
 def gather_dummy_src(tensor, rank, size):
-    #  gather and batch 1, ..., size-1 to 0
-    rank_dst=size-1
-    if rank < rank_dst:
+    #  gather and batch ranks 1, ..., size-1 to 0
+    if rank != 0 :
         src = tensor
         tensor_list = None
-    if rank == rank_dst:
+    if rank == 0:
         tensor_list = list(torch.split(tensor, len(tensor)//size))
-        tensor_list.append(torch.zeros_like(tensor_list[0], device=rank_dst))
-        src = torch.zeros_like(tensor_list[0], device=rank_dst)
+        tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
+        src = torch.zeros_like(tensor_list[0], device=0)
     dist.barrier()
-    dist.gather(src, tensor_list, rank_dst)
-    if rank == rank_dst:
-        tensor_list.pop()
+    dist.gather(src, tensor_list, dst=0)
+    if rank == 0:
+        tensor_list.pop(0)
         tensor = torch.stack(tensor_list)
     
 
 def isaac_training(cf, cfg: DictConfig, rank, size):
 
     setup(rank, size)
-    process_agents = list(range(0, size-1))
-    process_sim = size-1
+    process_agents = list(range(1, size))
+    process_sim = 0
     group_agents = dist.new_group(process_agents)
     device = torch.device(rank)
 
@@ -168,11 +170,11 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                         if sim_count == 0 and os.path.exists(cf.path_model):
                             model.load_state_dict(torch.load(cf.path_model))
                             model_student.load_state_dict(torch.load(cf.path_model))
-                        else:
-                            if sim_count % cf.student_update_step*2 == 0:
-                                model.load_state_dict(model_student.state_dict())
+                        # else:
+                        #     if sim_count % cf.student_update_step*2 == 0:
+                        #         model.load_state_dict(model_student.state_dict())
                         dist.barrier(group=group_agents)
-                        if rank == 0:
+                        if rank == 1:
                             torch.save(model_student.state_dict(), cf.path_model)
                         model.eval()
                 else:
@@ -350,7 +352,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 env.sim_frame_count += 1
                 env._task.post_physics_step()
 
-            if sim_count % 10 == 0 and env.sim_frame_count % cf.sim_duration == 256 and rank == 0:
+            if sim_count % 10 == 0 and sim_step % cf.sim_duration == 256 and rank == 0:
                 torchvision.io.write_video('/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/test_'  + str(sim_count) + '_vid_.mp4', 
                                             torch.stack(full_video)[:,1], 8*cf.frames)
             sim_step += 1
@@ -362,6 +364,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
 
     if rank == process_sim:
         env._simulation_app.close()
+    dist.barrier()
     dist.destroy_process_group()
 
 
