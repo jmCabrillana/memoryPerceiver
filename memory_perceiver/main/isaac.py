@@ -170,9 +170,9 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                         if sim_count == 0 and os.path.exists(cf.path_model):
                             model.load_state_dict(torch.load(cf.path_model))
                             model_student.load_state_dict(torch.load(cf.path_model))
-                        # else:
-                        #     if sim_count % cf.student_update_step*2 == 0:
-                        #         model.load_state_dict(model_student.state_dict())
+                        else:
+                            if sim_count % cf.student_update_step*2 == 0:
+                                model.load_state_dict(model_student.state_dict())
                         dist.barrier(group=group_agents)
                         if rank == 1:
                             torch.save(model_student.state_dict(), cf.path_model)
@@ -378,6 +378,10 @@ if __name__ == "__main__":
     torch.backends.cudnn.benchmark = True
     torch.backends.cudnn.deterministic = False
     os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+    # os.environ["CUDA_ERROR_DUMP"] = "1"
+    # os.environ["NCCL_DEBUG_SUBSYS"]="COLL"
+    os.environ["NCCL_DEBUG"]="INFO"
+    
     with initialize(config_path="../../OmniIsaacGymEnvs/omniisaacgymenvs/cfg"):
         cfg = compose(config_name="config", overrides=["task=Humanoid", "headless=True", "enable_viewport=True",
                         "num_envs="+str(cf.num_envs), "imgWidth="+str(cf.width), "imgHeight="+str(cf.height)])
