@@ -51,7 +51,6 @@ def setup(rank, size):
 def average_gradients(model, size, group):
     for param in model.parameters():
         if param.grad is not None: # !!! Temporary, audio not linked to loss for now (modality/projection['audio']) !!!
-            last_device = param.device
             dist.all_reduce(param.grad.data, op=dist.ReduceOp.SUM, group=group)
             param.grad.data /= size
             if dist.get_rank() !=  param.get_device():
@@ -157,6 +156,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
 
                 sim_count+=1
                 is_inference = not is_inference
+                group_agents = dist.new_group(process_agents) # It is necessary to reset this group here to avoid duplicate gpu errors
                 if rank == process_sim:
                     env._world.reset(soft=False)
                 
@@ -168,8 +168,8 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                     if rank in process_agents:
                         print(f"MEM:  {F.mse_loss(last_memories, memories['cross_cmem']).item()}")
                         if sim_count == 0 and os.path.exists(cf.path_model):
-                            model.load_state_dict(torch.load(cf.path_model))
-                            model_student.load_state_dict(torch.load(cf.path_model))
+                            model.load_state_dict(torch.load(cf.path_model, map_location=device))
+                            model_student.load_state_dict(torch.load(cf.path_model, map_location=device))
                         else:
                             if sim_count % cf.student_update_step*2 == 0:
                                 model.load_state_dict(model_student.state_dict())
@@ -379,8 +379,8 @@ if __name__ == "__main__":
     torch.backends.cudnn.deterministic = False
     os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
     # os.environ["CUDA_ERROR_DUMP"] = "1"
-    # os.environ["NCCL_DEBUG_SUBSYS"]="COLL"
-    os.environ["NCCL_DEBUG"]="INFO"
+    #os.environ["NCCL_DEBUG_SUBSYS"]="COLL" # print collective calls 
+    os.environ["NCCL_DEBUG"]="TRACE" #INFO WARN 
     
     with initialize(config_path="../../OmniIsaacGymEnvs/omniisaacgymenvs/cfg"):
         cfg = compose(config_name="config", overrides=["task=Humanoid", "headless=True", "enable_viewport=True",

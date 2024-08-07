@@ -76,20 +76,21 @@ def train(rank, size):
     print("rank : ", rank, "  ", tensor)
     """
     
-    group_agents=dist.new_group(list(range(2)))
+    group_agents=dist.new_group(list(range(1,4)))
     print(list(range(1,size)))
     if rank > 0:
         tensor = torch.tensor([[1,2,1],[3,3,3]], device=rank, dtype=float)
         tensor *= rank
     if rank == 0:
         tensor = torch.zeros(2, 3, device=rank, dtype=float)
-    if rank <2:
+    if rank > 0:
         dist.all_reduce(tensor, op=dist.ReduceOp.SUM, group=group_agents)
         #dist.barrier(group_agents)
     #dist.all_reduce(tensor, op=dist.ReduceOp.SUM)
     print(f"{rank}: {tensor}")
 
     # Clean up process group
+    dist.barrier()
     dist.destroy_process_group()
     
 
