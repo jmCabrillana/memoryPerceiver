@@ -223,8 +223,6 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 scatter_dummy_src(x, rank, size-1) 
             tr.update_buffers(buffer, {'obs': obs, 'video': video, 'rewards': reward}, frames=cf.frames)
 
-            print( f"{rank}A ")
-
             ### Reset memory at death and record 
 
             reset_indexes = torch.zeros(cf.num_envs, device=rank)
@@ -244,8 +242,6 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                                     .flatten().tolist()
             if rank in process_agents:
                 reset_memories(memories, indexes=reset_indexes_list)
-
-            print( f"{rank}B ")
 
             ### Agent
             
@@ -328,8 +324,6 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 actions_star = rearrange(actions_star, 'b t d -> t b d')
                 buffer['actions_star'] += list(torch.unbind( actions_star ))
             
-            print( f"{rank}C ")
-
 
             # Act(num_envs, 1)
 
@@ -350,11 +344,10 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 env.sim_frame_count += 1
                 env._task.post_physics_step()
 
-            # if sim_count % 10 == 0 and sim_step % cf.sim_duration == 256 and rank == 1:
-            #     torchvision.io.write_video('/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/test_'  + str(sim_count) + '_vid_.mp4', 
-            #                                 torch.stack(full_video)[:,1], 8*cf.frames)
+            if sim_count % 10 == 0 and sim_step % cf.sim_duration == 256 and rank == 0:
+                torchvision.io.write_video('/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/test_'  + str(sim_count) + '_vid_.mp4', 
+                                            torch.stack(full_video)[:,1], 8*cf.frames)
             sim_step += 1
-            print( f"{rank}D ")
 
         else:
             if rank == process_sim:
