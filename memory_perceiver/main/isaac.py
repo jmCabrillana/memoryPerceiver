@@ -380,7 +380,7 @@ if __name__ == "__main__":
     os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
     # os.environ["CUDA_ERROR_DUMP"] = "1"
     #os.environ["NCCL_DEBUG_SUBSYS"]="COLL" # print collective calls 
-    os.environ["NCCL_DEBUG"]="TRACE" #INFO WARN 
+    os.environ["NCCL_DEBUG"]="WARN" #INFO WARN 
     
     with initialize(config_path="../../OmniIsaacGymEnvs/omniisaacgymenvs/cfg"):
         cfg = compose(config_name="config", overrides=["task=Humanoid", "headless=True", "enable_viewport=True",
