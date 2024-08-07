@@ -56,7 +56,7 @@ class Config:
     dim_observations = 87
     dim_actions = 21
     dim_actions_ppo = 2*21 # *2
-    sim_duration =  12 #260
+    sim_duration =  260 #260
     num_envs = 12
     learning_rate = 1e-4
     accumulation_steps = 1 #2
