@@ -113,10 +113,6 @@ class ActorCriticPerceiver(ActorCritic):
         input = input_to_tensor(states, self.actor.modality, self.body_parts, device=device,
             height=self.patch_height, width=self.patch_width, bands_video=self.bands_video, bands_video_t=self.bands_video_t)
         x, new_memories, _ = self.actor(input, memories, queries=self.actor.queries)
-        for name, param in self.actor.named_parameters():
-            if torch.isnan(param).any():
-                print(f'{name} {param.data}')
-                print(f'grad {param.grad.data}')
         output = output_projection(self.actor, x, self.body_outputs, 
                           self.frames_future, self.audio_future)
         actions = []
@@ -124,8 +120,8 @@ class ActorCriticPerceiver(ActorCritic):
         for i in range(self.dim_actions):
             actions.append(output['action_'+str(i)])
             actions_var.append(output['action_variance_'+str(i)])
-        actions = torch.clamp(rearrange(actions, 'd b t () -> b t d'), -10, 10)
-        actions_var = torch.clamp(rearrange(actions_var, 'd b t () -> b t d'), -10, 10)
+        actions = rearrange(actions, 'd b t () -> b t d')
+        actions_var = rearrange(actions_var, 'd b t () -> b t d')
         dim_t = actions.size()[1]
         actions_tmp1, actions_tmp2 = torch.split(torch.tanh(actions), dim_t//2, dim=1)
         actions_mean = torch.cat((actions_tmp1.mean(dim=1), actions_tmp2.mean(dim=1)), dim=-1)

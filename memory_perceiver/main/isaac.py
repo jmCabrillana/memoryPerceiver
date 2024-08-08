@@ -173,8 +173,8 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                     if rank in process_agents:
                         print(f"MEM:  {F.mse_loss(last_memories, memories['cross_cmem']).item()}")
                         if sim_count == 0 and os.path.exists(cf.path_model):
-                            model.load_state_dict(torch.load(cf.path_model, map_location=device))
-                            model_student.load_state_dict(torch.load(cf.path_model, map_location=device))
+                            model.load_state_dict(torch.load(cf.path_model)) #, map_location=device))
+                            model_student.load_state_dict(torch.load(cf.path_model)) #, map_location=device))
                         else:
                             if sim_count % cf.student_update_step*2 == 0:
                                 model.load_state_dict(model_student.state_dict())
@@ -258,8 +258,8 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                     states['observations'] = tr.buffer_padding(torch.stack(buffer['obs']), [cf.dim_observations],
                                                                 num_envs=cf.num_envs, frames=cf.frames)
                     states['observations'][mask] *= 0
-                    # states['video'] = torch.zeros(cf.num_envs, cf.frames, cf.height, cf.width, 3, device=device)
-                    states['video'] = tr.buffer_padding(torch.stack(buffer['video']), [cf.height, cf.width, 3], num_envs=cf.num_envs, frames=cf.frames)
+                    states['video'] = torch.zeros(cf.num_envs, cf.frames, cf.height, cf.width, 3, device=device)
+                    # states['video'] = tr.buffer_padding(torch.stack(buffer['video']), [cf.height, cf.width, 3], num_envs=cf.num_envs, frames=cf.frames)
                     states['video'][mask] *= 0
                     states['video'] = rearrange(states['video'], 'b t h w c -> b c t h w')
                     states['audio'] = torch.zeros(cf.num_envs, cf.len_audio_raw, device=device)
@@ -282,11 +282,11 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
 
                     if not is_inference:
 
+                        torch.cuda.set_rng_state(previous_history['generator'][sim_step, rank], device=device)
                         with autocast(device_type='cuda', dtype=torch.float16):
                             returns = previous_history['returns'][sim_step].to(device)
                             advantages = previous_history['advantages'][sim_step].to(device)
                             new_logprobs, new_values, entropies, _ = model_student(states, memories, actions)
-                            torch.cuda.set_rng_state(previous_history['generator'][sim_step, rank], device=device)
                             _, _, _, memories = model(states, memories) 
                             
 
@@ -305,8 +305,8 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                         # Step optimizer
 
                         if backward_count % cf.accumulation_steps == 0 and backward_count != 0:
-                            scaler.unscale_(optimizer)
                             average_gradients(model_student, size-1, group_agents) # ALL REDUCE on scaled loss
+                            scaler.unscale_(optimizer)
                             torch.nn.utils.clip_grad_norm_(model_student.parameters(), cf.c_grad_norm)
                             scaler.step(optimizer)
                             scaler.update()
@@ -374,8 +374,8 @@ if __name__ == "__main__":
     os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
     # os.environ["CUDA_ERROR_DUMP"] = "1"
     #os.environ["NCCL_DEBUG_SUBSYS"]="COLL" # print collective calls 
-    os.environ["TORCH_CPP_LOG_LEVEL"]="WARNING"
-    os.environ["NCCL_DEBUG"]="0" #INFO WARN TRACE
+    os.environ["TORCH_CPP_LOG_LEVEL"]="FATAL" # INFO WARNING FATAL
+    os.environ["NCCL_DEBUG"]="WARN" # WARN INFO TRACE
     
     with initialize(config_path="../../OmniIsaacGymEnvs/omniisaacgymenvs/cfg"):
         cfg = compose(config_name="config", overrides=["task=Humanoid", "headless=True", "enable_viewport=True",
