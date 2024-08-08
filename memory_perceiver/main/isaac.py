@@ -160,11 +160,16 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 if rank == process_sim:
                     env._world.reset(soft=False)
                 
-                
-                if len(history['rewards'])>0:
-                    print(f"$$$ r{rank} CUMUL REWARD: {history['rewards'].sum().item()} $$$")
+                if rank == process_sim:
+                    if len(history['rewards'])>0:
+                        print(f"$$$ r{rank} CUMUL REWARD: {history['rewards'].sum().item()} $$$")
+                    print(f"SEED: {sim_count//2}")
+                    if is_inference:
+                        print('PLAY')
+                    else:
+                        print('REPLAY')
+                    
                 if is_inference:
-                    print('PLAY')
                     if rank in process_agents:
                         print(f"MEM:  {F.mse_loss(last_memories, memories['cross_cmem']).item()}")
                         if sim_count == 0 and os.path.exists(cf.path_model):
@@ -178,10 +183,10 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                             torch.save(model_student.state_dict(), cf.path_model)
                         model.eval()
                 else:
-                    print('REPLAY')
-                    death_index_tmp = rearrange(history['death_index'], 't b -> b t').contiguous()
-                    scatter_dummy_src(death_index_tmp, rank, size-1)
-                    history['death_index'] = rearrange(death_index_tmp, 'b t -> t b')
+                    for key in ['rewards', 'death_index']:
+                        swap_batch_time_tmp = rearrange(history[key], 't b -> b t').contiguous()
+                        scatter_dummy_src(swap_batch_time_tmp, rank, size-1)
+                        history[key] = rearrange(swap_batch_time_tmp, 'b t -> t b')
                     if rank in process_agents:
                         last_memories = memories['cross_cmem'].clone()
                         model_student.train() 
@@ -196,7 +201,6 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 if rank in process_agents:
                     reset_memories(memories)
                 tr.set_seeds(sim_count//2)
-                print(f"SEED: {sim_count//2}")
                 full_video = []
                 birth_time = torch.zeros(cf.num_envs, device=rank)
                 for key in buffer.keys():
@@ -205,7 +209,6 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 backward_count= 0
                 sim_step = 0
 
-            print(f"{rank}s{sim_step} " )
             dist.barrier()
 
             ### Get agent observations 
@@ -344,7 +347,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 env.sim_frame_count += 1
                 env._task.post_physics_step()
 
-            if sim_count % 10 == 0 and sim_step % cf.sim_duration == 256 and rank == 0:
+            if sim_count % 2 == 0 and sim_step % cf.sim_duration == 256 and rank == 0:
                 torchvision.io.write_video('/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/test_'  + str(sim_count) + '_vid_.mp4', 
                                             torch.stack(full_video)[:,1], 8*cf.frames)
             sim_step += 1
@@ -371,7 +374,8 @@ if __name__ == "__main__":
     os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
     # os.environ["CUDA_ERROR_DUMP"] = "1"
     #os.environ["NCCL_DEBUG_SUBSYS"]="COLL" # print collective calls 
-    os.environ["NCCL_DEBUG"]="WARN" #INFO WARN 
+    os.environ["TORCH_CPP_LOG_LEVEL"]="WARNING"
+    os.environ["NCCL_DEBUG"]="0" #INFO WARN TRACE
     
     with initialize(config_path="../../OmniIsaacGymEnvs/omniisaacgymenvs/cfg"):
         cfg = compose(config_name="config", overrides=["task=Humanoid", "headless=True", "enable_viewport=True",
