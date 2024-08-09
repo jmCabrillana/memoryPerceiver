@@ -83,7 +83,14 @@ def gather_dummy_src(tensor, rank, size):
     if rank == 0:
         tensor_list.pop(0)
         tensor = torch.stack(tensor_list)
-    
+
+def custom_random(seed1, seed2):
+    a = 1664525
+    c = 1013904223
+    m = 2**32
+    combined_seed = (seed1 + seed2) << 16
+    combined_seed = (a * combined_seed + c) % m
+    return combined_seed / m
 
 def isaac_training(cf, cfg: DictConfig, rank, size):
 
@@ -137,7 +144,6 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
         sim_running.fill_(env._simulation_app.is_running())
     dist.broadcast(sim_running, src=process_sim)    
     
-    #while sim_running and sim_count < 6:
     while sim_running:
         if rank == process_sim:
             world_playing.fill_(env._world.is_playing())
@@ -149,13 +155,14 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 
                 ### Plots
 
-                if rank == 1 and sim_count % 2 == 1 and len(plotter.data['loss_actor'])>0:
+                if rank == 1 and sim_count % (cf.n_repeat + 1) == 1 and len(plotter.data['loss_actor'])>0:
                     plotter.plot_all([(plotter.data['loss_actor'], 160), (plotter.data['loss_critic'], 160), plotter.data['returns']])
 
                 ### Initialization
 
-                sim_count+=1
-                is_inference = not is_inference
+                sim_count += 1
+                seed = sim_count // (cf.n_repeat+1)
+                is_inference =  sim_count % (cf.n_repeat+1) == 0 # not is_inference
                 group_agents = dist.new_group(process_agents) # It is necessary to reset this group here to avoid duplicate gpu errors
                 if rank == process_sim:
                     env._world.reset(soft=False)
@@ -163,7 +170,8 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 if rank == process_sim:
                     if len(history['rewards'])>0:
                         print(f"$$$ r{rank} CUMUL REWARD: {history['rewards'].sum().item()} $$$")
-                    print(f"SEED: {sim_count//2}")
+                    print(f"SEED: {seed}")
+                    print(f"SIM_COUNT: {sim_count}")
                     if is_inference:
                         print('PLAY')
                     else:
@@ -176,7 +184,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                             model.load_state_dict(torch.load(cf.path_model)) #, map_location=device))
                             model_student.load_state_dict(torch.load(cf.path_model)) #, map_location=device))
                         else:
-                            if sim_count % cf.student_update_step*2 == 0:
+                            if sim_count % cf.student_update_step == 0 :
                                 model.load_state_dict(model_student.state_dict())
                         dist.barrier(group=group_agents)
                         if rank == 1:
@@ -200,7 +208,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                     
                 if rank in process_agents:
                     reset_memories(memories)
-                tr.set_seeds(sim_count//2)
+                tr.set_seeds(seed)
                 full_video = []
                 birth_time = torch.zeros(cf.num_envs, device=rank)
                 for key in buffer.keys():
@@ -280,7 +288,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
 
                     ## Backward pass
 
-                    if not is_inference:
+                    if not is_inference and custom_random(sim_count, sim_step) < cf.c_update_probability :
 
                         torch.cuda.set_rng_state(previous_history['generator'][sim_step, rank], device=device)
                         with autocast(device_type='cuda', dtype=torch.float16):
@@ -347,7 +355,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 env.sim_frame_count += 1
                 env._task.post_physics_step()
 
-            if sim_count % 2 == 0 and sim_step % cf.sim_duration == 256 and rank == 0:
+            if sim_count % 10 == 0 and sim_step % cf.sim_duration == 256 and rank == 0:
                 torchvision.io.write_video('/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/test_'  + str(sim_count) + '_vid_.mp4', 
                                             torch.stack(full_video)[:,1], 8*cf.frames)
             sim_step += 1

@@ -84,24 +84,24 @@ class ActorCriticPerceiver(ActorCritic):
             cf.patch_height, cf.patch_width, cf.bands_video, cf.bands_video_t
         self.hidden_dim = 64
         self.actor = create_multimodal_perceiver(cf, device)
-        self.critic = nn.Sequential(nn.Linear(cf.dim_observations, self.hidden_dim),
-                                    nn.ReLU(),
-                                    nn.Linear(self.hidden_dim, self.hidden_dim),
-                                    nn.ReLU(),
-                                    nn.Linear(self.hidden_dim, self.hidden_dim),
-                                    nn.ReLU(),
-                                    nn.Linear(self.hidden_dim, self.hidden_dim),
-                                    nn.ReLU(),
-                                    nn.Linear(self.hidden_dim, 1)
-                                    ).to(device)
+        # self.critic = nn.Sequential(nn.Linear(cf.dim_observations, self.hidden_dim),
+        #                             nn.ReLU(),
+        #                             nn.Linear(self.hidden_dim, self.hidden_dim),
+        #                             nn.ReLU(),
+        #                             nn.Linear(self.hidden_dim, self.hidden_dim),
+        #                             nn.ReLU(),
+        #                             nn.Linear(self.hidden_dim, self.hidden_dim),
+        #                             nn.ReLU(),
+        #                             nn.Linear(self.hidden_dim, 1)
+        #                             ).to(device)
         
         
     def forward(self, states, memories, old_actions=None):
         
         # Critic
 
-        values = self.critic(states['observations'][:,-1])
-        values = rearrange(values,  'b 1 -> b')
+        # values = self.critic(states['observations'][:,-1])
+        # values = rearrange(values,  'b 1 -> b')
 
         # Actor
         
@@ -131,6 +131,9 @@ class ActorCriticPerceiver(ActorCritic):
         dist = MultivariateNormal(actions_mean, torch.diag_embed(actions_var))
 
         ## result
+
+        # Critic
+        values = rearrange(output['critic'], 'b t () -> b t').mean(dim=-1)
         
         # Act
         if old_actions is None:  

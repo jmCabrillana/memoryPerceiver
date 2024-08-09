@@ -25,7 +25,6 @@ class Plotter:
         
     def plot_all(self, series):
         for i, element in enumerate(series):
-            print(self.titles, self.axes, self.figs)
             if isinstance(element, list):
                 self.axes[i].plot(element)
                 self.figs[i].savefig(self.path_plots + self.titles[i]+ '.png')
