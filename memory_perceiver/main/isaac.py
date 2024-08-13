@@ -136,7 +136,6 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
         if rank == 1:
             plotter = Plotter(titles=['loss_actor', 'loss_critic', 'returns'])
     sim_count, sim_step = -1, 0
-    is_inference=False  # Will switch to True immediately
     
     sim_running = torch.tensor(False, device=rank)
     world_playing = torch.tensor(False, device=rank)
@@ -184,12 +183,13 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                             model.load_state_dict(torch.load(cf.path_model)) #, map_location=device))
                             model_student.load_state_dict(torch.load(cf.path_model)) #, map_location=device))
                         else:
-                            if sim_count % cf.student_update_step == 0 :
+                            if sim_count % ( (cf.n_repeat+1)*cf.student_update_step ) == 0 :
                                 model.load_state_dict(model_student.state_dict())
                         dist.barrier(group=group_agents)
                         if rank == 1:
                             torch.save(model_student.state_dict(), cf.path_model)
                         model.eval()
+                        history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, device)
                 else:
                     for key in ['rewards', 'death_index']:
                         swap_batch_time_tmp = rearrange(history[key], 't b -> b t').contiguous()
@@ -213,7 +213,6 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 birth_time = torch.zeros(cf.num_envs, device=rank)
                 for key in buffer.keys():
                     buffer[key]=[]
-                history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, device)
                 backward_count= 0
                 sim_step = 0
 
@@ -229,7 +228,8 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 full_video.append(video.cpu())
                 env._task.calculate_metrics()       
                 reward=env._task.rew_buf.clone()    # (num_envs, 1)
-                history['rewards'][sim_step] = reward
+                if is_inference:
+                    history['rewards'][sim_step] = reward
             for x in [obs, video, reward]:
                 scatter_dummy_src(x, rank, size-1) 
             tr.update_buffers(buffer, {'obs': obs, 'video': video, 'rewards': reward}, frames=cf.frames)
@@ -243,8 +243,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                         reset_indexes[agent_i] = 1
                         birth_time[agent_i] = sim_step
 
-                        # Update death dictionnary during inference
-
+                        # Update death dictionnary
                         if is_inference:
                             history['death_index'][sim_step, agent_i]=1
             scatter_dummy_src(reset_indexes, rank, size-1) 
@@ -288,7 +287,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
 
                     ## Backward pass
 
-                    if not is_inference and custom_random(sim_count, sim_step) < cf.c_update_probability :
+                    if not is_inference :
 
                         torch.cuda.set_rng_state(previous_history['generator'][sim_step, rank], device=device)
                         with autocast(device_type='cuda', dtype=torch.float16):
@@ -306,22 +305,24 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                             loss_entropy = -cf.c_entropy * entropies.mean()
                             loss_critic = cf.c_critic * F.mse_loss(new_values, returns)
                             loss =  (loss_actor + loss_critic + loss_entropy) / cf.accumulation_steps
-                        scaler.scale(loss).backward()
-                        backward_count += 1
+
+                        if custom_random(sim_count, sim_step) < cf.c_update_probability :
+                            scaler.scale(loss).backward()
+                            backward_count += 1
 
 
-                        # Step optimizer
+                            # Step optimizer
 
-                        if backward_count % cf.accumulation_steps == 0 and backward_count != 0:
-                            average_gradients(model_student, size-1, group_agents) # ALL REDUCE on scaled loss
-                            scaler.unscale_(optimizer)
-                            torch.nn.utils.clip_grad_norm_(model_student.parameters(), cf.c_grad_norm)
-                            scaler.step(optimizer)
-                            scaler.update()
-                            optimizer.zero_grad()
+                            if backward_count % cf.accumulation_steps == 0 and backward_count != 0:
+                                average_gradients(model_student, size-1, group_agents) # ALL REDUCE on scaled loss
+                                scaler.unscale_(optimizer)
+                                torch.nn.utils.clip_grad_norm_(model_student.parameters(), cf.c_grad_norm)
+                                scaler.step(optimizer)
+                                scaler.update()
+                                optimizer.zero_grad()
 
-                            # Reinitialize
-                            backward_count = 0
+                                # Reinitialize
+                                backward_count = 0
 
                         if rank == 1:
                             plotter.data['loss_actor'].append(loss_actor.item())
