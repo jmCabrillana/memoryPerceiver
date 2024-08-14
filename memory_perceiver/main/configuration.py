@@ -28,25 +28,25 @@ class Config:
     audio_future = frames_future*len_audio_frame 
 
     # PPO
-    task_name = "Humanoid" # Humanoid Cartpole 
+    task_name = "Cartpole" # Humanoid Cartpole 
     agent_type = "Simple" # Perceiver Simple
-    dim_observations = 87 # 87 4
-    dim_actions = 21 # 21 1
+    dim_observations = 4 # 87 4
+    dim_actions = 1 # 21 1
     dim_actions_ppo = frames_future*dim_actions # *2
-    sim_duration = 20 #1028 #260
-    num_envs = 18
+    sim_duration = 1028 #1028 516 260
+    num_envs = 42
     learning_rate = 1e-4 # 1e-4
-    accumulation_steps = 4 #2
-    c_entropy = 0.05  # 0.01 to 0.05
+    accumulation_steps = 2 #2
+    c_entropy = 0.01  # 0.01 to 0.05
     c_critic = 0.4       # 0.5 to 2
     student_update_step = 1
     eps = 1e-9
     c_gamma = 0.99
     c_lambda = 0.95
-    c_grad_norm = 0.1  # 0.1 to 1.0
+    c_grad_norm = 1.0  # 0.1 to 1.0
     eps_clip = 0.2
     n_replay = 4
-    c_update_probability = 0.1
+    c_update_probability = 0.3
     render = True
 
     # Model dimension configuration

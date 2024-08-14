@@ -382,7 +382,7 @@ if __name__ == "__main__":
     # os.environ["CUDA_ERROR_DUMP"] = "1"
     #os.environ["NCCL_DEBUG_SUBSYS"]="COLL" # print collective calls 
     os.environ["TORCH_CPP_LOG_LEVEL"]="FATAL" # INFO WARNING FATAL
-    os.environ["NCCL_DEBUG"]="WARN" # WARN INFO TRACE
+    os.environ["NCCL_DEBUG"]="WARN" # WARN INFO DEBUG TRACE
     
     with initialize(config_path="../../OmniIsaacGymEnvs/omniisaacgymenvs/cfg"):
         cfg = compose(config_name="config", overrides=["task="+cf.task_name, "headless=True", "enable_viewport=True",
