@@ -21,13 +21,15 @@ class ActorCriticSimple(ActorCritic):
     def __init__(self, cf, device):
         super().__init__()
         self.state_dim = cf.dim_observations
-        self.action_dim = cf.dim_actions
+        self.dim_actions = cf.dim_actions
+        self.dim_actions_ppo = cf.dim_actions_ppo
+        self.dim_t = cf.frames_future
         self.hidden_dim = 64
         self.actor = nn.Sequential( nn.Linear(self.state_dim, self.hidden_dim),
                                     nn.ReLU(),
                                     nn.Linear(self.hidden_dim, self.hidden_dim),
                                     nn.ReLU(),
-                                    nn.Linear(self.hidden_dim, 2*self.action_dim)
+                                    nn.Linear(self.hidden_dim, 2*self.dim_actions_ppo)
                                     ).to(device)
         self.actor.reset_memories = lambda *args, **kwargs: None
         self.critic = nn.Sequential(nn.Linear(self.state_dim, self.hidden_dim),
@@ -48,8 +50,8 @@ class ActorCriticSimple(ActorCritic):
         # Actor
 
         actions_tmp = torch.tanh(self.actor(state))
-        actions_mean,  = actions_tmp[:, 0:self.action_dim], 
-        actions_var = ((1+actions_tmp[:, self.action_dim:2*self.action_dim+1])/4+1e-5)**2
+        actions_mean,  = actions_tmp[:, 0:self.dim_actions_ppo], 
+        actions_var = ((1+actions_tmp[:, self.dim_actions_ppo:2*self.dim_actions_ppo+1])/4+1e-5)**2
         dist = MultivariateNormal(actions_mean, torch.diag_embed(actions_var))
         
         # Act
@@ -62,14 +64,18 @@ class ActorCriticSimple(ActorCritic):
             logprobs = dist.log_prob(old_actions)
             entropies = dist.entropy() 
             return logprobs, values, entropies, None
-            
     
     def instanciate_actions(self, actions, **kwargs):
-        dt=1
+        dt=2
         if 'dt' in kwargs:
             dt = kwargs['dt']
-        actions_star = repeat(actions, 'b d -> t b d', t=dt)
+        t = torch.linspace(0, 1, dt, device=actions.device)
+        dim_d = actions.size()[-1]
+        action1, action2 = torch.split(actions, dim_d//2, dim=-1)
+        actions_star = einsum('t, b d -> t b d', t, action1) + einsum('t, b d -> t b d', 1-t, action2)
+        # actions_star = repeat(actions, 'b d -> t b d', t=dt) for non ppo action dim
         return actions_star
+            
     
 class ActorCriticPerceiver(ActorCritic):
     def __init__(self, cf, device):
@@ -120,14 +126,17 @@ class ActorCriticPerceiver(ActorCritic):
         for i in range(self.dim_actions):
             actions.append(output['action_'+str(i)])
             actions_var.append(output['action_variance_'+str(i)])
-        actions = rearrange(actions, 'd b t () -> b t d')
-        actions_var = rearrange(actions_var, 'd b t () -> b t d')
+        actions = torch.tanh(rearrange(actions, 'd b t () -> b t d'))
+        actions_var = torch.tanh(rearrange(actions_var, 'd b t () -> b t d'))
         dim_t = actions.size()[1]
-        actions_tmp1, actions_tmp2 = torch.split(torch.tanh(actions), dim_t//2, dim=1)
+
+        # Average on time 
+        actions_tmp1, actions_tmp2 = torch.split(actions, dim_t//2, dim=1)
         actions_mean = torch.cat((actions_tmp1.mean(dim=1), actions_tmp2.mean(dim=1)), dim=-1)
-        actions_var_tmp1, actions_var_tmp2 = torch.split(torch.tanh(actions_var), dim_t//2, dim=1)
+        actions_var_tmp1, actions_var_tmp2 = torch.split(actions_var, dim_t//2, dim=1)
         actions_var_tmp = torch.cat((actions_var_tmp1.mean(dim=1), actions_var_tmp2.mean(dim=1)), dim=-1)
         actions_var = ((1+actions_var_tmp)/2+1e-4)**2 
+
         dist = MultivariateNormal(actions_mean, torch.diag_embed(actions_var))
 
         ## result
@@ -155,3 +164,12 @@ class ActorCriticPerceiver(ActorCritic):
         action1, action2 = torch.split(actions, dim_d//2, dim=-1)
         actions_star = einsum('t, b d -> t b d', t, action1) + einsum('t, b d -> t b d', 1-t, action2)
         return actions_star
+
+
+def create_agent(cf, rank):
+    if cf.agent_type == "Simple":
+        return ActorCriticSimple(cf, rank)
+    elif cf.agent_type == "Perceiver":
+        return ActorCriticPerceiver(cf, rank)
+    else:
+        raise ValueError("Unknown actor type")

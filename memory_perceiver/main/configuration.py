@@ -1,35 +1,10 @@
-# class Config:
-
-#     # Sampling configuration
-
-#     fps = 32
-#     sepformer_rate = 8000
-#     sample_per_frame = 1920
-#     sample_rate = fps * sample_per_frame
-#     body_parts = {'smplx_root_pose':3, 'smplx_body_pose':63, 'smplx_lhand_pose':45, 'smplx_rhand_pose':45, 'smplx_jaw_pose':3, 
-#               'smplx_expr':10, 'cam_trans':3, 'bbox':4}
-#     body_parts_extended = {'smplx_root_pose':3, 'smplx_body_pose':63, 'smplx_lhand_pose':45, 'smplx_rhand_pose':45, 'smplx_jaw_pose':3, 
-#               'smplx_expr':10, 'cam_trans':3, 'bbox':4, 'smplx_shape':10}
-#     seq_byte_size = 19012
-#     reward_byte_size = 21
-
-#     # Model dim configuration
-
-#     len_video_frame = 1824  # 456*256/(8*8)
-#     len_audio_frame = 120  # 1920/16
-#     query_dim = 832
-#     video_latent_dim = 256
-#     audio_latent_dim = 560
-
-    
-
-# cf = Config()
-
 " Isaac"
 
 class Config:
 
-    # Input / Outputs
+    experiment_name = "h_e0.0"
+
+    # Model inputs and outputs
 
     frames = 2
     sample_per_frame = 1920
@@ -53,22 +28,24 @@ class Config:
     audio_future = frames_future*len_audio_frame 
 
     # PPO
-    dim_observations = 87
-    dim_actions = 21
-    dim_actions_ppo = 2*21 # *2
-    sim_duration =  260 #1028 #260
-    num_envs = 24
-    learning_rate = 5e-5 # 1e-4
-    accumulation_steps = 1 #2
+    task_name = "Humanoid" # Humanoid Cartpole 
+    agent_type = "Simple" # Perceiver Simple
+    dim_observations = 87 # 87 4
+    dim_actions = 21 # 21 1
+    dim_actions_ppo = frames_future*dim_actions # *2
+    sim_duration = 20 #1028 #260
+    num_envs = 18
+    learning_rate = 1e-4 # 1e-4
+    accumulation_steps = 4 #2
     c_entropy = 0.05  # 0.01 to 0.05
-    c_critic=0.4       # 0.5 to 2
+    c_critic = 0.4       # 0.5 to 2
     student_update_step = 1
-    eps=1e-9
-    c_gamma=0.99
-    c_lambda=0.95
-    c_grad_norm=0.1  # 0.1 to 1.0
-    eps_clip=0.2
-    n_repeat = 5
+    eps = 1e-9
+    c_gamma = 0.99
+    c_lambda = 0.95
+    c_grad_norm = 0.1  # 0.1 to 1.0
+    eps_clip = 0.2
+    n_replay = 4
     c_update_probability = 0.1
     render = True
 
@@ -85,7 +62,9 @@ class Config:
     body_outputs.update({'critic':1})
     has_video = True
     has_audio = True
-    path_model = '/isaac-sim/memoryPerceiver/memory_perceiver/main/weights/humanoid.pt'
+    path_main = '/isaac-sim/memoryPerceiver/memory_perceiver/main/'
+    path_model = path_main+'weights/'+task_name+'.pt'
+    path_logs = path_main+'outputs/isaac.log'
 
 
 cf = Config()

@@ -29,19 +29,7 @@ from memoryPerceiver.memory_perceiver.main.configuration import cf
 from memoryPerceiver.memory_perceiver.core.model_wrapper import create_memories, reset_memories
 import memoryPerceiver.memory_perceiver.isaac.trainer as tr
 from memoryPerceiver.memory_perceiver.isaac.plot import Plotter
-from memoryPerceiver.memory_perceiver.isaac.agent import ActorCritic, ActorCriticSimple, ActorCriticPerceiver
-
-"""
-log_path = '/isaac-sim/memoryPerceiver/memory_perceiver/main/outputs/isaac.log'
-#log_file = open(log_path, 'w').close()
-logging.basicConfig(filename=log_path, level=logging.DEBUG)
-log_handler = logging.FileHandler(log_path, mode='a')
-log_handler.setLevel(logging.DEBUG)
-
-# Redirect stdout and stderr to the logging handler
-sys.stdout = log_handler.stream
-#sys.stderr = log_handler.stream
-"""
+from memoryPerceiver.memory_perceiver.isaac.agent import ActorCritic, ActorCriticSimple, ActorCriticPerceiver, create_agent
 
 def setup(rank, size):
     os.environ['MASTER_ADDR'] = 'localhost'
@@ -112,10 +100,13 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
         from omni.isaac.core.utils.stage import open_stage, save_stage
         enable_extension("omni.isaac.sensor")
     if rank in process_agents:
-        model = ActorCriticPerceiver(cf, rank)
-        model_student = ActorCriticPerceiver(cf, rank)
-        memories = create_memories(model.actor, cf.num_envs, device=device)
-        last_memories = torch.zeros_like(memories['cross_cmem'], device=device)
+        model = create_agent(cf, rank)
+        model_student = create_agent(cf, rank)
+        if isinstance(model, ActorCriticPerceiver):
+            memories = create_memories(model.actor, cf.num_envs, device=device)
+        else :
+            memories = None
+        # last_memories = torch.zeros_like(memories['cross_cmem'], device=device)
 
     history_keys = ['actions', 'values', 'logprobs', 'returns', 'rewards', 'advantages', 'death_index', 'generator']
     history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, device)
@@ -154,14 +145,14 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 
                 ### Plots
 
-                if rank == 1 and sim_count % (cf.n_repeat + 1) == 1 and len(plotter.data['loss_actor'])>0:
-                    plotter.plot_all([(plotter.data['loss_actor'], 160), (plotter.data['loss_critic'], 160), plotter.data['returns']])
+                if rank == 1 and sim_count % (cf.n_replay+1) == 2 and len(plotter.data['loss_actor']) > 0 :
+                    plotter.plot_all([(plotter.data['loss_actor'], 16), (plotter.data['loss_critic'], 16), plotter.data['returns']])
 
                 ### Initialization
 
                 sim_count += 1
-                seed = sim_count // (cf.n_repeat+1)
-                is_inference =  sim_count % (cf.n_repeat+1) == 0 # not is_inference
+                seed = sim_count // (cf.n_replay+1)
+                is_inference =  sim_count % (cf.n_replay+1) == 0 # not is_inference
                 group_agents = dist.new_group(process_agents) # It is necessary to reset this group here to avoid duplicate gpu errors
                 if rank == process_sim:
                     env._world.reset(soft=False)
@@ -178,12 +169,12 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                     
                 if is_inference:
                     if rank in process_agents:
-                        print(f"MEM:  {F.mse_loss(last_memories, memories['cross_cmem']).item()}")
+                        # print(f"MEM:  {F.mse_loss(last_memories, memories['cross_cmem']).item()}")
                         if sim_count == 0 and os.path.exists(cf.path_model):
                             model.load_state_dict(torch.load(cf.path_model)) #, map_location=device))
                             model_student.load_state_dict(torch.load(cf.path_model)) #, map_location=device))
                         else:
-                            if sim_count % ( (cf.n_repeat+1)*cf.student_update_step ) == 0 :
+                            if sim_count % ( (cf.n_replay+1)*cf.student_update_step ) == 0 :
                                 model.load_state_dict(model_student.state_dict())
                         dist.barrier(group=group_agents)
                         if rank == 1:
@@ -196,7 +187,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                         scatter_dummy_src(swap_batch_time_tmp, rank, size-1)
                         history[key] = rearrange(swap_batch_time_tmp, 'b t -> t b')
                     if rank in process_agents:
-                        last_memories = memories['cross_cmem'].clone()
+                        # last_memories = memories['cross_cmem'].clone()
                         model_student.train() 
                         optimizer.zero_grad()
                     previous_history = deepcopy(history)
@@ -206,7 +197,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                     if rank == 1:
                         plotter.data['returns'].append(previous_history['returns'][1, :].mean().item())
                     
-                if rank in process_agents:
+                if rank in process_agents and isinstance(model, ActorCriticPerceiver):
                     reset_memories(memories)
                 tr.set_seeds(seed)
                 full_video = []
@@ -250,7 +241,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
             scatter_dummy_src(birth_time, rank, size-1) 
             reset_indexes_list = torch.nonzero(reset_indexes) \
                                     .flatten().tolist()
-            if rank in process_agents:
+            if rank in process_agents and isinstance(model, ActorCriticPerceiver):
                 reset_memories(memories, indexes=reset_indexes_list)
 
             ### Agent
@@ -291,20 +282,21 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
 
                         torch.cuda.set_rng_state(previous_history['generator'][sim_step, rank], device=device)
                         with autocast(device_type='cuda', dtype=torch.float16):
-                            returns = previous_history['returns'][sim_step].to(device)
-                            advantages = previous_history['advantages'][sim_step].to(device)
-                            new_logprobs, new_values, entropies, _ = model_student(states, memories, actions)
-                            _, _, _, memories = model(states, memories) 
-                            
+                            if custom_random(sim_count, sim_step) < cf.c_update_probability :
+                                returns = previous_history['returns'][sim_step].to(device)
+                                advantages = previous_history['advantages'][sim_step].to(device)
+                                new_logprobs, new_values, entropies, _ = model_student(states, memories, actions)                            
 
-                            # Loss
-                            ratios = torch.exp(new_logprobs - logprobs)
-                            surr1 = ratios * advantages
-                            surr2 = torch.clamp(ratios, 1-cf.eps_clip, 1+cf.eps_clip) * advantages
-                            loss_actor = -(torch.min(surr1, surr2)).mean()
-                            loss_entropy = -cf.c_entropy * entropies.mean()
-                            loss_critic = cf.c_critic * F.mse_loss(new_values, returns)
-                            loss =  (loss_actor + loss_critic + loss_entropy) / cf.accumulation_steps
+                                # Loss
+                                ratios = torch.exp(new_logprobs - logprobs)
+                                surr1 = ratios * advantages
+                                surr2 = torch.clamp(ratios, 1-cf.eps_clip, 1+cf.eps_clip) * advantages
+                                loss_actor = -(torch.min(surr1, surr2)).mean()
+                                loss_entropy = -cf.c_entropy * entropies.mean()
+                                loss_critic = cf.c_critic * F.mse_loss(new_values, returns)
+                                loss =  (loss_actor + loss_critic + loss_entropy) / cf.accumulation_steps
+
+                            _, _, _, memories = model(states, memories) 
 
                         if custom_random(sim_count, sim_step) < cf.c_update_probability :
                             scaler.scale(loss).backward()
@@ -324,7 +316,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                                 # Reinitialize
                                 backward_count = 0
 
-                        if rank == 1:
+                        if rank == 1 and custom_random(sim_count, sim_step) < cf.c_update_probability :
                             plotter.data['loss_actor'].append(loss_actor.item())
                             plotter.data['loss_critic'].append(loss_critic.item())
 
@@ -373,8 +365,14 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
 
 if __name__ == "__main__":
 
-    log_path = '/isaac-sim/memoryPerceiver/memory_perceiver/main/outputs/isaac.log'
-    sys.stdout = open(log_path, 'w')
+    
+    # logging.basicConfig(filename=cf.path_logs, level=logging.INFO)
+    # log_handler = logging.FileHandler(cf.path_logs, mode='a')
+    # log_handler.setLevel(logging.INFO)
+    # sys.stdout = log_handler.stream
+    # sys.stderr = log_handler.stream
+    # file_logs = open(cf.path_logs, 'w') 
+    # sys.stdout = file_logs
 
     num_gpus=torch.cuda.device_count()
     torch.use_deterministic_algorithms(False)
@@ -387,7 +385,7 @@ if __name__ == "__main__":
     os.environ["NCCL_DEBUG"]="WARN" # WARN INFO TRACE
     
     with initialize(config_path="../../OmniIsaacGymEnvs/omniisaacgymenvs/cfg"):
-        cfg = compose(config_name="config", overrides=["task=Humanoid", "headless=True", "enable_viewport=True",
+        cfg = compose(config_name="config", overrides=["task="+cf.task_name, "headless=True", "enable_viewport=True",
                         "num_envs="+str(cf.num_envs), "imgWidth="+str(cf.width), "imgHeight="+str(cf.height)])
 
     size = num_gpus
