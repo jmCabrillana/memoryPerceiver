@@ -145,14 +145,14 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 
                 ### Plots
 
-                if rank == 1 and sim_count % (cf.n_replay+1) == 2 and len(plotter.data['loss_actor']) > 0 :
+                if rank == 1 and sim_count % (cf.num_replay+1) == 2 and len(plotter.data['loss_actor']) > 0 :
                     plotter.plot_all([(plotter.data['loss_actor'], 16), (plotter.data['loss_critic'], 16), plotter.data['returns']])
 
                 ### Initialization
 
                 sim_count += 1
-                seed = sim_count // (cf.n_replay+1)
-                is_inference =  sim_count % (cf.n_replay+1) == 0 # not is_inference
+                seed = sim_count // (cf.num_replay+1)
+                is_inference =  sim_count % (cf.num_replay+1) == 0 # not is_inference
                 group_agents = dist.new_group(process_agents) # It is necessary to reset this group here to avoid duplicate gpu errors
                 if rank == process_sim:
                     env._world.reset(soft=False)
@@ -174,7 +174,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                             model.load_state_dict(torch.load(cf.path_model)) #, map_location=device))
                             model_student.load_state_dict(torch.load(cf.path_model)) #, map_location=device))
                         else:
-                            if sim_count % ( (cf.n_replay+1)*cf.student_update_step ) == 0 :
+                            if sim_count % ( (cf.num_replay+1)*cf.student_update_step ) == 0 :
                                 model.load_state_dict(model_student.state_dict())
                         dist.barrier(group=group_agents)
                         if rank == 1:
@@ -191,9 +191,9 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                         model_student.train() 
                         optimizer.zero_grad()
                     previous_history = deepcopy(history)
-                    previous_history['returns'] = tr.calculate_returns(history['rewards'], history['death_index'], gamma=cf.c_gamma)
+                    previous_history['returns'] = tr.calculate_returns(history['rewards'], history['death_index'], gamma=cf.gamma)
                     previous_history['advantages'] = tr.calculate_gae(history['rewards'], history['values'], 
-                                                        history['death_index'], gamma=cf.c_gamma, gae_lambda=cf.c_lambda)
+                                                        history['death_index'], gamma=cf.gamma, gae_lambda=cf.c_lambda)
                     if rank == 1:
                         plotter.data['returns'].append(previous_history['returns'][1, :].mean().item())
                     
@@ -214,16 +214,20 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
             if rank == process_sim:
                 all_obs = env._task.get_observations()['articulation_view']
                 obs = all_obs['obs_buf'].clone()    # (num_envs, d)
-                video = all_obs['video_buf'].clone()  # (num_envs, 256, 456, 3)
-                #ts.save(video[0], '/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/live.jpg')
-                full_video.append(video.cpu())
+                if cf.render:
+                    video = all_obs['video_buf'].clone()  # (num_envs, 256, 456, 3)
+                    #ts.save(video[0], '/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/live.jpg')
+                    full_video.append(video.cpu())
                 env._task.calculate_metrics()       
                 reward=env._task.rew_buf.clone()    # (num_envs, 1)
                 if is_inference:
                     history['rewards'][sim_step] = reward
-            for x in [obs, video, reward]:
+            for x in [obs, reward]: #video
                 scatter_dummy_src(x, rank, size-1) 
             tr.update_buffers(buffer, {'obs': obs, 'video': video, 'rewards': reward}, frames=cf.frames)
+            if cf.render:
+                scatter_dummy_src(video, rank, size-1)
+                tr.update_buffers(buffer, {'video': video}, frames=cf.frames)
 
             ### Reset memory at death and record 
 
@@ -282,7 +286,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
 
                         torch.cuda.set_rng_state(previous_history['generator'][sim_step, rank], device=device)
                         with autocast(device_type='cuda', dtype=torch.float16):
-                            if custom_random(sim_count, sim_step) < cf.c_update_probability :
+                            if custom_random(sim_count, sim_step) < cf.update_probability :
                                 returns = previous_history['returns'][sim_step].to(device)
                                 advantages = previous_history['advantages'][sim_step].to(device)
                                 new_logprobs, new_values, entropies, _ = model_student(states, memories, actions)                            
@@ -292,13 +296,13 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                                 surr1 = ratios * advantages
                                 surr2 = torch.clamp(ratios, 1-cf.eps_clip, 1+cf.eps_clip) * advantages
                                 loss_actor = -(torch.min(surr1, surr2)).mean()
-                                loss_entropy = -cf.c_entropy * entropies.mean()
-                                loss_critic = cf.c_critic * F.mse_loss(new_values, returns)
+                                loss_entropy = -cf.entropy * entropies.mean()
+                                loss_critic = cf.critic * F.mse_loss(new_values, returns)
                                 loss =  (loss_actor + loss_critic + loss_entropy) / cf.accumulation_steps
 
                             _, _, _, memories = model(states, memories) 
 
-                        if custom_random(sim_count, sim_step) < cf.c_update_probability :
+                        if custom_random(sim_count, sim_step) < cf.update_probability :
                             scaler.scale(loss).backward()
                             backward_count += 1
 
@@ -308,7 +312,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                             if backward_count % cf.accumulation_steps == 0 and backward_count != 0:
                                 average_gradients(model_student, size-1, group_agents) # ALL REDUCE on scaled loss
                                 scaler.unscale_(optimizer)
-                                torch.nn.utils.clip_grad_norm_(model_student.parameters(), cf.c_grad_norm)
+                                torch.nn.utils.clip_grad_norm_(model_student.parameters(), cf.grad_norm)
                                 scaler.step(optimizer)
                                 scaler.update()
                                 optimizer.zero_grad()
@@ -316,7 +320,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                                 # Reinitialize
                                 backward_count = 0
 
-                        if rank == 1 and custom_random(sim_count, sim_step) < cf.c_update_probability :
+                        if rank == 1 and custom_random(sim_count, sim_step) < cf.update_probability :
                             plotter.data['loss_actor'].append(loss_actor.item())
                             plotter.data['loss_critic'].append(loss_critic.item())
 
@@ -348,7 +352,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 env.sim_frame_count += 1
                 env._task.post_physics_step()
 
-            if sim_count % 10 == 0 and sim_step % cf.sim_duration == 256 and rank == 0:
+            if sim_count % 10 == 0 and sim_step % cf.sim_duration == 256 and rank == 0 and cf.render :
                 torchvision.io.write_video('/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/test_'  + str(sim_count) + '_vid_.mp4', 
                                             torch.stack(full_video)[:,1], 8*cf.frames)
             sim_step += 1
