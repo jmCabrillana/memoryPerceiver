@@ -34,10 +34,10 @@ class Config:
     dim_actions = 1 # 21 1
     dim_actions_ppo = frames_future*dim_actions #
     sim_duration = 260 # 1028 516 260
-    num_envs = 54 # 54
-    learning_rate = 1e-4 # 1e-4
-    accumulation_steps = 2 #2
-    entropy = 0.01  # 0.01 to 0.05
+    num_envs = 216 # 54
+    learning_rate = 1e-3 # 1e-4
+    accumulation_steps = 4 #2
+    entropy = 0.05  # 0.01 to 0.05
     critic = 0.4       # 0.5 to 2
     student_update_step = 1
     eps = 1e-9
@@ -45,8 +45,8 @@ class Config:
     c_lambda = 0.95
     grad_norm = 1.0  # 0.1 to 1.0
     eps_clip = 0.2
-    num_replay = 2
-    update_probability = 0.3
+    num_replay = 3
+    update_probability = 0.33
     render = False
 
     # Model dimension configuration
@@ -64,6 +64,7 @@ class Config:
     has_audio = True
     path_main = '/isaac-sim/memoryPerceiver/memory_perceiver/main/'
     path_model = path_main+'weights/'+task_name+'.pt'
+    path_optimizer = path_main+'weights/'+task_name+'_optimizer.pt'
     path_logs = path_main+'outputs/isaac.log'
 
 

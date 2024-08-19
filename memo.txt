@@ -7,7 +7,7 @@ cd /isaac-sim
 tmux detach -a => detach all other processes thus adjust window size
 tmux set-option history-limit 10000 \; new-window => more history, default 2000
 ^b [ => scroll mode
-^b set-window-option mode-keys vi => vim mode, ^d -> down ^u -> up
+^b : set-window-option mode-keys vi => vim mode, ^d -> down ^u -> up
 ^b c => new window
 ^b n => switch window
 ^b d => detach

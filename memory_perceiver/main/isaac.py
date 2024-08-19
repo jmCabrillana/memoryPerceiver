@@ -1,6 +1,7 @@
 from os.path import join, dirname
 import os
 import sys
+import gc
 import logging
 from copy import deepcopy
 from hydra import initialize, compose
@@ -80,6 +81,22 @@ def custom_random(seed1, seed2):
     combined_seed = (a * combined_seed + c) % m
     return combined_seed / m
 
+def print_cuda_tensors():
+    objects = []
+    mem_total = 0
+    for obj in gc.get_objects():
+        try:
+            if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
+                mem = (obj.element_size() * obj.nelement()/1000000)
+                mem_total += mem
+                objects.append( [type(obj), obj.size(), obj.nelement(), mem])
+        except:
+            pass
+    print(mem_total)
+    objects = sorted(objects, key = lambda x: x[2], reverse=True)
+    for obj in objects[:5]:
+        print(obj)
+
 def isaac_training(cf, cfg: DictConfig, rank, size):
 
     setup(rank, size)
@@ -123,6 +140,8 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
         task = initialize_task(cfg_dict, env)
     if rank in process_agents:
         optimizer = torch.optim.Adam(model_student.parameters(), lr=cf.learning_rate)
+        if os.path.exists(cf.path_model):
+            optimizer.load_state_dict(torch.load(cf.path_optimizer))
         scaler = GradScaler()
         if rank == 1:
             plotter = Plotter(titles=['loss_actor', 'loss_critic', 'returns'])
@@ -142,6 +161,11 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
         dist.broadcast(sim_running, src=0)
         if world_playing:
             if sim_step % cf.sim_duration == 0:
+
+                if rank ==3:
+                    print('CUDA')
+                    print_cuda_tensors()
+
                 
                 ### Plots
 
@@ -153,6 +177,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 sim_count += 1
                 seed = sim_count // (cf.num_replay+1)
                 is_inference =  sim_count % (cf.num_replay+1) == 0 # not is_inference
+                dist.destroy_process_group(group_agents)
                 group_agents = dist.new_group(process_agents) # It is necessary to reset this group here to avoid duplicate gpu errors
                 if rank == process_sim:
                     env._world.reset(soft=False)
@@ -179,6 +204,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                         dist.barrier(group=group_agents)
                         if rank == 1:
                             torch.save(model_student.state_dict(), cf.path_model)
+                            torch.save(optimizer.state_dict(), cf.path_optimizer)
                         model.eval()
                         history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, device)
                 else:
@@ -189,16 +215,19 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                     if rank in process_agents:
                         # last_memories = memories['cross_cmem'].clone()
                         model_student.train() 
-                        optimizer.zero_grad()
+                        
                     previous_history = deepcopy(history)
                     previous_history['returns'] = tr.calculate_returns(history['rewards'], history['death_index'], gamma=cf.gamma)
                     previous_history['advantages'] = tr.calculate_gae(history['rewards'], history['values'], 
                                                         history['death_index'], gamma=cf.gamma, gae_lambda=cf.c_lambda)
                     if rank == 1:
                         plotter.data['returns'].append(previous_history['returns'][1, :].mean().item())
-                    
-                if rank in process_agents and isinstance(model, ActorCriticPerceiver):
-                    reset_memories(memories)
+
+                if rank in process_agents:
+                    torch.cuda.empty_cache()
+                    optimizer.zero_grad(set_to_none=True)
+                    if isinstance(model, ActorCriticPerceiver):
+                        reset_memories(memories)
                 tr.set_seeds(seed)
                 full_video = []
                 birth_time = torch.zeros(cf.num_envs, device=rank)
@@ -386,7 +415,7 @@ if __name__ == "__main__":
     # os.environ["CUDA_ERROR_DUMP"] = "1"
     #os.environ["NCCL_DEBUG_SUBSYS"]="COLL" # print collective calls 
     os.environ["TORCH_CPP_LOG_LEVEL"]="FATAL" # INFO WARNING FATAL
-    os.environ["NCCL_DEBUG"]="WARN" # WARN INFO DEBUG TRACE
+    os.environ["NCCL_DEBUG"]="TRACE" # WARN INFO DEBUG TRACE
     
     with initialize(config_path="../../OmniIsaacGymEnvs/omniisaacgymenvs/cfg"):
         cfg = compose(config_name="config", overrides=["task="+cf.task_name, "headless=True", "enable_viewport=True",
