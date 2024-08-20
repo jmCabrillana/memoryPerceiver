@@ -133,6 +133,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
     video = torch.zeros(cf.num_envs, cf.height, cf.width, cf.channels, device=rank, dtype=torch.uint8)
     reward = torch.zeros(cf.num_envs, 1, device=rank)
     actions_star = torch.zeros(cf.frames_future, cf.num_envs, cf.dim_actions, device=rank)
+    skip_indices = torch.tensor([i for i in range(0, cf.sim_duration, 2)], device, dtype=torch.int64)
 
     if rank == process_sim:
         cfg.seed = set_seed(cfg.seed, torch_deterministic=cfg.torch_deterministic)
@@ -218,9 +219,12 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                         
                     previous_history = deepcopy(history)
                     previous_history['returns'] = tr.calculate_returns(history['rewards'], history['death_index'], gamma=cf.gamma)
+                    history['rewards'][skip_indices] = history['rewards'][skip_indices+1]
                     previous_history['advantages'] = tr.calculate_gae(history['rewards'], history['values'], 
                                                         history['death_index'], gamma=cf.gamma, gae_lambda=cf.c_lambda)
                     if rank == 1:
+                        for key, value in previous_history.items():
+                            print(f"{key}: {value[:,0]}")
                         plotter.data['returns'].append(previous_history['returns'][:, :].mean().item())
 
                 if rank in process_agents:
@@ -415,7 +419,7 @@ if __name__ == "__main__":
     # os.environ["CUDA_ERROR_DUMP"] = "1"
     #os.environ["NCCL_DEBUG_SUBSYS"]="COLL" # print collective calls 
     os.environ["TORCH_CPP_LOG_LEVEL"]="FATAL" # INFO WARNING FATAL
-    os.environ["NCCL_DEBUG"]="TRACE" # WARN INFO DEBUG TRACE
+    os.environ["NCCL_DEBUG"]="WARN" # WARN INFO DEBUG TRACE
     
     with initialize(config_path="../../OmniIsaacGymEnvs/omniisaacgymenvs/cfg"):
         cfg = compose(config_name="config", overrides=["task="+cf.task_name, "headless=True", "enable_viewport=True",

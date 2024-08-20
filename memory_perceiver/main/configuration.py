@@ -34,7 +34,7 @@ class Config:
     dim_actions = 1 # 21 1
     dim_actions_ppo = frames_future*dim_actions #
     sim_duration = 260 # 1028 516 260
-    num_envs = 864 # 54
+    num_envs = 216 # 54 864
     learning_rate = 1e-3 # 1e-4
     accumulation_steps = 4 #2
     entropy = 0.05  # 0.01 to 0.05
