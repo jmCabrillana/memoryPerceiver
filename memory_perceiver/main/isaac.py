@@ -133,7 +133,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
     video = torch.zeros(cf.num_envs, cf.height, cf.width, cf.channels, device=rank, dtype=torch.uint8)
     reward = torch.zeros(cf.num_envs, 1, device=rank)
     actions_star = torch.zeros(cf.frames_future, cf.num_envs, cf.dim_actions, device=rank)
-    skip_indices = torch.tensor([i for i in range(0, cf.sim_duration, 2)], device, dtype=torch.int64)
+    skip_indices = torch.tensor([i for i in range(0, cf.sim_duration, 2)], device=device, dtype=torch.int64)
 
     if rank == process_sim:
         cfg.seed = set_seed(cfg.seed, torch_deterministic=cfg.torch_deterministic)
