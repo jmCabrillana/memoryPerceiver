@@ -221,7 +221,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                     previous_history['advantages'] = tr.calculate_gae(history['rewards'], history['values'], 
                                                         history['death_index'], gamma=cf.gamma, gae_lambda=cf.c_lambda)
                     if rank == 1:
-                        plotter.data['returns'].append(previous_history['returns'][1, :].mean().item())
+                        plotter.data['returns'].append(previous_history['returns'][:, :].mean().item())
 
                 if rank in process_agents:
                     torch.cuda.empty_cache()
