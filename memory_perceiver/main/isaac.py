@@ -219,7 +219,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                         
                     previous_history = deepcopy(history)
                     previous_history['returns'] = tr.calculate_returns(history['rewards'], history['death_index'], gamma=cf.gamma)
-                    history['rewards'][skip_indices] = history['rewards'][skip_indices+1]
+                    history['values'][skip_indices+1] = history['values'][skip_indices]
                     previous_history['advantages'] = tr.calculate_gae(history['rewards'], history['values'], 
                                                         history['death_index'], gamma=cf.gamma, gae_lambda=cf.c_lambda)
                     if rank == 1:
