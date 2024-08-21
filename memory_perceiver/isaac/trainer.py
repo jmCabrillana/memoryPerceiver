@@ -61,10 +61,11 @@ def calculate_gae(mem_rewards, mem_values, death_index, gamma=0.99, gae_lambda=0
 
         # Calculate the TD error and gae
         if t == sim_duration-1:
-            delta_t = mem_values[t, :]  
+            delta_t = mem_rewards[t, :] - mem_values[t, :]
         else:
             delta_t= mem_rewards[t, :] + gamma * mem_values[t+1, :] - mem_values[t, :]
-        gae_estimates[t, :] = delta_t + gamma * gae_lambda * gae
+        gae = delta_t + gamma * gae_lambda * gae
+        gae_estimates[t, :] = gae
         
     return gae_estimates
 

@@ -145,7 +145,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
             optimizer.load_state_dict(torch.load(cf.path_optimizer))
         scaler = GradScaler()
         if rank == 1:
-            plotter = Plotter(titles=['loss_actor', 'loss_critic', 'returns'])
+            plotter = Plotter(titles=['loss_actor', 'loss_critic', 'loss_entropy', 'returns'])
     sim_count, sim_step = -1, 0
     
     sim_running = torch.tensor(False, device=rank)
@@ -171,7 +171,8 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 ### Plots
 
                 if rank == 1 and sim_count % (cf.num_replay+1) == 2 and len(plotter.data['loss_actor']) > 0 :
-                    plotter.plot_all([(plotter.data['loss_actor'], 16), (plotter.data['loss_critic'], 16), plotter.data['returns']])
+                    plotter.plot_all([(plotter.data['loss_actor'], 64), (plotter.data['loss_critic'], 64), 
+                                      (plotter.data['loss_entropy'], 64), plotter.data['returns']])
 
                 ### Initialization
 
@@ -206,6 +207,8 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                         if rank == 1:
                             torch.save(model_student.state_dict(), cf.path_model)
                             torch.save(optimizer.state_dict(), cf.path_optimizer)
+                        dist.barrier(group=group_agents)
+                        model.load_state_dict(torch.load(cf.path_model))
                         model.eval()
                         history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, device)
                 else:
@@ -219,12 +222,21 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                         
                     previous_history = deepcopy(history)
                     previous_history['returns'] = tr.calculate_returns(history['rewards'], history['death_index'], gamma=cf.gamma)
-                    history['values'][skip_indices+1] = history['values'][skip_indices]
-                    previous_history['advantages'] = tr.calculate_gae(history['rewards'], history['values'], 
-                                                        history['death_index'], gamma=cf.gamma, gae_lambda=cf.c_lambda)
+                    previous_history['values'][skip_indices+1] = history['values'][skip_indices]
+                    # previous_history['advantages'] = tr.calculate_gae(history['rewards'], history['values'], 
+                    #                                     history['death_index'], gamma=cf.gamma, gae_lambda=cf.c_lambda)
+                    previous_history['advantages'] = previous_history['returns'] - previous_history['values']
+                    
                     if rank == 1:
                         for key, value in previous_history.items():
-                            print(f"{key}: {value[:,0]}")
+                            if key not in ['actions', 'logprobs', 'returns', 'generator']:
+                                print(f"{key}: {value[:,0]}")
+                            if key == 'actions':
+                                print(f"{key}0: {value[:,0, 0]}")
+                                print(f"{key}1: {value[:,0, 1]}")
+                            if key == 'returns':
+                                print(f"{key}: {(value[:,0]*10).int()}")
+                            
                         plotter.data['returns'].append(previous_history['returns'][:, :].mean().item())
 
                 if rank in process_agents:
@@ -356,6 +368,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                         if rank == 1 and custom_random(sim_count, sim_step) < cf.update_probability :
                             plotter.data['loss_actor'].append(loss_actor.item())
                             plotter.data['loss_critic'].append(loss_critic.item())
+                            # plotter.data['loss_entropy'].append(loss_entropy.item())
 
                     # Update buffers
 
@@ -364,6 +377,9 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 gather_dummy_src(actions_star, rank, size-1)
                 actions_star = rearrange(actions_star, 'b t d -> t b d')
                 buffer['actions_star'] += list(torch.unbind( actions_star ))
+                if rank == 1:
+                    tt =  (actions_star[0, :, 0] - actions_star[1, :, 0]).mean()
+                    plotter.data['loss_entropy'].append(tt.item())
             
 
             # Act(num_envs, 1)
@@ -377,7 +393,6 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
             if rank == process_sim:
 
                 # Step environment
-
                 if sim_step == 0:
                     env._task.post_reset()
                 env._task.pre_physics_step(action.to(task.device))
