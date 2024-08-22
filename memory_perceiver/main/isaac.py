@@ -207,8 +207,6 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                         if rank == 1:
                             torch.save(model_student.state_dict(), cf.path_model)
                             torch.save(optimizer.state_dict(), cf.path_optimizer)
-                        dist.barrier(group=group_agents)
-                        model.load_state_dict(torch.load(cf.path_model))
                         model.eval()
                         history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, device)
                 else:
@@ -237,7 +235,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                             if key == 'returns':
                                 print(f"{key}: {(value[:,0]*10).int()}")
                             
-                        plotter.data['returns'].append(previous_history['returns'][:, :].mean().item())
+                        plotter.data['returns'].append(previous_history['returns'][0, :].mean().item())
 
                 if rank in process_agents:
                     torch.cuda.empty_cache()

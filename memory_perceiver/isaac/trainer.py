@@ -52,8 +52,8 @@ def calculate_returns(mem_rewards, death_index, gamma=0.99):
 
 def calculate_gae(mem_rewards, mem_values, death_index, gamma=0.99, gae_lambda=0.95):
     sim_duration, num_envs = mem_rewards.size()
-    gae_estimates = torch.zeros_like(mem_rewards)
-    gae = torch.zeros_like(mem_rewards[0])
+    gae_estimates = torch.zeros(sim_duration, num_envs)
+    gae = torch.ones_like(num_envs)
     
     for t in reversed(range(sim_duration)):
         # If the agent is reset, set GAE to 0
