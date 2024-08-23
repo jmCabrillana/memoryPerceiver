@@ -145,7 +145,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
             optimizer.load_state_dict(torch.load(cf.path_optimizer))
         scaler = GradScaler()
         if rank == 1:
-            plotter = Plotter(titles=['loss_actor', 'loss_critic', 'loss_entropy', 'returns'])
+            plotter = Plotter(titles=['loss_actor', 'loss_critic', 'loss_entropy', 'actions_gap', 'returns'])
     sim_count, sim_step = -1, 0
     
     sim_running = torch.tensor(False, device=rank)
@@ -163,16 +163,11 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
         if world_playing:
             if sim_step % cf.sim_duration == 0:
 
-                if rank ==3:
-                    print('CUDA')
-                    print_cuda_tensors()
-
-                
                 ### Plots
 
-                if rank == 1 and sim_count % (cf.num_replay+1) == 2 and len(plotter.data['loss_actor']) > 0 :
+                if rank == 1 and sim_count % (cf.num_replay+1) == 1 and len(plotter.data['loss_actor']) > 0 :
                     plotter.plot_all([(plotter.data['loss_actor'], 64), (plotter.data['loss_critic'], 64), 
-                                      (plotter.data['loss_entropy'], 64), plotter.data['returns']])
+                                      (plotter.data['loss_entropy'], 64), (plotter.data['actions_gap'], 64), plotter.data['returns']])
 
                 ### Initialization
 
@@ -366,7 +361,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                         if rank == 1 and custom_random(sim_count, sim_step) < cf.update_probability :
                             plotter.data['loss_actor'].append(loss_actor.item())
                             plotter.data['loss_critic'].append(loss_critic.item())
-                            # plotter.data['loss_entropy'].append(loss_entropy.item())
+                            plotter.data['loss_entropy'].append(loss_entropy.item())
 
                     # Update buffers
 
@@ -376,8 +371,8 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 actions_star = rearrange(actions_star, 'b t d -> t b d')
                 buffer['actions_star'] += list(torch.unbind( actions_star ))
                 if rank == 1:
-                    tt =  (actions_star[0, :, 0] - actions_star[1, :, 0]).mean()
-                    plotter.data['loss_entropy'].append(tt.item())
+                    actions_gap =  (actions_star[0, :, 0] - actions_star[1, :, 0]).mean()
+                    plotter.data['actions_gap'].append(actions_gap.item())
             
 
             # Act(num_envs, 1)
