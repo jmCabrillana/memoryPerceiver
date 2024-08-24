@@ -29,10 +29,10 @@ class Config:
 
     # PPO
     task_name = "Cartpole" # Humanoid Cartpole 
-    agent_type = "Simple" # Perceiver Simple
+    agent_type = "Perceiver" # Perceiver Simple
     dim_observations = 4 # 87 4
     dim_actions = 1 # 21 1
-    dim_actions_ppo = frames_future*dim_actions
+    dim_actions_ppo = min(2, frames_future)*dim_actions
     sim_duration = 260 # 1028 516 260
     num_envs = 12 # 54 216 864
     learning_rate = 1e-4 # 1e-4
@@ -65,7 +65,7 @@ class Config:
     path_main = '/isaac-sim/memoryPerceiver/memory_perceiver/main/'
     path_model = path_main+'weights/'+task_name+'.pt'
     path_optimizer = path_main+'weights/'+task_name+'_optimizer.pt'
-    path_logs = path_main+'outputs/isaac.log'
+    # path_logs = path_main+'outputs/isaac.log'
 
 
 cf = Config()

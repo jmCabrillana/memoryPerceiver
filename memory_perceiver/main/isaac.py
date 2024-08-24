@@ -28,50 +28,11 @@ from omniisaacgymenvs.envs.vec_env_rlgames import VecEnvRLGames
 
 from memoryPerceiver.memory_perceiver.main.configuration import cf
 from memoryPerceiver.memory_perceiver.core.model_wrapper import create_memories, reset_memories
+from memoryPerceiver.memory_perceiver.core.distributed import setup_distributed, average_gradients, scatter_dummy_src, gather_dummy_src
 import memoryPerceiver.memory_perceiver.isaac.trainer as tr
 from memoryPerceiver.memory_perceiver.isaac.plot import Plotter
 from memoryPerceiver.memory_perceiver.isaac.agent import ActorCritic, ActorCriticSimple, ActorCriticPerceiver, create_agent
 
-def setup(rank, size):
-    os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '12355'
-    dist.init_process_group("nccl", rank=rank, world_size=size)
-
-def average_gradients(model, size, group):
-    for param in model.parameters():
-        if param.grad is not None: # !!! Temporary, audio not linked to loss for now (modality/projection['audio']) !!!
-            dist.all_reduce(param.grad.data, op=dist.ReduceOp.SUM, group=group)
-            param.grad.data /= size
-            if dist.get_rank() !=  param.get_device():
-                print(f"{dist.get_rank()} -> {param.device}")
-                # sys.exit()
-
-def scatter_dummy_src(tensor, rank, size):
-    #  split batch at rank 0 to ranks  1, ..., size-1
-    if rank == 0:
-        tensor_list = list(torch.split(tensor, len(tensor)//size))
-        tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
-        dst = torch.zeros_like(tensor_list[0], device=0)
-    if rank != 0:
-        tensor_list = None
-        dst = tensor
-    dist.barrier()
-    dist.scatter(dst, tensor_list, src=0)
-
-def gather_dummy_src(tensor, rank, size):
-    #  gather and batch ranks 1, ..., size-1 to 0
-    if rank != 0 :
-        src = tensor
-        tensor_list = None
-    if rank == 0:
-        tensor_list = list(torch.split(tensor, len(tensor)//size))
-        tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
-        src = torch.zeros_like(tensor_list[0], device=0)
-    dist.barrier()
-    dist.gather(src, tensor_list, dst=0)
-    if rank == 0:
-        tensor_list.pop(0)
-        tensor = torch.stack(tensor_list)
 
 def custom_random(seed1, seed2):
     a = 1664525
@@ -99,7 +60,7 @@ def print_cuda_tensors():
 
 def isaac_training(cf, cfg: DictConfig, rank, size):
 
-    setup(rank, size)
+    setup_distributed(rank, size)
     process_agents = list(range(1, size))
     process_sim = 0
     group_agents = dist.new_group(process_agents)

@@ -66,13 +66,20 @@ class ActorCriticSimple(ActorCritic):
             return logprobs, values, entropies, None
     
     def instanciate_actions(self, actions, **kwargs):
+
+        # default dt
         dt=2
         if 'dt' in kwargs:
             dt = kwargs['dt']
-        t = torch.linspace(0, 1, dt, device=actions.device)
-        dim_d = actions.size()[-1]
-        action1, action2 = torch.split(actions, dim_d//2, dim=-1)
-        actions_star = einsum('t, b d -> t b d', t, action1) + einsum('t, b d -> t b d', 1-t, action2)
+
+        # Interpolate if dt>=2 otherwise identity
+        if dt >= 2:
+            t = torch.linspace(0, 1, dt, device=actions.device)
+            dim_d = actions.size()[-1]
+            action1, action2 = torch.split(actions, dim_d//2, dim=-1)
+            actions_star = einsum('t, b d -> t b d', t, action1) + einsum('t, b d -> t b d', 1-t, action2)
+        else: 
+            actions_star = actions
         # actions_star = repeat(actions, 'b d -> t b d', t=dt) for non ppo action dim
         return actions_star
             
@@ -156,13 +163,20 @@ class ActorCriticPerceiver(ActorCritic):
             return logprobs, values, entropies, new_memories
     
     def instanciate_actions(self, actions, **kwargs):
+
+        # set default dt
         dt=8
         if 'dt' in kwargs:
             dt = kwargs['dt']
-        t = torch.linspace(0, 1, dt, device=actions.device)
-        dim_d = actions.size()[-1]
-        action1, action2 = torch.split(actions, dim_d//2, dim=-1)
-        actions_star = einsum('t, b d -> t b d', t, action1) + einsum('t, b d -> t b d', 1-t, action2)
+
+        # Interpolate if dt >= 2 otherwise no modif
+        if dt >= 2:
+            t = torch.linspace(0, 1, dt, device=actions.device)
+            dim_d = actions.size()[-1]
+            action1, action2 = torch.split(actions, dim_d//2, dim=-1)
+            actions_star = einsum('t, b d -> t b d', t, action1) + einsum('t, b d -> t b d', 1-t, action2)
+        else :
+            actions_star = actions
         return actions_star
 
 

@@ -1,7 +1,6 @@
 git config --global user.email "jean_manuel.cabrillana@yahoo.fr"
 git config --global user.name "jmCabrillana"
 mkdir memory_perceiver/main/weights
-mkdir memory_perceiver/main/outputs
 mkdir memory_perceiver/main/monitor
 /isaac-sim/python.sh -m pip install torch torchvision torchaudio
 /isaac-sim/python.sh -m pip install -r requirements.txt
