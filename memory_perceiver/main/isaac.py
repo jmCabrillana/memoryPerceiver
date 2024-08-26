@@ -332,7 +332,7 @@ def isaac_training(cf, cfg: DictConfig, rank, size):
                 actions_star = rearrange(actions_star, 'b t d -> t b d')
                 buffer['actions_star'] += list(torch.unbind( actions_star ))
                 if rank == 1:
-                    actions_gap =  (actions_star[0, :, 0] - actions_star[1, :, 0]).mean()
+                    actions_gap =  (actions_star[0, :, 0]).mean() # - actions_star[1, :, 0]).mean()
                     plotter.data['actions_gap'].append(actions_gap.item())
             
 

@@ -8,7 +8,7 @@ class Config:
 
     frames = 2
     sample_per_frame = 1920
-    frames_future = 2
+    frames_future = 1
     width = 456
     height = 264
     patch_audio = 16
@@ -29,7 +29,7 @@ class Config:
 
     # PPO
     task_name = "Cartpole" # Humanoid Cartpole 
-    agent_type = "Perceiver" # Perceiver Simple
+    agent_type = "Simple" # Perceiver Simple
     dim_observations = 4 # 87 4
     dim_actions = 1 # 21 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
@@ -47,7 +47,7 @@ class Config:
     eps_clip = 0.2
     num_replay = 1
     update_probability = 0.9 #0.33
-    render = True
+    render = False
 
     # Model dimension configuration
 

@@ -79,7 +79,7 @@ class ActorCriticSimple(ActorCritic):
             action1, action2 = torch.split(actions, dim_d//2, dim=-1)
             actions_star = einsum('t, b d -> t b d', t, action1) + einsum('t, b d -> t b d', 1-t, action2)
         else: 
-            actions_star = actions
+            actions_star = repeat(actions, 'b d -> t b d', t=1)
         # actions_star = repeat(actions, 'b d -> t b d', t=dt) for non ppo action dim
         return actions_star
             
@@ -176,7 +176,7 @@ class ActorCriticPerceiver(ActorCritic):
             action1, action2 = torch.split(actions, dim_d//2, dim=-1)
             actions_star = einsum('t, b d -> t b d', t, action1) + einsum('t, b d -> t b d', 1-t, action2)
         else :
-            actions_star = actions
+            actions_star = repeat(actions, 'b d -> t b d', t=1)
         return actions_star
 
 
