@@ -18,15 +18,14 @@ CLOUDSDK_CORE_DISABLE_PROMPTS=1 ./google-cloud-sdk/install.sh
 
 # python and requirements
 alias python='/isaac-sim/python.sh'
-python -m pip install torch torchvision torchaudio
-python -m pip install -r requirements.txt
-python -m pip install . 
+/isaac-sim/python.sh -m pip install torch torchvision torchaudio
+/isaac-sim/python.sh -m pip install -r requirements.txt
 cd /isaac-sim/memoryPerceiver/IsaacLab/source/extensions/omni.isaac.lab
-python -m pip install -e .
+/isaac-sim/python.sh -m pip install -e .
 cd /isaac-sim/memoryPerceiver/IsaacLab/source/extensions/omni.isaac.lab_assets
-python -m pip install -e .
-cd /isaac-sim/memoryPerceiver/IsaacLab/source/extensions/omni.isaac.lab_task
-python -m pip install -e .
+/isaac-sim/python.sh -m pip install -e .
+cd /isaac-sim/memoryPerceiver/IsaacLab/source/extensions/omni.isaac.lab_tasks
+/isaac-sim/python.sh -m pip install -e .
 
 # Set variables
 export ACCEPT_EULA=Y
