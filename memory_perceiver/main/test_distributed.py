@@ -9,16 +9,18 @@ def setup(rank, size):
     os.environ['MASTER_PORT'] = '12355'
     dist.init_process_group("nccl", rank=rank, world_size=size)
 
-def scatter_dummy_src(tensor_batch, rank, size, swap_axes=False):
-    #  split batch at 0 to 1, ..., size-1
+def scatter_dummy_src(tensor, rank, size):
+    #  split batch at rank 0 to ranks  1, ..., size-1
     if rank == 0:
-        tensor_list = list(torch.split(tensor_batch, len(tensor_batch)//size))
+        tensor_list = list(torch.split(tensor, len(tensor)//size))
         tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
         print(tensor_list)
-        dummy_dst = torch.zeros_like(tensor_list[0], device=0)
-        dist.scatter(dummy_dst, tensor_list, 0)
-    if rank > 0:
-        dist.scatter(tensor_batch, None, 0)
+        dst = torch.zeros_like(tensor_list[0], device=0)
+    if rank != 0:
+        tensor_list = None
+        dst = tensor
+    dist.barrier()
+    dist.scatter(dst, tensor_list, src=0)
 
 def gather_dummy_src(tensor, rank, size):
     #  gather and batch 1, ..., size-1 to 0
@@ -52,7 +54,7 @@ def train(rank, size):
     print("rank : ", rank, "  ", tensor_dst)
     """
     
-    """
+    
     if rank == 0:
         tensor_batch = torch.tensor([[1,1,2],
                                      [4,7,8],
@@ -61,10 +63,10 @@ def train(rank, size):
                                      [3,3,4],
                                      [4,7,8],], device=rank, dtype=float)
     if rank > 0:
-        tensor_batch = torch.zeros(2,3, device=rank, dtype=float)
+        tensor_batch = torch.zeros(6,3, device=rank, dtype=float)
     scatter_dummy_src(tensor_batch, rank, size-1)
-    print("rank : ", rank, "  ", tensor_batch)
-    """
+    print(f"rank : {rank}, , {tensor_batch}")
+    
     
     """
     if rank > 0:
@@ -75,7 +77,8 @@ def train(rank, size):
     gather_dummy_src(tensor, rank, size-1)
     print("rank : ", rank, "  ", tensor)
     """
-    
+
+    """
     group_agents=dist.new_group(list(range(1,4)))
     print(list(range(1,size)))
     if rank > 0:
@@ -88,6 +91,7 @@ def train(rank, size):
         #dist.barrier(group_agents)
     #dist.all_reduce(tensor, op=dist.ReduceOp.SUM)
     print(f"{rank}: {tensor}")
+    """
 
     # Clean up process group
     dist.barrier()
@@ -97,6 +101,7 @@ def train(rank, size):
 if __name__ == '__main__':
     # Number of processes (assumed to be equal to the number of GPUs)
     world_size = torch.cuda.device_count()
+    print(world_size)
 
     # Spawn processes
     processes = []

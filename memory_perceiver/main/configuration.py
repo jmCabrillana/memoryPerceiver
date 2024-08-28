@@ -8,7 +8,7 @@ class Config:
 
     frames = 2
     sample_per_frame = 1920
-    frames_future = 1
+    frames_future = 2
     width = 456
     height = 264
     patch_audio = 16
@@ -66,6 +66,7 @@ class Config:
     has_video = True
     has_audio = True
     path_main = '/isaac-sim/memoryPerceiver/memory_perceiver/main/'
+    path_experiment = path_main+'experiments/'+task+'/'+experiment_name+'/'
     path_model = path_main+'weights/'+task+'.pt'
     path_optimizer = path_main+'weights/'+task+'_optimizer.pt'
     # path_logs = path_main+'outputs/isaac.log'

@@ -116,7 +116,8 @@ def isaac_training(cf, rank, size):
             optimizer.load_state_dict(torch.load(cf.path_optimizer))
         scaler = GradScaler()
         if rank == 1:
-            plotter = Plotter(titles=['loss_actor', 'loss_critic', 'loss_entropy', 'actions_gap', 'returns'])
+            plotter = Plotter(titles=['loss_actor', 'loss_critic', 'loss_entropy', 'actions_gap', 'returns'],
+                                path_plots=cf.path_experiment)
     sim_count, sim_step = -1, 0
     
     sim_running = torch.tensor(False, device=rank)
@@ -159,7 +160,7 @@ def isaac_training(cf, rank, size):
                         print('PLAY')
                     else:
                         print('REPLAY')
-                    
+                print(f'{rank} $0')
                 if is_inference:
                     if rank in process_agents:
                         # print(f"MEM:  {F.mse_loss(last_memories, memories['cross_cmem']).item()}")
@@ -169,12 +170,17 @@ def isaac_training(cf, rank, size):
                         else:
                             if sim_count % ( (cf.num_replay+1)*cf.student_update_step ) == 0 :
                                 model.load_state_dict(model_student.state_dict())
+                        print('$1')
                         dist.barrier(group=group_agents)
+                        print('$2')
                         if rank == 1:
                             torch.save(model_student.state_dict(), cf.path_model)
                             torch.save(optimizer.state_dict(), cf.path_optimizer)
+                        print('$3')
                         model.eval()
+                        print('$4')
                         history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, device)
+                        print('$5')
                 else:
                     for key in ['rewards', 'death_index']:
                         swap_batch_time_tmp = rearrange(history[key], 't b -> b t').contiguous()
@@ -183,7 +189,7 @@ def isaac_training(cf, rank, size):
                     if rank in process_agents:
                         # last_memories = memories['cross_cmem'].clone()
                         model_student.train() 
-                        
+
                     previous_history = deepcopy(history)
                     previous_history['returns'] = tr.calculate_returns(history['rewards'], history['death_index'], gamma=cf.gamma)
                     previous_history['values'][skip_indices+1] = history['values'][skip_indices]
@@ -208,6 +214,7 @@ def isaac_training(cf, rank, size):
                     optimizer.zero_grad(set_to_none=True)
                     if isinstance(model, ActorCriticPerceiver):
                         reset_memories(memories)
+                print(f'{rank} $6')
                 tr.set_seeds(seed)
                 full_video = []
                 birth_time = torch.zeros(cf.num_envs, device=rank)
@@ -215,8 +222,10 @@ def isaac_training(cf, rank, size):
                     buffer[key]=[]
                 backward_count= 0
                 sim_step = 0
+                print(f'{rank} $7')
 
             dist.barrier()
+            print(f'{rank} $8')
 
             ### Get agent observations 
 
@@ -233,26 +242,38 @@ def isaac_training(cf, rank, size):
                     history['rewards'][sim_step] = reward
             for x in [obs, reward]: #video
                 scatter_dummy_src(x, rank, size-1) 
+            print(f'{rank} {obs}')
             tr.update_buffers(buffer, {'obs': obs, 'video': video, 'rewards': reward}, frames=cf.frames)
             if cf.render:
                 scatter_dummy_src(video, rank, size-1)
                 tr.update_buffers(buffer, {'video': video}, frames=cf.frames)
 
+            print(f'{rank} $9')
             ### Reset memory at death and record 
 
             dones = torch.zeros(cf.num_envs, device=rank)
             if rank == process_sim:
+                print(f'{rank} $9.1')
                 dones, _ = env.unwrapped._get_dones()
-                birth_time[dones] = sim_step
+                dones = dones.int().clone()
+                birth_time[dones==1] = sim_step
 
                 # Update death dictionnary
+                print(f'{rank} $9.2')
                 if is_inference:
-                    history['death_index'][sim_step, :]=dones.int()
+                    history['death_index'][sim_step, :]=dones
+                print(f'{rank} $9.3')
             scatter_dummy_src(dones, rank, size-1) 
+            print(dones)
+            print(f'{rank} $9.4')
+            print(birth_time)
             scatter_dummy_src(birth_time, rank, size-1) 
+            print(f'{rank} $9.5')
             dones_list = torch.nonzero(dones.int()).flatten().tolist()
+            print(f'{rank} $9.6')
             if rank in process_agents and isinstance(model, ActorCriticPerceiver):
                 reset_memories(memories, indexes=dones_list)
+            print(f'{rank} $10')
 
             ### Agent
             
@@ -342,7 +363,7 @@ def isaac_training(cf, rank, size):
                     actions_gap =  (actions_star[0, :, 0]).mean() # - actions_star[1, :, 0]).mean()
                     plotter.data['actions_gap'].append(actions_gap.item())
             
-
+            print(f'{rank} $11')
             # Act(num_envs, 1)
 
             if(len(buffer['actions_star'])>0):
@@ -355,7 +376,7 @@ def isaac_training(cf, rank, size):
 
                 # Step environment
                 if sim_step == 0:
-                    env.__init__()
+                    pass #env.unwrapped.__init__(env_cfg)
                 env.step(action.to(process_sim))
                 # env.step(render=cf.render)
                 # env.sim_frame_count += 1
@@ -365,6 +386,7 @@ def isaac_training(cf, rank, size):
                 torchvision.io.write_video('/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/test_'  + str(sim_count) + '_vid_.mp4', 
                                             torch.stack(full_video)[:,1], 8*cf.frames)
             sim_step += 1
+            print(f'{rank} $12')
 
         else:
             if rank == process_sim:
@@ -396,7 +418,7 @@ if __name__ == "__main__":
     # os.environ["CUDA_ERROR_DUMP"] = "1"
     #os.environ["NCCL_DEBUG_SUBSYS"]="COLL" # print collective calls 
     os.environ["TORCH_CPP_LOG_LEVEL"]="FATAL" # INFO WARNING FATAL
-    os.environ["NCCL_DEBUG"]="WARN" # WARN INFO DEBUG TRACE
+    os.environ["NCCL_DEBUG"]="DEBUG" # WARN INFO DEBUG TRACE
     
     # with initialize(config_path="../../OmniIsaacGymEnvs/omniisaacgymenvs/cfg"):
     #     cfg = compose(config_name="config", overrides=["task="+cf.task_name, "headless=True", "enable_viewport=True",
