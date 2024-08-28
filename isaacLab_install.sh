@@ -17,7 +17,7 @@ CLOUDSDK_CORE_DISABLE_PROMPTS=1 ./google-cloud-sdk/install.sh
 ./google-cloud-sdk/bin/gcloud --quiet auth activate-service-account --key-file=/isaac-sim/memoryPerceiver/service_account.json
 
 # python and requirements
-alias python='/isaac-sim/python.sh'
+# alias python='/isaac-sim/python.sh'
 /isaac-sim/python.sh -m pip install torch torchvision torchaudio
 /isaac-sim/python.sh -m pip install -r requirements.txt
 cd /isaac-sim/memoryPerceiver/IsaacLab/source/extensions/omni.isaac.lab

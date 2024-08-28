@@ -68,6 +68,7 @@ instance/
 # Scrapy stuff:
 .scrapy
 
+temp_auto_push.bat
 # Sphinx documentation
 docs/_build/
 
@@ -138,4 +139,5 @@ memory_perceiver/main/outputs
 google-cloud-sdk/
 OmniIsaacGymEnvs
 google-cloud-cli-417.0.1-linux-x86_64.tar.gz
-infinigen/
+infinigen/.gitignore
+branch_structure.json
