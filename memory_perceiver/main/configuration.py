@@ -27,14 +27,18 @@ class Config:
     video_future = frames_future*len_video_frame
     audio_future = frames_future*len_audio_frame 
 
-    # PPO
-    task_name = "Cartpole" # Humanoid Cartpole 
+    # Task
+    task = "Isaac-Cartpole-Direct-v0" # Humanoid Cartpole 
     agent_type = "Simple" # Perceiver Simple
     dim_observations = 4 # 87 4
     dim_actions = 1 # 21 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
     sim_duration = 260 # 1028 516 260
     num_envs = 12 # 54 216 864
+    seed = 68
+    render = False
+
+    # PPO
     learning_rate = 1e-4 # 1e-4
     accumulation_steps = 2 # 2 4
     entropy = 0.00  # 0.01 to 0.05
@@ -47,7 +51,6 @@ class Config:
     eps_clip = 0.2
     num_replay = 1
     update_probability = 0.9 #0.33
-    render = False
 
     # Model dimension configuration
 
@@ -63,8 +66,8 @@ class Config:
     has_video = True
     has_audio = True
     path_main = '/isaac-sim/memoryPerceiver/memory_perceiver/main/'
-    path_model = path_main+'weights/'+task_name+'.pt'
-    path_optimizer = path_main+'weights/'+task_name+'_optimizer.pt'
+    path_model = path_main+'weights/'+task+'.pt'
+    path_optimizer = path_main+'weights/'+task+'_optimizer.pt'
     # path_logs = path_main+'outputs/isaac.log'
 
 
