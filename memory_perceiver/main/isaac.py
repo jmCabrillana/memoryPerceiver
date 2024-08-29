@@ -163,22 +163,21 @@ def isaac_training(cf, rank, size):
 
                     previous_history = deepcopy(history)
                     previous_history['returns'] = tr.calculate_returns(history['rewards'], history['death_index'], gamma=cf.gamma)
-                    previous_history['advantages'] = tr.calculate_gae(history['rewards'], history['values'], 
-                                                        history['death_index'], gamma=cf.gamma, gae_lambda=cf.c_lambda)
-                    # previous_history['advantages'] = previous_history['returns'] - previous_history['values']
+                    # previous_history['advantages'] = tr.calculate_gae(history['rewards'], history['values'], 
+                    #                                     history['death_index'], gamma=cf.gamma, gae_lambda=cf.c_lambda)
+                    previous_history['advantages'] = previous_history['returns'] - previous_history['values']
                     
                     if rank == 1:
+                        plotter.data['returns'].append(previous_history['returns'][0, :].mean().item())
                         for key, value in previous_history.items():
                             if key not in ['actions', 'logprobs', 'returns', 'generator']:
                                 print(f"{key}: {value[:,0]}")
                             if key == 'actions':
-                                print(f"{key}0: {value[:,0, 0]}")
-                                print(f"{key}1: {value[:,0, 1]}")
+                                print(f"{key}: {value[:,0, 0]}")
+                                #print(f"{key}1: {value[:,0, 1]}")
                             if key == 'returns':
                                 print(f"{key}: {(value[:,0]*10).int()}")
-                            
-                        plotter.data['returns'].append(previous_history['returns'][0, :].mean().item())
-
+                        
                 if rank in rank_agents:
                     torch.cuda.empty_cache()
                     optimizer.zero_grad(set_to_none=True)
@@ -260,8 +259,7 @@ def isaac_training(cf, rank, size):
                         history['values'][sim_step:sim_step+cf.frames_future] = values  # for cumulative sum  
                     else:
                         actions, logprobs, values = [previous_history[key][sim_step].to(device) \
-                                                    for key in ['actions', 'logprobs', 'values']]
-                                        
+                                                    for key in ['actions', 'logprobs', 'values']]                                        
 
                     ## Backward pass
 
@@ -311,6 +309,7 @@ def isaac_training(cf, rank, size):
                     # Update buffers
 
                     actions_star = model.instanciate_actions(actions, dt=cf.frames_future)
+
                 actions_star = rearrange(actions_star, 't b d -> b t d').contiguous()
                 gather_dummy_src(actions_star, rank, size-1)
                 actions_star = rearrange(actions_star, 'b t d -> t b d')
@@ -322,8 +321,8 @@ def isaac_training(cf, rank, size):
             # Act(num_envs, 1)
 
             if(len(buffer['actions_star'])>0):
-                    action = buffer['actions_star'].pop(0)
-                    action = torch.clamp(action, min=-1, max=1)
+                action = buffer['actions_star'].pop(0)
+                action = torch.clamp(action, min=-1, max=1)
             else:
                 action = torch.dzeros(cf.num_envs, 1)
 
