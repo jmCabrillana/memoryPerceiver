@@ -3,6 +3,7 @@
 class Config:
 
     experiment_name = "h_e0.0"
+    experiment_iteration=0
 
     # Model inputs and outputs
 
@@ -39,9 +40,9 @@ class Config:
     render = False
 
     # PPO
-    learning_rate = 5e-4 # 1e-4
+    learning_rate = 1e-3 # 1e-4
     accumulation_steps = 1 # 2 4
-    entropy = 0.01  # 0.01 to 0.05
+    entropy = 0.00  # 0.01 to 0.05
     critic = 4      # 0.5 to 2 4
     student_update_step = 1
     eps = 1e-9
@@ -50,7 +51,7 @@ class Config:
     grad_norm = 1.0  # 0.1 to 1.0
     eps_clip = 0.2
     num_replay = 1
-    update_probability = 0.85 #0.33
+    update_probability = 0.99 #0.33
 
     # Model dimension configuration
 

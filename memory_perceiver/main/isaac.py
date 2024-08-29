@@ -4,8 +4,6 @@ import sys
 import gc
 import logging
 from copy import deepcopy
-from hydra import initialize, compose
-from omegaconf import DictConfig
 import numpy as np
 import torchshow as ts
 import torchvision
@@ -163,20 +161,20 @@ def isaac_training(cf, rank, size):
 
                     previous_history = deepcopy(history)
                     previous_history['returns'] = tr.calculate_returns(history['rewards'], history['death_index'], gamma=cf.gamma)
-                    # previous_history['advantages'] = tr.calculate_gae(history['rewards'], history['values'], 
-                    #                                     history['death_index'], gamma=cf.gamma, gae_lambda=cf.c_lambda)
-                    previous_history['advantages'] = previous_history['returns'] - previous_history['values']
+                    previous_history['advantages'] = tr.calculate_gae(history['rewards'], history['values'], 
+                                                        history['death_index'], gamma=cf.gamma, gae_lambda=cf.c_lambda)
+                    # previous_history['advantages'] = previous_history['returns'] - previous_history['values']
                     
                     if rank == 1:
                         plotter.data['returns'].append(previous_history['returns'][0, :].mean().item())
-                        for key, value in previous_history.items():
-                            if key not in ['actions', 'logprobs', 'returns', 'generator']:
-                                print(f"{key}: {value[:,0]}")
-                            if key == 'actions':
-                                print(f"{key}: {value[:,0, 0]}")
-                                #print(f"{key}1: {value[:,0, 1]}")
-                            if key == 'returns':
-                                print(f"{key}: {(value[:,0]*10).int()}")
+                        # for key, value in previous_history.items():
+                        #     if key not in ['actions', 'logprobs', 'returns', 'generator']:
+                        #         print(f"{key}: {value[:,0]}")
+                        #     if key == 'actions':
+                        #         print(f"{key}: {value[:,0, 0]}")
+                        #         #print(f"{key}1: {value[:,0, 1]}")
+                        #     if key == 'returns':
+                        #         print(f"{key}: {(value[:,0]*10).int()}")
                         
                 if rank in rank_agents:
                     torch.cuda.empty_cache()
@@ -376,6 +374,36 @@ if __name__ == "__main__":
     # with initialize(config_path="../../OmniIsaacGymEnvs/omniisaacgymenvs/cfg"):
     #     cfg = compose(config_name="config", overrides=["task="+cf.task_name, "headless=True", "enable_viewport=True",
     #                     "num_envs="+str(cf.num_envs), "imgWidth="+str(cf.width), "imgHeight="+str(cf.height)])
+
+    # import re
+    # import shutil
+
+    # if not os.path.exists(cf.path_experiment):
+    #     os.makedirs(cf.path_experiment)
+    #     shutil.copy(cf.path_main+'configuration.py', 
+    #             cf.path_experiment+'configuration_0.py')
+    # else:
+    #     pattern = re.compile(r'configuration_(\d+)\.py')
+    #     experiment_number = -1
+    #     max_file = None
+
+    #     # List all files in the specified directory
+    #     for filename in os.listdir(cf.path_experiment):
+    #         match = pattern.match(filename)
+    #         if match:
+    #             number = int(match.group(1))
+    #             if number > experiment_number:
+    #                 experiment_number = number
+    #                 max_file = filename
+
+    #     print(max_file, experiment_number)
+    # if (): # files equal
+    #     pass
+    # else:
+    #     cf.experiment_iteration = experiment_number+1
+    # shutil.copy(cf.path_main+'configuration.py', 
+    #             cf.path_experiment+'configuration_'+str(cf.experiment_iteration)+'.py')
+
 
     size = num_gpus
     processes = []

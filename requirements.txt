@@ -12,3 +12,4 @@ torchshow>=0.4.2
 speechbrain>=0.5.12
 gdown>=4.5.1
 argparse>=1.4.0
+xxhash>=3.5.0
