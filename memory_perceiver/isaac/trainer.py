@@ -36,8 +36,10 @@ def update_buffers(buff, dict, frames=32):
 
 def calculate_returns(mem_rewards, death_index, gamma=0.99):
     sim_duration, num_envs = mem_rewards.size()
+    device = mem_rewards.device
     returns_estimates = torch.zeros_like(mem_rewards)
-    sum = torch.zeros_like(mem_rewards[0])
+    returns_estimates = torch.zeros(sim_duration, num_envs, device=device)
+    sum = torch.ones(num_envs, device=device)
     
     for t in reversed(range(sim_duration)):
         # If the agent is reset, set to 0
@@ -51,9 +53,10 @@ def calculate_returns(mem_rewards, death_index, gamma=0.99):
 
 
 def calculate_gae(mem_rewards, mem_values, death_index, gamma=0.99, gae_lambda=0.95):
+    device = mem_rewards.device
     sim_duration, num_envs = mem_rewards.size()
-    gae_estimates = torch.zeros(sim_duration, num_envs)
-    gae = torch.ones_like(num_envs)
+    gae_estimates = torch.zeros(sim_duration, num_envs, device=device)
+    gae = torch.ones(num_envs, device=device)
     
     for t in reversed(range(sim_duration)):
         # If the agent is reset, set GAE to 0

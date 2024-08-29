@@ -31,48 +31,25 @@ from omni.isaac.lab.app import AppLauncher
 from memoryPerceiver.memory_perceiver.main.configuration import cf
 from memoryPerceiver.memory_perceiver.core.model_wrapper import create_memories, reset_memories
 from memoryPerceiver.memory_perceiver.core.distributed import setup_distributed, average_gradients, scatter_dummy_src, gather_dummy_src
+from memoryPerceiver.memory_perceiver.core.miscellaneous import custom_random, print_cuda_tensors
 import memoryPerceiver.memory_perceiver.isaac.trainer as tr
 from memoryPerceiver.memory_perceiver.isaac.plot import Plotter
 from memoryPerceiver.memory_perceiver.isaac.agent import ActorCritic, ActorCriticSimple, ActorCriticPerceiver, create_agent
 
 
-def custom_random(seed1, seed2):
-    a = 1664525
-    c = 1013904223
-    m = 2**32
-    combined_seed = (seed1 + seed2) << 16
-    combined_seed = (a * combined_seed + c) % m
-    return combined_seed / m
-
-def print_cuda_tensors():
-    objects = []
-    mem_total = 0
-    for obj in gc.get_objects():
-        try:
-            if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
-                mem = (obj.element_size() * obj.nelement()/1000000)
-                mem_total += mem
-                objects.append( [type(obj), obj.size(), obj.nelement(), mem])
-        except:
-            pass
-    print(mem_total)
-    objects = sorted(objects, key = lambda x: x[2], reverse=True)
-    for obj in objects[:5]:
-        print(obj)
-
 def isaac_training(cf, rank, size):
 
     setup_distributed(rank, size)
-    process_agents = list(range(1, size))
-    process_sim = 0
-    group_agents = dist.new_group(process_agents)
+    rank_agents = list(range(1, size))
+    rank_sim = 0
+    group_agents = dist.new_group(rank_agents)
     device = torch.device(rank)
 
-    cf.num_envs = cf.num_envs//(size-1) if rank > 0 else cf.num_envs
+    cf.num_envs = cf.num_envs//(size-1) if rank in rank_agents else cf.num_envs
     
-    if rank == process_sim:
+    if rank == rank_sim:
         # !!! Load isaac modules after the variables
-        # env = VecEnvRLGames(headless=cfg.headless, sim_device=process_sim, enable_viewport=cfg.enable_viewport)
+        # env = VecEnvRLGames(headless=cfg.headless, sim_device=rank_sim, enable_viewport=cfg.enable_viewport)
         app_launcher = AppLauncher(headless=True)
         simulation_app = app_launcher.app
         import gymnasium as gym
@@ -88,7 +65,7 @@ def isaac_training(cf, rank, size):
         env = gym.make(cf.task, cfg=env_cfg)
         print(f"[INFO]: Gym observation space: {env.observation_space}")
         print(f"[INFO]: Gym action space: {env.action_space}")
-    if rank in process_agents:
+    if rank in rank_agents:
         model = create_agent(cf, rank)
         model_student = create_agent(cf, rank)
         if isinstance(model, ActorCriticPerceiver):
@@ -105,12 +82,11 @@ def isaac_training(cf, rank, size):
     video = torch.zeros(cf.num_envs, cf.height, cf.width, cf.channels, device=rank, dtype=torch.uint8)
     reward = torch.zeros(cf.num_envs, 1, device=rank)
     actions_star = torch.zeros(cf.frames_future, cf.num_envs, cf.dim_actions, device=rank)
-    skip_indices = torch.tensor([i for i in range(0, cf.sim_duration, 2)], device=device, dtype=torch.int64)
 
-    if rank == process_sim:
+    if rank == rank_sim:
         seed_isaac = set_seed(cf.seed, torch_deterministic=False)
         env.reset()
-    if rank in process_agents:
+    if rank in rank_agents:
         optimizer = torch.optim.Adam(model_student.parameters(), lr=cf.learning_rate)
         if os.path.exists(cf.path_model):
             optimizer.load_state_dict(torch.load(cf.path_optimizer))
@@ -122,12 +98,12 @@ def isaac_training(cf, rank, size):
     
     sim_running = torch.tensor(False, device=rank)
     world_playing = torch.tensor(False, device=rank)
-    if rank == process_sim:
+    if rank == rank_sim:
         sim_running.fill_(simulation_app.is_running())
-    dist.broadcast(sim_running, src=process_sim)    
+    dist.broadcast(sim_running, src=rank_sim)    
     
     while sim_running:
-        if rank == process_sim:
+        if rank == rank_sim:
             world_playing.fill_(env.unwrapped.sim.is_playing())
             sim_running.fill_(simulation_app.is_running())
         dist.broadcast(world_playing, src=0)
@@ -147,11 +123,11 @@ def isaac_training(cf, rank, size):
                 seed = sim_count // (cf.num_replay+1)
                 is_inference =  sim_count % (cf.num_replay+1) == 0 # not is_inference
                 dist.destroy_process_group(group_agents)
-                group_agents = dist.new_group(process_agents) # It is necessary to reset this group here to avoid duplicate gpu errors
-                if rank == process_sim:
+                group_agents = dist.new_group(rank_agents) # It is necessary to reset this group here to avoid duplicate gpu errors
+                if rank == rank_sim:
                     env.unwrapped.sim.reset(soft=True) #False
                 
-                if rank == process_sim:
+                if rank == rank_sim:
                     if len(history['rewards'])>0:
                         print(f"$$$ r{rank} CUMUL REWARD: {history['rewards'].sum().item()} $$$")
                     print(f"SEED: {seed}")
@@ -162,7 +138,7 @@ def isaac_training(cf, rank, size):
                         print('REPLAY')
 
                 if is_inference:
-                    if rank in process_agents:
+                    if rank in rank_agents:
                         # print(f"MEM:  {F.mse_loss(last_memories, memories['cross_cmem']).item()}")
                         if sim_count == 0 and os.path.exists(cf.path_model):
                             model.load_state_dict(torch.load(cf.path_model)) #, map_location=device))
@@ -181,16 +157,15 @@ def isaac_training(cf, rank, size):
                         swap_batch_time_tmp = rearrange(history[key], 't b -> b t').contiguous()
                         scatter_dummy_src(swap_batch_time_tmp, rank, size-1)
                         history[key] = rearrange(swap_batch_time_tmp, 'b t -> t b')
-                    if rank in process_agents:
+                    if rank in rank_agents:
                         # last_memories = memories['cross_cmem'].clone()
                         model_student.train() 
 
                     previous_history = deepcopy(history)
                     previous_history['returns'] = tr.calculate_returns(history['rewards'], history['death_index'], gamma=cf.gamma)
-                    previous_history['values'][skip_indices+1] = history['values'][skip_indices]
-                    # previous_history['advantages'] = tr.calculate_gae(history['rewards'], history['values'], 
-                    #                                     history['death_index'], gamma=cf.gamma, gae_lambda=cf.c_lambda)
-                    previous_history['advantages'] = previous_history['returns'] - previous_history['values']
+                    previous_history['advantages'] = tr.calculate_gae(history['rewards'], history['values'], 
+                                                        history['death_index'], gamma=cf.gamma, gae_lambda=cf.c_lambda)
+                    # previous_history['advantages'] = previous_history['returns'] - previous_history['values']
                     
                     if rank == 1:
                         for key, value in previous_history.items():
@@ -204,7 +179,7 @@ def isaac_training(cf, rank, size):
                             
                         plotter.data['returns'].append(previous_history['returns'][0, :].mean().item())
 
-                if rank in process_agents:
+                if rank in rank_agents:
                     torch.cuda.empty_cache()
                     optimizer.zero_grad(set_to_none=True)
                     if isinstance(model, ActorCriticPerceiver):
@@ -221,11 +196,11 @@ def isaac_training(cf, rank, size):
 
             ### Get agent observations 
 
-            if rank == process_sim:
+            if rank == rank_sim:
                 all_obs = env.unwrapped._get_observations()
                 obs = all_obs['policy'].clone()    # (num_envs, d)
                 if cf.render:
-                    video = all_obs['video_buf'].clone()  # (num_envs, 256, 456, 3)
+                    video = all_obs['camera'].clone()  # (num_envs, 256, 456, 3)
                     #ts.save(video[0], '/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/live.jpg')
                     full_video.append(video.cpu())
                 # env._task.calculate_metrics()       
@@ -234,17 +209,15 @@ def isaac_training(cf, rank, size):
                     history['rewards'][sim_step] = reward
             for x in [obs, reward]: #video
                 scatter_dummy_src(x, rank, size-1) 
-            print(f'{rank} {obs}')
             tr.update_buffers(buffer, {'obs': obs, 'video': video, 'rewards': reward}, frames=cf.frames)
             if cf.render:
                 scatter_dummy_src(video, rank, size-1)
                 tr.update_buffers(buffer, {'video': video}, frames=cf.frames)
 
-            print(f'{rank} $9')
             ### Reset memory at death and record 
 
             dones = torch.zeros(cf.num_envs, device=rank)
-            if rank == process_sim:
+            if rank == rank_sim:
                 dones, _ = env.unwrapped._get_dones()
                 dones = dones.int().clone()
                 birth_time[dones==1] = sim_step
@@ -253,17 +226,15 @@ def isaac_training(cf, rank, size):
                 if is_inference:
                     history['death_index'][sim_step, :]=dones
             scatter_dummy_src(dones, rank, size-1) 
-            print(dones)
-            print(birth_time)
             scatter_dummy_src(birth_time, rank, size-1) 
             dones_list = torch.nonzero(dones.int()).flatten().tolist()
-            if rank in process_agents and isinstance(model, ActorCriticPerceiver):
+            if rank in rank_agents and isinstance(model, ActorCriticPerceiver):
                 reset_memories(memories, indexes=dones_list)
 
             ### Agent
             
             if len(buffer['actions_star'])==0 :
-                if rank in process_agents:
+                if rank in rank_agents:
 
                     ## Process inputs
 
@@ -286,7 +257,7 @@ def isaac_training(cf, rank, size):
                             actions, logprobs, values, memories = model(states, memories)   
                         history['actions'][sim_step] = actions  
                         history['logprobs'][sim_step] = logprobs 
-                        history['values'][sim_step] = values     
+                        history['values'][sim_step:sim_step+cf.frames_future] = values  # for cumulative sum  
                     else:
                         actions, logprobs, values = [previous_history[key][sim_step].to(device) \
                                                     for key in ['actions', 'logprobs', 'values']]
@@ -356,12 +327,12 @@ def isaac_training(cf, rank, size):
             else:
                 action = torch.dzeros(cf.num_envs, 1)
 
-            if rank == process_sim:
+            if rank == rank_sim:
 
                 # Step environment
                 if sim_step == 0:
                     pass #env.unwrapped.__init__(env_cfg)
-                env.step(action.to(process_sim))
+                env.step(action.to(rank_sim))
                 # env.step(render=cf.render)
                 # env.sim_frame_count += 1
                 # env._task.post_physics_step()
@@ -372,10 +343,10 @@ def isaac_training(cf, rank, size):
             sim_step += 1
 
         else:
-            if rank == process_sim:
+            if rank == rank_sim:
                 env.step() #render=cf.render)
 
-    if rank == process_sim:
+    if rank == rank_sim:
         env.close()
         simulation_app.close()
     dist.barrier()

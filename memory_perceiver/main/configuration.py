@@ -41,7 +41,7 @@ class Config:
     # PPO
     learning_rate = 1e-4 # 1e-4
     accumulation_steps = 2 # 2 4
-    entropy = 0.04  # 0.01 to 0.05
+    entropy = 0.0  # 0.01 to 0.05
     critic = 4      # 0.5 to 2 4
     student_update_step = 1
     eps = 1e-9
