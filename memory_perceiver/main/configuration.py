@@ -34,23 +34,23 @@ class Config:
     dim_actions = 1 # 21 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
     sim_duration = 260 # 1028 516 260
-    num_envs = 12 # 54 216 864
+    num_envs = 54 # 54 216 864
     seed = 68
     render = False
 
     # PPO
     learning_rate = 1e-4 # 1e-4
     accumulation_steps = 2 # 2 4
-    entropy = 0.00  # 0.01 to 0.05
-    critic = 1      # 0.5 to 2 4
+    entropy = 0.04  # 0.01 to 0.05
+    critic = 4      # 0.5 to 2 4
     student_update_step = 1
     eps = 1e-9
     gamma = 0.99
     c_lambda = 0.95
     grad_norm = 1.0  # 0.1 to 1.0
     eps_clip = 0.2
-    num_replay = 1
-    update_probability = 0.9 #0.33
+    num_replay = 2
+    update_probability = 0.5 #0.33
 
     # Model dimension configuration
 

@@ -160,7 +160,7 @@ def isaac_training(cf, rank, size):
                         print('PLAY')
                     else:
                         print('REPLAY')
-                print(f'{rank} $0')
+
                 if is_inference:
                     if rank in process_agents:
                         # print(f"MEM:  {F.mse_loss(last_memories, memories['cross_cmem']).item()}")
@@ -170,17 +170,12 @@ def isaac_training(cf, rank, size):
                         else:
                             if sim_count % ( (cf.num_replay+1)*cf.student_update_step ) == 0 :
                                 model.load_state_dict(model_student.state_dict())
-                        print('$1')
                         dist.barrier(group=group_agents)
-                        print('$2')
                         if rank == 1:
                             torch.save(model_student.state_dict(), cf.path_model)
                             torch.save(optimizer.state_dict(), cf.path_optimizer)
-                        print('$3')
                         model.eval()
-                        print('$4')
                         history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, device)
-                        print('$5')
                 else:
                     for key in ['rewards', 'death_index']:
                         swap_batch_time_tmp = rearrange(history[key], 't b -> b t').contiguous()
@@ -214,7 +209,6 @@ def isaac_training(cf, rank, size):
                     optimizer.zero_grad(set_to_none=True)
                     if isinstance(model, ActorCriticPerceiver):
                         reset_memories(memories)
-                print(f'{rank} $6')
                 tr.set_seeds(seed)
                 full_video = []
                 birth_time = torch.zeros(cf.num_envs, device=rank)
@@ -222,10 +216,8 @@ def isaac_training(cf, rank, size):
                     buffer[key]=[]
                 backward_count= 0
                 sim_step = 0
-                print(f'{rank} $7')
 
             dist.barrier()
-            print(f'{rank} $8')
 
             ### Get agent observations 
 
@@ -253,27 +245,20 @@ def isaac_training(cf, rank, size):
 
             dones = torch.zeros(cf.num_envs, device=rank)
             if rank == process_sim:
-                print(f'{rank} $9.1')
                 dones, _ = env.unwrapped._get_dones()
                 dones = dones.int().clone()
                 birth_time[dones==1] = sim_step
 
                 # Update death dictionnary
-                print(f'{rank} $9.2')
                 if is_inference:
                     history['death_index'][sim_step, :]=dones
-                print(f'{rank} $9.3')
             scatter_dummy_src(dones, rank, size-1) 
             print(dones)
-            print(f'{rank} $9.4')
             print(birth_time)
             scatter_dummy_src(birth_time, rank, size-1) 
-            print(f'{rank} $9.5')
             dones_list = torch.nonzero(dones.int()).flatten().tolist()
-            print(f'{rank} $9.6')
             if rank in process_agents and isinstance(model, ActorCriticPerceiver):
                 reset_memories(memories, indexes=dones_list)
-            print(f'{rank} $10')
 
             ### Agent
             
@@ -363,7 +348,6 @@ def isaac_training(cf, rank, size):
                     actions_gap =  (actions_star[0, :, 0]).mean() # - actions_star[1, :, 0]).mean()
                     plotter.data['actions_gap'].append(actions_gap.item())
             
-            print(f'{rank} $11')
             # Act(num_envs, 1)
 
             if(len(buffer['actions_star'])>0):
@@ -386,7 +370,6 @@ def isaac_training(cf, rank, size):
                 torchvision.io.write_video('/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/test_'  + str(sim_count) + '_vid_.mp4', 
                                             torch.stack(full_video)[:,1], 8*cf.frames)
             sim_step += 1
-            print(f'{rank} $12')
 
         else:
             if rank == process_sim:
