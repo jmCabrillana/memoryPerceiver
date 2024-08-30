@@ -389,6 +389,8 @@ if __name__ == "__main__":
     #os.environ["NCCL_DEBUG_SUBSYS"]="COLL" # print collective calls 
     os.environ["TORCH_CPP_LOG_LEVEL"]="FATAL" # INFO WARNING FATAL
     os.environ["NCCL_DEBUG"]="DEBUG" # WARN INFO DEBUG TRACE
+    os.environ["TORCH_DISTRIBUTED_DEBUG"]="INFO"
+    os.environ["TORCH_NCCL_ENABLE_MONITORING"]="1"
     
     # with initialize(config_path="../../OmniIsaacGymEnvs/omniisaacgymenvs/cfg"):
     #     cfg = compose(config_name="config", overrides=["task="+cf.task_name, "headless=True", "enable_viewport=True",
