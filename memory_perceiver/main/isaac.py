@@ -135,6 +135,7 @@ def isaac_training(cf, rank, size):
                     else:
                         print('REPLAY')
 
+                print(f'{rank}$1')
                 if is_inference:
                     if rank in rank_agents:
                         # print(f"MEM:  {F.mse_loss(last_memories, memories['cross_cmem']).item()}")
@@ -150,6 +151,7 @@ def isaac_training(cf, rank, size):
                             torch.save(optimizer.state_dict(), cf.path_optimizer)
                         model.eval()
                         history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, device)
+                        print(f'{rank}$2')
                 else:
                     for key in ['rewards', 'death_index']:
                         swap_batch_time_tmp = rearrange(history[key], 't b -> b t').contiguous()
@@ -161,8 +163,9 @@ def isaac_training(cf, rank, size):
 
                     previous_history = deepcopy(history)
                     previous_history['returns'] = tr.calculate_returns(history['rewards'], history['death_index'], gamma=cf.gamma)
-                    previous_history['advantages'] = tr.calculate_gae(history['rewards'], history['values'], 
+                    tmp_advantages = tr.calculate_gae(history['rewards'], history['values'], 
                                                         history['death_index'], gamma=cf.gamma, gae_lambda=cf.c_lambda)
+                    previous_history['advantages'] = (tmp_advantages - tmp_advantages.mean(dim=1)) / tmp_advantages.std(dim=1)
                     # previous_history['advantages'] = previous_history['returns'] - previous_history['values']
                     
                     if rank == 1:
@@ -181,6 +184,7 @@ def isaac_training(cf, rank, size):
                     optimizer.zero_grad(set_to_none=True)
                     if isinstance(model, ActorCriticPerceiver):
                         reset_memories(memories)
+                print(f'{rank}$3')
                 tr.set_seeds(seed)
                 full_video = []
                 birth_time = torch.zeros(cf.num_envs, device=rank)
@@ -188,8 +192,10 @@ def isaac_training(cf, rank, size):
                     buffer[key]=[]
                 backward_count= 0
                 sim_step = 0
+                print(f'{rank}$4')
 
             dist.barrier()
+            print(f'{rank}$5')
 
             ### Get agent observations 
 
@@ -210,6 +216,7 @@ def isaac_training(cf, rank, size):
             if cf.render:
                 scatter_dummy_src(video, rank, size-1)
                 tr.update_buffers(buffer, {'video': video}, frames=cf.frames)
+            print(f'{rank}$6')
 
             ### Reset memory at death and record 
 
@@ -227,8 +234,10 @@ def isaac_training(cf, rank, size):
             dones_list = torch.nonzero(dones.int()).flatten().tolist()
             if rank in rank_agents and isinstance(model, ActorCriticPerceiver):
                 reset_memories(memories, indexes=dones_list)
+            print(f'{rank}$7')
 
             ### Agent
+            dist.barrier()
             
             if len(buffer['actions_star'])==0 :
                 if rank in rank_agents:
@@ -237,6 +246,7 @@ def isaac_training(cf, rank, size):
 
                     states={}
                     mask = tr.create_mask(birth_time, sim_step, frames=cf.frames)
+                    print(f'{rank}$7.1')
                     states['observations'] = tr.buffer_padding(torch.stack(buffer['obs']), [cf.dim_observations],
                                                                 num_envs=cf.num_envs, frames=cf.frames)
                     states['observations'][mask] *= 0
@@ -245,6 +255,7 @@ def isaac_training(cf, rank, size):
                     states['video'][mask] *= 0
                     states['video'] = rearrange(states['video'], 'b t h w c -> b c t h w')
                     states['audio'] = torch.zeros(cf.num_envs, cf.len_audio_raw, device=device)
+                    print(f'{rank}$7.2')
 
                     ## Inference, save history and memory update
 
@@ -255,9 +266,11 @@ def isaac_training(cf, rank, size):
                         history['actions'][sim_step] = actions  
                         history['logprobs'][sim_step] = logprobs 
                         history['values'][sim_step:sim_step+cf.frames_future] = values  # for cumulative sum  
+                        print(f'{rank}$7.3')
                     else:
                         actions, logprobs, values = [previous_history[key][sim_step].to(device) \
-                                                    for key in ['actions', 'logprobs', 'values']]                                        
+                                                    for key in ['actions', 'logprobs', 'values']]      
+                    print(f'{rank}$8')
 
                     ## Backward pass
 
@@ -303,11 +316,12 @@ def isaac_training(cf, rank, size):
                             plotter.data['loss_actor'].append(loss_actor.item())
                             plotter.data['loss_critic'].append(loss_critic.item())
                             plotter.data['loss_entropy'].append(loss_entropy.item())
-
+                    print(f'{rank}$9')
                     # Update buffers
 
                     actions_star = model.instanciate_actions(actions, dt=cf.frames_future)
-
+                    
+                print(f'{rank}$10')
                 actions_star = rearrange(actions_star, 't b d -> b t d').contiguous()
                 gather_dummy_src(actions_star, rank, size-1)
                 actions_star = rearrange(actions_star, 'b t d -> t b d')
@@ -315,14 +329,16 @@ def isaac_training(cf, rank, size):
                 if rank == 1:
                     actions_gap =  (actions_star[0, :, 0]).mean() # - actions_star[1, :, 0]).mean()
                     plotter.data['actions_gap'].append(actions_gap.item())
+            print(f'{rank}$11')
             
             # Act(num_envs, 1)
-
             if(len(buffer['actions_star'])>0):
                 action = buffer['actions_star'].pop(0)
                 action = torch.clamp(action, min=-1, max=1)
             else:
                 action = torch.dzeros(cf.num_envs, 1)
+            print(f'{rank}$12 {action}')
+            dist.barrier()
 
             if rank == rank_sim:
 
@@ -330,9 +346,12 @@ def isaac_training(cf, rank, size):
                 if sim_step == 0:
                     pass #env.unwrapped.__init__(env_cfg)
                 env.step(action.to(rank_sim))
+                print(f'{rank}$12.1')
                 # env.step(render=cf.render)
                 # env.sim_frame_count += 1
                 # env._task.post_physics_step()
+            print(f'{rank}$13')
+            dist.barrier()
 
             if sim_count % 10 == 0 and sim_step % cf.sim_duration == 256 and rank == 0 and cf.render :
                 torchvision.io.write_video('/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/test_'  + str(sim_count) + '_vid_.mp4', 

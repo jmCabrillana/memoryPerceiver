@@ -9,7 +9,7 @@ class Config:
 
     frames = 2
     sample_per_frame = 1920
-    frames_future = 2
+    frames_future = 1
     width = 456
     height = 264
     patch_audio = 16
@@ -34,13 +34,13 @@ class Config:
     dim_observations = 4 # 87 4
     dim_actions = 1 # 21 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
-    sim_duration = 516 # 1028 516 260
-    num_envs = 864 # 54 216 864
+    sim_duration = 128 # 1028 516 260
+    num_envs = 24 # 54 216 864
     seed = 68
     render = False
 
     # PPO
-    learning_rate = 1e-3 # 1e-4
+    learning_rate = 3e-4 # 1e-4
     accumulation_steps = 1 # 2 4
     entropy = 0.00  # 0.01 to 0.05
     critic = 4      # 0.5 to 2 4
