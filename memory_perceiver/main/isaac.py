@@ -72,7 +72,7 @@ def isaac_training(cf, rank, size):
             memories = None
         # last_memories = torch.zeros_like(memories['cross_cmem'], device=device)
 
-    history_keys = ['actions', 'values', 'logprobs', 'returns', 'rewards', 'advantages', 'death_index', 'generator']
+    history_keys = ['actions', 'values', 'logprobs', 'returns', 'returns_targets', 'rewards', 'advantages', 'death_index', 'generator']
     history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, device)
     previous_history = deepcopy(history)
     buffer = {'video':[], 'audio':[], 'obs':[], 'rewards':[], 'actions_star':[]}
@@ -163,7 +163,9 @@ def isaac_training(cf, rank, size):
                     previous_history['returns'] = tr.calculate_returns(history['rewards'], history['death_index'], gamma=cf.gamma)
                     tmp_advantages = tr.calculate_gae(history['rewards'], history['values'], 
                                                         history['death_index'], gamma=cf.gamma, gae_lambda=cf.c_lambda)
-                    previous_history['advantages'] = (tmp_advantages - tmp_advantages.mean(dim=1, keepdim=True)) / tmp_advantages.std(dim=1, keepdim=True)
+                    # previous_history['advantages'] = (tmp_advantages - tmp_advantages.mean(dim=1, keepdim=True)) / tmp_advantages.std(dim=1, keepdim=True)
+                    previous_history['advantages'] = tmp_advantages
+                    previous_history['returns_targets'] = tmp_advantages + history['values']
                     # previous_history['advantages'] = previous_history['returns'] - previous_history['values']
                     
                     if rank == 1:
@@ -265,7 +267,7 @@ def isaac_training(cf, rank, size):
                         torch.cuda.set_rng_state(previous_history['generator'][sim_step, rank], device=device)
                         with autocast(device_type='cuda', dtype=torch.float16):
                             if custom_random(sim_count, sim_step) < cf.update_probability :
-                                returns = previous_history['returns'][sim_step].to(device)
+                                returns = previous_history['returns_targets'][sim_step].to(device)
                                 advantages = previous_history['advantages'][sim_step].to(device)
                                 new_logprobs, new_values, entropies, _ = model_student(states, memories, actions)                            
 

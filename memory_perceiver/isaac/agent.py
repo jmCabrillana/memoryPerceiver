@@ -24,34 +24,36 @@ class ActorCriticSimple(ActorCritic):
         self.dim_actions = cf.dim_actions
         self.dim_actions_ppo = cf.dim_actions_ppo
         self.dim_t = cf.frames_future
-        self.hidden_dim = 64
+        self.hidden_dim = 32
         self.actor = nn.Sequential( nn.Linear(self.state_dim, self.hidden_dim),
                                     nn.ReLU(),
                                     nn.Linear(self.hidden_dim, self.hidden_dim),
                                     nn.ReLU(),
-                                    nn.Linear(self.hidden_dim, 2*self.dim_actions_ppo)
+                                    nn.Linear(self.hidden_dim, 2*self.dim_actions_ppo+1)
                                     ).to(device)
         self.actor.reset_memories = lambda *args, **kwargs: None
-        self.critic = nn.Sequential(nn.Linear(self.state_dim, self.hidden_dim),
-                                    nn.ReLU(),
-                                    nn.Linear(self.hidden_dim, self.hidden_dim),
-                                    nn.ReLU(),
-                                    nn.Linear(self.hidden_dim, 1)
-                                    ).to(device)
+        # self.critic = nn.Sequential(nn.Linear(self.state_dim, self.hidden_dim),
+        #                             nn.ReLU(),
+        #                             nn.Linear(self.hidden_dim, self.hidden_dim),
+        #                             nn.ReLU(),
+        #                             nn.Linear(self.hidden_dim, 1)
+        #                             ).to(device)
         
     def forward(self, states, memories, old_actions=None):
         state = states['observations'][:,-1] # last time
         
         # Critic
 
-        values = self.critic(state)
+        # values = self.critic(state)
+        x = self.actor(state)
+        values = x[:, 2*self.dim_actions_ppo:]
         values = rearrange(values,  'b 1 -> b')
 
         # Actor
 
-        actions_tmp = torch.tanh(self.actor(state))
+        actions_tmp = torch.tanh(x[:, :2*self.dim_actions_ppo]) #torch.tanh(self.actor(state))
         actions_mean,  = actions_tmp[:, 0:self.dim_actions_ppo], 
-        actions_var = ((1+actions_tmp[:, self.dim_actions_ppo:2*self.dim_actions_ppo+1])/4+1e-5)**2
+        actions_var = ((1+actions_tmp[:, self.dim_actions_ppo:2*self.dim_actions_ppo])/4+1e-5)**2
         dist = MultivariateNormal(actions_mean, torch.diag_embed(actions_var))
         
         # Act

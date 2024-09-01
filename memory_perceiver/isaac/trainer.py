@@ -37,7 +37,6 @@ def update_buffers(buff, dict, frames=32):
 def calculate_returns(mem_rewards, death_index, gamma=0.99):
     sim_duration, num_envs = mem_rewards.size()
     device = mem_rewards.device
-    returns_estimates = torch.zeros_like(mem_rewards)
     returns_estimates = torch.zeros(sim_duration, num_envs, device=device)
     sum = torch.ones(num_envs, device=device)
     

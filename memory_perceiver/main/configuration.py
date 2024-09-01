@@ -34,7 +34,7 @@ class Config:
     dim_observations = 4 # 87 4
     dim_actions = 1 # 21 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
-    sim_duration = 128 # 1028 516 260
+    sim_duration = 516 # 1028 516 260
     num_envs = 2048 # 54 216 864
     seed = 68
     render = False
