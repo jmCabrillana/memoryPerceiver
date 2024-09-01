@@ -58,6 +58,7 @@ class Config:
     critic_layers = 4
     query_dim = 832
     depth = 2
+    shared=True
     batch_size = num_envs
     body_parts =  {'observation_' + str(i): 1 for i in range(dim_observations)}
     body_outputs = {'action_' + str(i): 1 for i in range(dim_actions)}
