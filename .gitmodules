@@ -1,6 +1,6 @@
-[submodule "hand4whole"]
-	path = hand4whole
-	url = git@github.com:jmCabrillana/hand4whole.git
 [submodule "OmniIsaacGymEnvs"]
 	path = OmniIsaacGymEnvs
 	url = git@github.com:jmCabrillana/OmniIsaacGymEnvs.git
+[submodule "IsaacLab"]
+	path = IsaacLab
+	url = git@github.com:jmCabrillana/IsaacLab.git

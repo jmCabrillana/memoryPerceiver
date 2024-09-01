@@ -7,7 +7,7 @@ class Config:
 
     # Model inputs and outputs
 
-    frames = 2
+    frames = 1
     sample_per_frame = 1920
     frames_future = 1
     width = 456
@@ -35,7 +35,7 @@ class Config:
     dim_actions = 1 # 21 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
     sim_duration = 128 # 1028 516 260
-    num_envs = 24 # 54 216 864
+    num_envs = 2048 # 54 216 864
     seed = 68
     render = False
 

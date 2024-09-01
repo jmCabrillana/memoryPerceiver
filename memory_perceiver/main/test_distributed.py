@@ -23,14 +23,17 @@ def scatter_dummy_src(tensor, rank, size):
     dist.scatter(dst, tensor_list, src=0)
 
 def gather_dummy_src(tensor, rank, size):
-    #  gather and batch 1, ..., size-1 to 0
-    if rank > 0:
-        dist.gather(tensor, None, 0)
+    #  gather and batch ranks 1, ..., size-1 to 0
+    if rank != 0 :
+        src = tensor
+        tensor_list = None
     if rank == 0:
         tensor_list = list(torch.split(tensor, len(tensor)//size))
         tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
-        dummy_src = torch.zeros_like(tensor_list[0], device=0)
-        dist.gather(dummy_src, tensor_list, 0)
+        src = torch.zeros_like(tensor_list[0], device=0)
+    dist.barrier()
+    dist.gather(src, tensor_list, dst=0)
+    if rank == 0:
         tensor_list.pop(0)
         tensor = torch.stack(tensor_list)
 
@@ -55,43 +58,39 @@ def train(rank, size):
     """
     
     
-    if rank == 0:
-        tensor_batch = torch.tensor([[1,1,2],
-                                     [4,7,8],
-                                     [2,2,3],
-                                     [4,7,8],
-                                     [3,3,4],
-                                     [4,7,8],], device=rank, dtype=float)
-    if rank > 0:
-        tensor_batch = torch.zeros(6,3, device=rank, dtype=float)
-    scatter_dummy_src(tensor_batch, rank, size-1)
-    print(f"rank : {rank}, , {tensor_batch}")
+    # if rank == 0:
+    #     tensor_batch = torch.tensor([[1,1,2],
+    #                                  [4,7,8],
+    #                                  [2,2,3],
+    #                                  [4,7,8],
+    #                                  [3,3,4],
+    #                                  [4,7,8],], device=rank, dtype=float)
+    # if rank > 0:
+    #     tensor_batch = torch.zeros(6,3, device=rank, dtype=float)
+    # scatter_dummy_src(tensor_batch, rank, size-1)
+    # print(f"rank : {rank}, , {tensor_batch}")
     
     
-    """
     if rank > 0:
-        tensor = torch.tensor([[1,2,1],[4,4,4]], device=rank, dtype=float)
+        tensor = torch.tensor([[[1]],[[4]]], device=rank, dtype=float)
         tensor *= rank
     if rank == 0:
-        tensor = torch.zeros(6, 3, device=rank, dtype=float)
+        tensor = torch.zeros(2, 1, 1, device=rank, dtype=float)
     gather_dummy_src(tensor, rank, size-1)
     print("rank : ", rank, "  ", tensor)
-    """
 
-    """
-    group_agents=dist.new_group(list(range(1,4)))
-    print(list(range(1,size)))
-    if rank > 0:
-        tensor = torch.tensor([[1,2,1],[3,3,3]], device=rank, dtype=float)
-        tensor *= rank
-    if rank == 0:
-        tensor = torch.zeros(2, 3, device=rank, dtype=float)
-    if rank > 0:
-        dist.all_reduce(tensor, op=dist.ReduceOp.SUM, group=group_agents)
-        #dist.barrier(group_agents)
-    #dist.all_reduce(tensor, op=dist.ReduceOp.SUM)
-    print(f"{rank}: {tensor}")
-    """
+    # group_agents=dist.new_group(list(range(1,4)))
+    # print(list(range(1,size)))
+    # if rank > 0:
+    #     tensor = torch.tensor([[1,2,1],[3,3,3]], device=rank, dtype=float)
+    #     tensor *= rank
+    # if rank == 0:
+    #     tensor = torch.zeros(2, 3, device=rank, dtype=float)
+    # if rank > 0:
+    #     dist.all_reduce(tensor, op=dist.ReduceOp.SUM, group=group_agents)
+    #     #dist.barrier(group_agents)
+    # #dist.all_reduce(tensor, op=dist.ReduceOp.SUM)
+    # print(f"{rank}: {tensor}")
 
     # Clean up process group
     dist.barrier()
