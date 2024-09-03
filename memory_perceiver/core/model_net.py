@@ -52,12 +52,16 @@ class PreNormMem(nn.Module):
 
         if exists(self.norm_mem):
             mem = kwargs['mem']
+            # print(f'mem {mem.sum()}')
             normed_mem = self.norm_mem(mem)
+            # print(f'mem norm {normed_mem.sum()}')
             kwargs.update(mem = normed_mem)
 
         if exists(self.norm_cmem):
             cmem = kwargs['cmem']
+            # print(f'cmem {cmem.sum()}')
             normed_cmem = self.norm_cmem(cmem)
+            # print(f'cmem norm {normed_cmem.sum()}')
             kwargs.update(cmem = normed_cmem)
 
         return self.fn(x, **kwargs)
@@ -71,8 +75,8 @@ class FeedForward(nn.Module):
     def __init__(self, dim, mult = 4):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(dim, dim * mult * 2),
-            GEGLU(),
+            nn.Linear(dim, dim * mult),
+            nn.ReLU(), #GEGLU()nn.ReLU(),
             nn.Linear(dim * mult, dim)
         )
 
@@ -100,7 +104,7 @@ class Attention(nn.Module):
 
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> (b h) n d', h = h), (q, k, v))
 
-        sim = einsum('b i d, b j d -> b i j', q, k) * self.scale
+        sim = einsum('b i d, b j d -> b i j', q, k) / self.scale
 
         if exists(mask):
             max_neg_value = -torch.finfo(sim.dtype).max
@@ -160,7 +164,11 @@ class AttentionMemory(nn.Module):
 
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> (b h) n d', h = h), (q, k, v))
 
-        sim = einsum('b i d, b j d -> b i j', q, k) * self.scale
+        # print(f'$q {q.sum()}')
+        # print(f'$k {k.sum()}')
+        # print(f'$v {v.sum()}')
+        sim = einsum('b i d, b j d -> b i j', q, k) / self.scale
+        # print(f'$sim {sim.sum()}')
 
         if exists(mask):
             max_neg_value = -torch.finfo(sim.dtype).max
@@ -170,9 +178,11 @@ class AttentionMemory(nn.Module):
         # Attention, what we cannot get enough of
 
         attn = sim.softmax(dim = -1)
+        # print(f'$attn {attn.sum()}')
 
         out = einsum('b i j, b j d -> b i d', attn, v)
         out = rearrange(out, '(b h) n d -> b n (h d)', h = h)
+        # print(f'$out {out.sum()}')
 
         # Auxiliary loss
         
@@ -191,7 +201,8 @@ class AttentionMemory(nn.Module):
             out_cmem,
             out_old_mem
         )
-
+        to_out = self.to_out(out)
+        # print(f'$to_out {out.sum()}')
         return self.to_out(out), new_mem, new_cmem, aux_loss
 
 # main class
@@ -202,7 +213,7 @@ class PerceiverIO(nn.Module):
         depth,
         queries_dim,
         device,
-        num_latents = 512,
+        nb_latents = 512,
         cross_heads = 1,
         latent_heads = 8,
         cross_dim_head = 64,
@@ -210,7 +221,7 @@ class PerceiverIO(nn.Module):
         mem_size = 1024,
         cmem_size = 1024,
         special_compression = None,
-        compression_ratio = 4,
+        nb_compressed = 512,
         modality_parameters = None,
         projection_parameters = None,
     ):
@@ -220,22 +231,20 @@ class PerceiverIO(nn.Module):
         self.mem_size = mem_size
         self.cmem_size = cmem_size
         self.depth = depth
-        self.latents = nn.Parameter(torch.randn(num_latents, latent_dim, device=device))
+        self.latents = nn.Parameter(torch.randn(nb_latents, latent_dim, device=device))
         self.special_compression = special_compression
-        self.compression_ratio = compression_ratio
+        self.nb_compressed = nb_compressed
 
         self.cross_attn = PreNormMem(latent_dim, 
                                 AttentionMemory(latent_dim, 
                                                 queries_dim, 
                                                 heads = cross_heads, 
                                                 dim_head = cross_dim_head),
-                                mem_dim = queries_dim)
+                                                mem_dim = queries_dim)
         self.cross_ff = PreNormContext(latent_dim, FeedForward(latent_dim))
 
         self.attn_layers = nn.ModuleList([])
         self.ff_layers = nn.ModuleList([])
-        self.layers_mem = []
-        self.layers_cmem = []
         for i in range(self.depth):
             if ( i % 2 == 0):
                 self.attn_layers.append(
@@ -270,7 +279,6 @@ class PerceiverIO(nn.Module):
         data.to(device)
         sum_aux_loss = torch.tensor(0, requires_grad = True, device=device, dtype=dtype)
         x = repeat(self.latents, 'n d -> b n d', b = b)
-        new_memories = {}
 
         # Cross attention on input
 
@@ -297,15 +305,19 @@ class PerceiverIO(nn.Module):
                 attn, new_mem, new_cmem, aux_loss = self.attn_layers[i](x, 
                                                                         mem = memories['layers_mem'][:, i//2].clone().detach(), 
                                                                         cmem = memories['layers_cmem'][:, i//2].clone().detach(),
-                                                                        nb_compressed = int(self.latents.shape[1]/self.compression_ratio),
+                                                                        nb_compressed = self.nb_compressed,
                                                                         mask=mask
                                                                         )
+                mem=memories['layers_mem'][:, i//2].clone().detach().sum()
+                cmem=memories['layers_mem'][:, i//2].clone().detach().sum()
                 if update_mem:
                     new_layers_mem[:, i//2], new_layers_cmem[:, i//2] = new_mem.clone().detach(), new_cmem.clone().detach()
                 sum_aux_loss= sum_aux_loss + aux_loss
+            # print(f'$1 {i} {attn.sum()}')
             x = attn + x
+            lay= self.ff_layers[i](x)
+            # print(f'$2 {i} {lay.sum()}')
             x = self.ff_layers[i](x) + x
-                
 
         if not exists(queries):
             return x, sum_aux_loss
@@ -317,7 +329,7 @@ class PerceiverIO(nn.Module):
             queries = repeat(queries, 'n d -> b n d', b = b)
 
         # cross attend from decoder queries to latents
-        
+
         output = self.decoder_cross_attn(queries, context = x)
 
         # final linear out
@@ -325,6 +337,3 @@ class PerceiverIO(nn.Module):
         memories = {'cross_cmem':new_cross_cmem, 'layers_mem':new_layers_mem, 'layers_cmem':new_layers_cmem}
         
         return output, memories, sum_aux_loss
-
-
-

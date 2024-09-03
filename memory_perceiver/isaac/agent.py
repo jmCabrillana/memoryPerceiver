@@ -146,12 +146,17 @@ class ActorCriticPerceiver(ActorCritic):
         actions_var = torch.tanh(rearrange(actions_var, 'd b t () -> b t d'))
         dim_t = actions.size()[1]
 
-        # Average on time 
-        actions_tmp1, actions_tmp2 = torch.split(actions, dim_t//2, dim=1)
-        actions_mean = torch.cat((actions_tmp1.mean(dim=1), actions_tmp2.mean(dim=1)), dim=-1)
-        actions_var_tmp1, actions_var_tmp2 = torch.split(actions_var, dim_t//2, dim=1)
-        actions_var_tmp = torch.cat((actions_var_tmp1.mean(dim=1), actions_var_tmp2.mean(dim=1)), dim=-1)
-        actions_var = ((1+actions_var_tmp)/2+1e-4)**2 
+        # Average on time or identity
+        if dim_t >= 2:
+            actions_tmp1, actions_tmp2 = torch.split(actions, dim_t//2, dim=1)
+            actions_mean = torch.cat((actions_tmp1.mean(dim=1), actions_tmp2.mean(dim=1)), dim=-1)
+            actions_var_tmp1, actions_var_tmp2 = torch.split(actions_var, dim_t//2, dim=1)
+            actions_var_tmp = torch.cat((actions_var_tmp1.mean(dim=1), actions_var_tmp2.mean(dim=1)), dim=-1)
+        else : 
+            actions_mean = rearrange(actions, 'b () d -> b d')
+            actions_var_tmp = rearrange(actions_var, 'b () d -> b d')
+        actions_var = ((1+actions_var_tmp)/4+1e-5)**2
+
 
         dist = MultivariateNormal(actions_mean, torch.diag_embed(actions_var))
 

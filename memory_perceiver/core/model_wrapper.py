@@ -18,20 +18,31 @@ def create_multimodal_perceiver(cf, device):
         modality_parameters[part] = cf.query_dim - 2*cf.bands_fourier - params
 
     projection_parameters = dict(cf.body_outputs)
-    projection_parameters.update({'audio': cf.patch_audio})
+    if cf.output_audio:
+        projection_parameters.update({'audio': cf.patch_audio})
 
     # Input compression
 
-    special_compression = [i for i in range(cf.video_future)] + [i for i in range(cf.len_video, cf.len_video+cf.audio_future)]
+    special_compression = []
+    i0=0
+    if cf.input_video:
+        special_compression += [i for i in range(cf.video_future)]
+        i0 += cf.len_video
+    if cf.input_audio:
+        special_compression += [i0 + i for i in range(cf.audio_future)]
+        i0 += cf.len_audio
     for k in range(len(cf.body_parts)):
-        special_compression += [ cf.len_video + cf.len_audio + k*cf.frames + i for i in range(cf.frames_future) ]
+        special_compression += [i0 + k*cf.frames + i for i in range(cf.frames_future) ]
 
     # Instantiate model
         
     model = PerceiverIO(
             cf.depth,
             cf.query_dim,
-            special_compression = special_compression,
+            nb_latents = cf.nb_latents,
+            mem_size = cf.mem_size,
+            cmem_size = cf.cmem_size,
+            nb_compressed = cf.nb_compressed,
             device=device,
             projection_parameters = projection_parameters,
             modality_parameters = modality_parameters,
@@ -54,9 +65,11 @@ def create_multimodal_perceiver(cf, device):
 
 def output_projection(model, x, body_outputs, frames_future, audio_future):
     output = {}
-    output['audio'] = rearrange(model.projections['audio'](
-        x[:, :audio_future, :]), "b t t1 -> b (t t1)" )
-    start_modality = audio_future
+    start_modality = 0
+    if 'audio' in model.projections.keys():
+        output['audio'] = rearrange(model.projections['audio'](
+            x[:, :audio_future, :]), "b t t1 -> b (t t1)" )
+        start_modality = audio_future
     for part in body_outputs.keys():
         output[part] = model.projections[part](
             x[:, start_modality:start_modality+frames_future, :] )

@@ -11,23 +11,23 @@ def fourier_encode(x, max_freq, num_bands = 4):
 
 
 
-def input_to_tensor(media, latents, body_parts=None, device='cpu', 
+def input_to_tensor(data, latents, body_parts=None, device='cpu', 
                     height=8, width=8, bands_video=64, bands_video_t=64):
     
     # Set everything to the same device:
 
     for key, latent in latents.items():
         latents[key]=latent.to(device)
-    for key, modality in media.items():
-        media[key]=modality.to(device)
+    for key, modality in data.items():
+        data[key]=modality.to(device)
     multi_mod = torch.tensor([], device=device)
 
     #=======#
     # Video Encoding
     #=======#
 
-    if 'video' in media:
-        video = media['video']
+    if 'video' in data:
+        video = data['video']
         b, c, t, h0, w0 = video.shape # [colors, time, height, width]
         h1, w1 = height, width
         h, w =  int(h0/h1), int(w0/w1)
@@ -70,8 +70,8 @@ def input_to_tensor(media, latents, body_parts=None, device='cpu',
     # Audio Encoding
     #=======#
 
-    if 'audio' in media:
-        audio = media['audio']
+    if 'audio' in data:
+        audio = data['audio']
         b, t0 = audio.shape 
         t1 = 16
         t =  int(t0/t1)
@@ -105,13 +105,13 @@ def input_to_tensor(media, latents, body_parts=None, device='cpu',
         body = torch.tensor([], device=device)
         for part in body_parts.keys():
 
-            b, t, _ = media[part].shape 
+            b, t, _ = data[part].shape 
 
             # Time axis postion encoding
 
             pos = fourier_encode(torch.linspace(-1, 1, t), t/2, num_bands=128).to(device)
             pos = repeat(pos, '... -> b ...', b=b)
-            body_part = torch.cat([media[part], pos], dim=-1)
+            body_part = torch.cat([data[part], pos], dim=-1)
 
             # Add encoding
 

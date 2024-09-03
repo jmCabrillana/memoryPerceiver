@@ -67,7 +67,8 @@ def isaac_training(cf, rank, size):
         model = create_agent(cf, rank)
         model_student = create_agent(cf, rank)
         if isinstance(model, ActorCriticPerceiver):
-            memories = create_memories(model.actor, cf.num_envs, device=device)
+            memories = create_memories(model.actor, cf.num_envs, device=device, 
+                                       mem_size=cf.mem_size, cmem_size=cf.cmem_size)
         else :
             memories = None
         # last_memories = torch.zeros_like(memories['cross_cmem'], device=device)
@@ -201,7 +202,6 @@ def isaac_training(cf, rank, size):
                     video = all_obs['camera'].clone()  # (num_envs, 256, 456, 3)
                     #ts.save(video[0], '/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/live.jpg')
                     full_video.append(video.cpu())
-                # env._task.calculate_metrics()       
                 reward=env.unwrapped._get_rewards()    # (num_envs, 1)
                 if is_inference:
                     history['rewards'][sim_step] = reward
@@ -241,17 +241,19 @@ def isaac_training(cf, rank, size):
                     states['observations'] = tr.buffer_padding(torch.stack(buffer['obs']), [cf.dim_observations],
                                                                 num_envs=cf.num_envs, frames=cf.frames)
                     states['observations'][mask] *= 0
-                    states['video'] = torch.zeros(cf.num_envs, cf.frames, cf.height, cf.width, 3, device=device)
-                    # states['video'] = tr.buffer_padding(torch.stack(buffer['video']), [cf.height, cf.width, 3], num_envs=cf.num_envs, frames=cf.frames)
-                    states['video'][mask] *= 0
-                    states['video'] = rearrange(states['video'], 'b t h w c -> b c t h w')
-                    states['audio'] = torch.zeros(cf.num_envs, cf.len_audio_raw, device=device)
+                    if cf.input_video:
+                        states['video'] = torch.zeros(cf.num_envs, cf.frames, cf.height, cf.width, 3, device=device)
+                        # states['video'] = tr.buffer_padding(torch.stack(buffer['video']), [cf.height, cf.width, 3], num_envs=cf.num_envs, frames=cf.frames)
+                        states['video'][mask] *= 0
+                        states['video'] = rearrange(states['video'], 'b t h w c -> b c t h w')
+                    if cf.input_audio:
+                        states['audio'] = torch.zeros(cf.num_envs, cf.len_audio_raw, device=device)
 
                     ## Inference, save history and memory update
 
                     if is_inference:
                         history['generator'][sim_step, rank] = torch.cuda.get_rng_state(rank).clone() 
-                        with autocast(device_type='cuda', dtype=torch.float16):
+                        with autocast(device_type='cuda', dtype=torch.bfloat16):
                             actions, logprobs, values, memories = model(states, memories)   
                         history['actions'][sim_step] = actions  
                         history['logprobs'][sim_step] = logprobs 
@@ -265,7 +267,7 @@ def isaac_training(cf, rank, size):
                     if not is_inference :
 
                         torch.cuda.set_rng_state(previous_history['generator'][sim_step, rank], device=device)
-                        with autocast(device_type='cuda', dtype=torch.float16):
+                        with autocast(device_type='cuda', dtype=torch.bfloat16):
                             if custom_random(sim_count, sim_step) < cf.update_probability :
                                 returns = previous_history['returns_targets'][sim_step].to(device)
                                 advantages = previous_history['advantages'][sim_step].to(device)
@@ -294,6 +296,10 @@ def isaac_training(cf, rank, size):
                                 scaler.unscale_(optimizer)
                                 torch.nn.utils.clip_grad_norm_(model_student.parameters(), cf.grad_norm)
                                 scaler.step(optimizer)
+                                # for name, param in model_student.named_parameters():
+                                #     if True or torch.isnan(param).any():
+                                #         print(f'{name} {param.data}')
+                                #         print(f'grad {param.grad.data}')
                                 scaler.update()
                                 optimizer.zero_grad()
 
