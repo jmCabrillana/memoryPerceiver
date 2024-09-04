@@ -142,9 +142,11 @@ class AttentionMemory(nn.Module):
 
         # New memories
 
-        new_mem = torch.cat([mem[:, nb_compressed:, :], x[:, 0:nb_compressed, :]], dim=1)
-        to_compress = mem[:, 0:nb_compressed, :]
-        if( special_compression != None ):
+        if( special_compression is None ):
+            new_mem = torch.cat([mem[:, nb_compressed:, :], x[:, 0:nb_compressed, :]], dim=1)
+            to_compress = mem[:, 0:nb_compressed, :]
+        else:
+            new_mem = mem
             to_compress = mem[:, special_compression, :]
         new_cmem = self.compress_mem(cmem, to_compress)
 
