@@ -3,7 +3,6 @@
 class Config:
 
     experiment_name = "h_e0.0"
-    experiment_iteration=0
 
     # Model inputs and outputs
 
@@ -37,7 +36,7 @@ class Config:
     dim_observations = 4 # 87 4
     dim_actions = 1 # 21 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
-    sim_duration = 256 # 1028 516 260
+    sim_duration = 1028 # 1028 516 260
     num_envs = 512 # 54 216 864
     seed = 68
     render = False
@@ -53,8 +52,8 @@ class Config:
     c_lambda = 0.95
     grad_norm = 1.0  # 0.1 to 1.0
     eps_clip = 0.2
-    num_replay = 1
-    update_probability = 0.99 #0.33
+    num_replay = 3
+    update_probability = 0.33 #0.33
 
     # Model dimension configuration
 
@@ -72,13 +71,12 @@ class Config:
     actions_variance = {'action_variance_' + str(i): 1 for i in range(dim_actions)}
     body_outputs.update(actions_variance)
     body_outputs.update({'critic':1})
-    has_video = True
-    has_audio = True
     path_main = '/isaac-sim/memoryPerceiver/memory_perceiver/main/'
     path_experiment = path_main+'experiments/'+task+'/'+experiment_name+'/'
-    path_model = path_main+'weights/'+task+'.pt'
-    path_optimizer = path_main+'weights/'+task+'_optimizer.pt'
-    # path_logs = path_main+'outputs/isaac.log'
+    path_run = path_experiment
+    path_model = path_main+'weights/'+task+'_'+experiment_name+'.pt'
+    path_optimizer = path_main+'weights/'+task+'_'+experiment_name+'_optimizer.pt'
+    path_logs = path_experiment+'isaac.log'
 
 
 cf = Config()

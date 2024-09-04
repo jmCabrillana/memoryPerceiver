@@ -3,12 +3,12 @@ import os
 import sys
 import gc
 import logging
+import argparse
 from copy import deepcopy
 import numpy as np
 import torchshow as ts
 import torchvision
 from einops import rearrange
-import argparse
 
 import torch
 from torch import autocast
@@ -91,7 +91,7 @@ def isaac_training(cf, rank, size):
             optimizer.load_state_dict(torch.load(cf.path_optimizer))
         scaler = GradScaler()
         if rank == 1:
-            plotter = Plotter(titles=['loss_actor', 'loss_critic', 'loss_entropy', 'actions_gap', 'returns'],
+            plotter = Plotter('tensorboard', titles=['loss_actor', 'loss_critic', 'loss_entropy', 'actions_gap', 'returns'],
                                 path_plots=cf.path_experiment)
     sim_count, sim_step = -1, 0
     
@@ -112,9 +112,8 @@ def isaac_training(cf, rank, size):
 
                 ### Plots
 
-                if rank == 1 and sim_count % (cf.num_replay+1) == 1 and len(plotter.data['loss_actor']) > 0 :
-                    plotter.plot_all([(plotter.data['loss_actor'], 64), (plotter.data['loss_critic'], 64), 
-                                      (plotter.data['loss_entropy'], 64), (plotter.data['actions_gap'], 64), plotter.data['returns']])
+                if rank == 1 and sim_count % (cf.num_replay+1) == 1 :
+                    plotter.plot_all([('loss_actor', 64), ('loss_critic', 64), ('loss_entropy', 64), ('actions_gap', 64), 'returns'])
 
                 ### Initialization
 
@@ -170,7 +169,7 @@ def isaac_training(cf, rank, size):
                     # previous_history['advantages'] = previous_history['returns'] - previous_history['values']
                     
                     if rank == 1:
-                        plotter.data['returns'].append(previous_history['returns'][0, :].mean().item())
+                        plotter.add('returns', previous_history['returns'][0, :].mean().item(), sim_count)
                         for key, value in previous_history.items():
                             if key not in ['actions', 'logprobs', 'returns', 'generator']:
                                 print(f"{key}: {value[:,0]}")
@@ -307,9 +306,9 @@ def isaac_training(cf, rank, size):
                                 backward_count = 0
 
                         if rank == 1 and custom_random(sim_count, sim_step) < cf.update_probability :
-                            plotter.data['loss_actor'].append(loss_actor.item())
-                            plotter.data['loss_critic'].append(loss_critic.item())
-                            plotter.data['loss_entropy'].append(loss_entropy.item())
+                            plotter.add('loss_actor', loss_actor.item(), sim_count*cf.sim_duration+sim_step)
+                            plotter.add('loss_critic', loss_critic.item(), sim_count*cf.sim_duration+sim_step)
+                            plotter.add('loss_entropy', loss_entropy.item(), sim_count*cf.sim_duration+sim_step)
                     # Update buffers
 
                     actions_star = model.instanciate_actions(actions, dt=cf.frames_future).to(torch.float32) # important for gather !!!!
@@ -320,7 +319,7 @@ def isaac_training(cf, rank, size):
                 buffer['actions_star'] += list(torch.unbind( actions_star ))
                 if rank == 1:
                     actions_gap =  (actions_star[0, :, 0]).mean() # - actions_star[1, :, 0]).mean()
-                    plotter.data['actions_gap'].append(actions_gap.item())
+                    plotter.add('actions_gap', actions_gap.item(), sim_count*cf.sim_duration+sim_step)
             
             # Act(num_envs, 1)
             if(len(buffer['actions_star'])>0):
@@ -358,6 +357,7 @@ def isaac_training(cf, rank, size):
 
 if __name__ == "__main__":
 
+    cf.path_experiment = tr.setup_run(cf.path_main+'configuration.py', cf.path_experiment)
     
     # logging.basicConfig(filename=cf.path_logs, level=logging.INFO)
     # log_handler = logging.FileHandler(cf.path_logs, mode='a')
@@ -379,40 +379,6 @@ if __name__ == "__main__":
     os.environ["TORCH_DISTRIBUTED_DEBUG"]="INFO"
     os.environ["TORCH_NCCL_ENABLE_MONITORING"]="1"
     
-    # with initialize(config_path="../../OmniIsaacGymEnvs/omniisaacgymenvs/cfg"):
-    #     cfg = compose(config_name="config", overrides=["task="+cf.task_name, "headless=True", "enable_viewport=True",
-    #                     "num_envs="+str(cf.num_envs), "imgWidth="+str(cf.width), "imgHeight="+str(cf.height)])
-
-    # import re
-    # import shutil
-
-    # if not os.path.exists(cf.path_experiment):
-    #     os.makedirs(cf.path_experiment)
-    #     shutil.copy(cf.path_main+'configuration.py', 
-    #             cf.path_experiment+'configuration_0.py')
-    # else:
-    #     pattern = re.compile(r'configuration_(\d+)\.py')
-    #     experiment_number = -1
-    #     max_file = None
-
-    #     # List all files in the specified directory
-    #     for filename in os.listdir(cf.path_experiment):
-    #         match = pattern.match(filename)
-    #         if match:
-    #             number = int(match.group(1))
-    #             if number > experiment_number:
-    #                 experiment_number = number
-    #                 max_file = filename
-
-    #     print(max_file, experiment_number)
-    # if (): # files equal
-    #     pass
-    # else:
-    #     cf.experiment_iteration = experiment_number+1
-    # shutil.copy(cf.path_main+'configuration.py', 
-    #             cf.path_experiment+'configuration_'+str(cf.experiment_iteration)+'.py')
-
-
     size = num_gpus
     processes = []
     mp.set_start_method("spawn")

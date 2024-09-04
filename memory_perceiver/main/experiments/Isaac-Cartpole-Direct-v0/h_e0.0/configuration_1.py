@@ -3,13 +3,12 @@
 class Config:
 
     experiment_name = "h_e0.0"
-    experiment_iteration=0
 
     # Model inputs and outputs
 
-    frames = 2
+    frames = 1
     sample_per_frame = 1920
-    frames_future = 2
+    frames_future = 1
     width = 456
     height = 264
     patch_audio = 16
@@ -27,22 +26,25 @@ class Config:
     len_audio_raw = frames*sample_per_frame
     video_future = frames_future*len_video_frame
     audio_future = frames_future*len_audio_frame 
+    input_audio = False
+    input_video = False
+    output_audio = False
 
     # Task
     task = "Isaac-Cartpole-Direct-v0" # Humanoid Cartpole 
-    agent_type = "Simple" # Perceiver Simple
+    agent_type = "Perceiver" # Perceiver Simple
     dim_observations = 4 # 87 4
     dim_actions = 1 # 21 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
-    sim_duration = 516 # 1028 516 260
-    num_envs = 864 # 54 216 864
+    sim_duration = 128 # 1028 516 260
+    num_envs = 512 # 54 216 864
     seed = 68
     render = False
 
     # PPO
-    learning_rate = 5e-5 # 1e-4
+    learning_rate = 5e-5 # 3e-4 1e-4 1e-5
     accumulation_steps = 1 # 2 4
-    entropy = 0.01  # 0.01 to 0.05
+    entropy = 0.00  # 0.01 to 0.05
     critic = 4      # 0.5 to 2 4
     student_update_step = 1
     eps = 1e-9
@@ -51,26 +53,30 @@ class Config:
     grad_norm = 1.0  # 0.1 to 1.0
     eps_clip = 0.2
     num_replay = 1
-    update_probability = 0.85 #0.33
+    update_probability = 0.99 #0.33
 
     # Model dimension configuration
 
     critic_layers = 4
     query_dim = 832
     depth = 2
+    mem_size = 2
+    cmem_size = 2
+    nb_latents = 24
+    nb_compressed=2
+    shared=True
     batch_size = num_envs
     body_parts =  {'observation_' + str(i): 1 for i in range(dim_observations)}
     body_outputs = {'action_' + str(i): 1 for i in range(dim_actions)}
     actions_variance = {'action_variance_' + str(i): 1 for i in range(dim_actions)}
     body_outputs.update(actions_variance)
     body_outputs.update({'critic':1})
-    has_video = True
-    has_audio = True
     path_main = '/isaac-sim/memoryPerceiver/memory_perceiver/main/'
     path_experiment = path_main+'experiments/'+task+'/'+experiment_name+'/'
-    path_model = path_main+'weights/'+task+'.pt'
-    path_optimizer = path_main+'weights/'+task+'_optimizer.pt'
-    # path_logs = path_main+'outputs/isaac.log'
+    path_run = path_experiment
+    path_model = path_main+'weights/'+task+'_'+experiment_name+'.pt'
+    path_optimizer = path_main+'weights/'+task+'_'+experiment_name+'_optimizer.pt'
+    path_logs = path_experiment+'isaac.log'
 
 
 cf = Config()

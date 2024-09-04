@@ -3,6 +3,9 @@ import numpy as np
 import os
 import random
 from einops import repeat, rearrange
+import re
+import shutil
+from datetime import datetime
 
 def init_history(history_keys, sim_duration, num_envs, action_dim, device):
     history = { key: torch.zeros(sim_duration, num_envs, device=device) for key in history_keys}
@@ -93,3 +96,34 @@ def set_seeds(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
+
+def setup_run(path_config, path_experiment):
+    experiment_number = 0
+    if not os.path.exists(path_experiment):
+        os.makedirs(path_experiment)
+        shutil.copy(path_config, path_experiment+'configuration_0.py')
+    else:
+        pattern = re.compile(r'configuration_(\d+)\.py')
+        max_file = None
+
+        # List all files in the specified directory
+        for filename in os.listdir(path_experiment):
+            match = pattern.match(filename)
+            if match:
+                number = int(match.group(1))
+                if number >= experiment_number:
+                    experiment_number = number
+                    max_file = filename
+
+        if max_file is None:
+            shutil.copy(path_config, path_experiment+'configuration_0.py')
+        else:
+            path_last_experiment = path_experiment+max_file
+            with open(path_config, 'rb') as f1, open(path_last_experiment, 'rb') as f2:
+                if f1.read() != f2.read():
+                    experiment_number += 1
+                    shutil.copy(path_config, path_experiment+'configuration_'+str(experiment_number)+'.py')
+
+    time_experiment = datetime.now().strftime("%m-%d_%H:%M:%S")
+    path_run = path_experiment + 'run_' + str(experiment_number) +'_'+time_experiment+'/'
+    return path_run

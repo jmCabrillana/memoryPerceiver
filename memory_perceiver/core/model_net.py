@@ -52,16 +52,12 @@ class PreNormMem(nn.Module):
 
         if exists(self.norm_mem):
             mem = kwargs['mem']
-            # print(f'mem {mem.sum()}')
             normed_mem = self.norm_mem(mem)
-            # print(f'mem norm {normed_mem.sum()}')
             kwargs.update(mem = normed_mem)
 
         if exists(self.norm_cmem):
             cmem = kwargs['cmem']
-            # print(f'cmem {cmem.sum()}')
             normed_cmem = self.norm_cmem(cmem)
-            # print(f'cmem norm {normed_cmem.sum()}')
             kwargs.update(cmem = normed_cmem)
 
         return self.fn(x, **kwargs)
@@ -164,11 +160,7 @@ class AttentionMemory(nn.Module):
 
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> (b h) n d', h = h), (q, k, v))
 
-        # print(f'$q {q.sum()}')
-        # print(f'$k {k.sum()}')
-        # print(f'$v {v.sum()}')
         sim = einsum('b i d, b j d -> b i j', q, k) / self.scale
-        # print(f'$sim {sim.sum()}')
 
         if exists(mask):
             max_neg_value = -torch.finfo(sim.dtype).max
@@ -178,11 +170,9 @@ class AttentionMemory(nn.Module):
         # Attention, what we cannot get enough of
 
         attn = sim.softmax(dim = -1)
-        # print(f'$attn {attn.sum()}')
 
         out = einsum('b i j, b j d -> b i d', attn, v)
         out = rearrange(out, '(b h) n d -> b n (h d)', h = h)
-        # print(f'$out {out.sum()}')
 
         # Auxiliary loss
         
@@ -201,8 +191,6 @@ class AttentionMemory(nn.Module):
             out_cmem,
             out_old_mem
         )
-        to_out = self.to_out(out)
-        # print(f'$to_out {out.sum()}')
         return self.to_out(out), new_mem, new_cmem, aux_loss
 
 # main class
@@ -313,10 +301,7 @@ class PerceiverIO(nn.Module):
                 if update_mem:
                     new_layers_mem[:, i//2], new_layers_cmem[:, i//2] = new_mem.clone().detach(), new_cmem.clone().detach()
                 sum_aux_loss= sum_aux_loss + aux_loss
-            # print(f'$1 {i} {attn.sum()}')
             x = attn + x
-            lay= self.ff_layers[i](x)
-            # print(f'$2 {i} {lay.sum()}')
             x = self.ff_layers[i](x) + x
 
         if not exists(queries):
