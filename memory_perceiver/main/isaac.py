@@ -266,8 +266,10 @@ def isaac_training(cf, rank, size):
                     if not is_inference :
 
                         torch.cuda.set_rng_state(previous_history['generator'][sim_step, rank], device=device)
+                        perform_update = custom_random(sim_count, sim_step) < cf.update_probability and \
+                                         sim_step <= 1.00*cf.sim_duration
                         with autocast(device_type='cuda', dtype=torch.bfloat16):
-                            if custom_random(sim_count, sim_step) < cf.update_probability :
+                            if perform_update :
                                 returns = previous_history['returns_targets'][sim_step].to(device)
                                 advantages = previous_history['advantages'][sim_step].to(device)
                                 new_logprobs, new_values, entropies, _ = model_student(states, memories, actions)                            
@@ -283,7 +285,7 @@ def isaac_training(cf, rank, size):
 
                             _, _, _, memories = model(states, memories) 
 
-                        if custom_random(sim_count, sim_step) < cf.update_probability :
+                        if perform_update :
                             scaler.scale(loss).backward()
                             backward_count += 1
 
@@ -295,22 +297,18 @@ def isaac_training(cf, rank, size):
                                 scaler.unscale_(optimizer)
                                 torch.nn.utils.clip_grad_norm_(model_student.parameters(), cf.grad_norm)
                                 scaler.step(optimizer)
-                                # for name, param in model_student.named_parameters():
-                                #     if True or torch.isnan(param).any():
-                                #         print(f'{name} {param.data}')
-                                #         print(f'grad {param.grad.data}')
                                 scaler.update()
                                 optimizer.zero_grad()
 
                                 # Reinitialize
                                 backward_count = 0
 
-                        if rank == 1 and custom_random(sim_count, sim_step) < cf.update_probability :
+                        if rank == 1 and perform_update :
                             plotter.add('loss_actor', loss_actor.item(), sim_count*cf.sim_duration+sim_step)
                             plotter.add('loss_critic', loss_critic.item(), sim_count*cf.sim_duration+sim_step)
                             plotter.add('loss_entropy', loss_entropy.item(), sim_count*cf.sim_duration+sim_step)
-                    # Update buffers
 
+                    # Instanciate action before dispatch
                     actions_star = model.instanciate_actions(actions, dt=cf.frames_future).to(torch.float32) # important for gather !!!!
                     
                 actions_star = rearrange(actions_star, 't b d -> b t d').contiguous()
@@ -328,17 +326,10 @@ def isaac_training(cf, rank, size):
             else:
                 action = torch.dzeros(cf.num_envs, 1)
 
+            # Step environment
             if rank == rank_sim:
-
-                # Step environment
-                if sim_step == 0:
-                    pass #env.unwrapped.__init__(env_cfg)
                 env.step(action.to(rank_sim))
-                # env.step(render=cf.render)
-                # env.sim_frame_count += 1
-                # env._task.post_physics_step()
-            dist.barrier()
-
+                
             if sim_count % 10 == 0 and sim_step % cf.sim_duration == 256 and rank == 0 and cf.render :
                 torchvision.io.write_video('/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/test_'  + str(sim_count) + '_vid_.mp4', 
                                             torch.stack(full_video)[:,1], 8*cf.frames)
