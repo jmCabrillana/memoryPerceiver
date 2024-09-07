@@ -156,6 +156,7 @@ class AttentionMemory(nn.Module):
         else:
             full_input = torch.concat([new_cmem, new_mem], dim=1)
         full_input = default(full_input, x)
+        full_input = x # !!! DELETE
         k, v = self.to_kv(full_input).chunk(2, dim = -1)
 
         # Merge heads
@@ -193,7 +194,7 @@ class AttentionMemory(nn.Module):
             out_cmem,
             out_old_mem
         )
-        return self.to_out(out), new_mem, new_cmem, aux_loss
+        return self.to_out(out), mem, cmem, aux_loss# new_mem, new_cmem, aux_loss
 
 # main class
 

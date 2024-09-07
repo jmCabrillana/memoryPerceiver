@@ -163,21 +163,19 @@ def isaac_training(cf, rank, size):
                     previous_history['returns'] = tr.calculate_returns(history['rewards'], history['death_index'], gamma=cf.gamma)
                     tmp_advantages = tr.calculate_gae(history['rewards'], history['values'], 
                                                         history['death_index'], gamma=cf.gamma, gae_lambda=cf.c_lambda)
-                    # previous_history['advantages'] = (tmp_advantages - tmp_advantages.mean(dim=1, keepdim=True)) / tmp_advantages.std(dim=1, keepdim=True)
-                    previous_history['advantages'] = tmp_advantages
                     previous_history['returns_targets'] = tmp_advantages + history['values']
+                    # tmp_advantages = (tmp_advantages - tmp_advantages.mean(dim=1, keepdim=True)) / tmp_advantages.std(dim=1, keepdim=True)
+                    previous_history['advantages'] = tmp_advantages
                     # previous_history['advantages'] = previous_history['returns'] - previous_history['values']
                     
                     if rank == 1:
                         plotter.add('returns', previous_history['returns'][0, :].mean().item(), sim_count)
                         for key, value in previous_history.items():
-                            if key not in ['actions', 'logprobs', 'returns', 'generator']:
+                            if key not in ['actions', 'logprobs', 'generator']:
                                 print(f"{key}: {value[:,0]}")
                             if key == 'actions':
                                 print(f"{key}: {value[:,0, 0]}")
                                 #print(f"{key}1: {value[:,0, 1]}")
-                            if key == 'returns':
-                                print(f"{key}: {(value[:,0]*10).int()}")
                         
                 if rank in rank_agents:
                     torch.cuda.empty_cache()
@@ -215,7 +213,7 @@ def isaac_training(cf, rank, size):
 
             dones = torch.zeros(cf.num_envs, device=rank)
             if rank == rank_sim:
-                dones, _ = env.unwrapped._get_dones()
+                dones = env.last_dones # dones, _ = env.unwrapped._get_dones()
                 dones = dones.int().clone()
                 birth_time[dones==1] = sim_step
 
@@ -267,7 +265,7 @@ def isaac_training(cf, rank, size):
 
                         torch.cuda.set_rng_state(previous_history['generator'][sim_step, rank], device=device)
                         perform_update = custom_random(sim_count, sim_step) < cf.update_probability and \
-                                         sim_step <= 1.00*cf.sim_duration
+                                         sim_step <= 0.75*cf.sim_duration
                         with autocast(device_type='cuda', dtype=torch.bfloat16):
                             if perform_update :
                                 returns = previous_history['returns_targets'][sim_step].to(device)

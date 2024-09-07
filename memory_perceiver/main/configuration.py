@@ -2,15 +2,15 @@
 
 class Config:
 
-    experiment_name = "S_0.0_in-1"
+    experiment_name = "P_0.0_in-1"
 
     # Task
     task = "Isaac-Cartpole-Direct-v0" # Humanoid Cartpole 
-    agent_type = "Simple" # Perceiver Simple
+    agent_type = "Perceiver" # Perceiver Simple
     dim_observations = 4 # 87 4
     dim_actions = 1 # 21 1
-    sim_duration = 516 # 1028 516 260
-    num_envs = 2048 # 54 216 864
+    sim_duration = 64 # 1028 516 260
+    num_envs = 24 # 54 216 864
     seed = 68
     render = False
 
@@ -19,7 +19,7 @@ class Config:
     frames_future = 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
     learning_rate = 3e-4 # 3e-4 1e-4 1e-5
-    accumulation_steps = 1 # 2 4
+    accumulation_steps = 4 # 2 4
     entropy = 0.00  # 0.01 to 0.05
     critic = 4      # 0.5 to 2 4
     student_update_step = 1
@@ -29,7 +29,7 @@ class Config:
     grad_norm = 1.0  # 0.1 to 1.0
     eps_clip = 0.2
     num_replay = 1
-    update_probability = 0.99 #0.33
+    update_probability = 0.6 #0.33
 
     # Model parameters
     critic_layers = 4
