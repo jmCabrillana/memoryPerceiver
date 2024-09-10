@@ -46,15 +46,17 @@ def create_multimodal_perceiver(cf, device):
             device=device,
             projection_parameters = projection_parameters,
             modality_parameters = modality_parameters,
+            special_compression=special_compression
         )
     model = model.to(device)
 
     # Queries
 
     queries = []
-    audio_query = repeat( torch.cat([model.modality['audio'], torch.zeros(16, device=device)]), '... -> n ...', n=cf.audio_future)
-    audio_pos = fourier_encode(torch.linspace(-1, 1, cf.audio_future), cf.audio_future/2, num_bands=128).to(device)
-    queries.append(torch.cat([audio_query, audio_pos], dim=-1).to(device))
+    if cf.output_audio:
+        audio_query = repeat( torch.cat([model.modality['audio'], torch.zeros(16, device=device)]), '... -> n ...', n=cf.audio_future)
+        audio_pos = fourier_encode(torch.linspace(-1, 1, cf.audio_future), cf.audio_future/2, num_bands=128).to(device)
+        queries.append(torch.cat([audio_query, audio_pos], dim=-1).to(device))
     for part, params in cf.body_outputs.items():
         part_query = repeat( torch.cat([model.modality[part], torch.zeros(params, device=device)]), '... -> n ...', n=cf.frames_future)
         part_pos = fourier_encode(torch.linspace(-1, 1, cf.frames_future), cf.frames_future/2, num_bands=128).to(device)

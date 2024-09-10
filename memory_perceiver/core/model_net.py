@@ -148,15 +148,17 @@ class AttentionMemory(nn.Module):
         else:
             new_mem = mem
             to_compress = mem[:, special_compression, :]
-        new_cmem = self.compress_mem(cmem, to_compress)
+        # new_cmem = self.compress_mem(cmem, to_compress)
+        new_cmem = cmem
 
         q = self.to_q(x)
         if(use_x):
-            full_input = torch.concat([new_cmem, new_mem, x], dim=1)
+            if special_compression is not None:
+                full_input = torch.concat([mem, x], dim=1)
+            else: 
+                full_input = x
         else:
-            full_input = torch.concat([new_cmem, new_mem], dim=1)
-        full_input = default(full_input, x)
-        full_input = x # !!! DELETE
+            full_input = torch.concat([cmem, mem], dim=1)
         k, v = self.to_kv(full_input).chunk(2, dim = -1)
 
         # Merge heads
@@ -194,7 +196,7 @@ class AttentionMemory(nn.Module):
             out_cmem,
             out_old_mem
         )
-        return self.to_out(out), mem, cmem, aux_loss# new_mem, new_cmem, aux_loss
+        return self.to_out(out), mem, cmem, aux_loss # new_mem, new_cmem, aux_loss
 
 # main class
 
@@ -227,11 +229,10 @@ class PerceiverIO(nn.Module):
         self.nb_compressed = nb_compressed
 
         self.cross_attn = PreNormMem(latent_dim, 
-                                AttentionMemory(latent_dim, 
+                                Attention(latent_dim, 
                                                 queries_dim, 
                                                 heads = cross_heads, 
-                                                dim_head = cross_dim_head),
-                                                mem_dim = queries_dim)
+                                                dim_head = cross_dim_head))
         self.cross_ff = PreNormContext(latent_dim, FeedForward(latent_dim))
 
         self.attn_layers = nn.ModuleList([])
@@ -262,7 +263,7 @@ class PerceiverIO(nn.Module):
         for part, params in projection_parameters.items():
             self.projections[part] = nn.Linear(queries_dim, params, device=device)
 
-    def forward(self, data, memories, mask = None, queries = None, update_mem=True):
+    def forward(self, data, memories, mask = None, queries = None):
 
         # init data
 
@@ -273,17 +274,10 @@ class PerceiverIO(nn.Module):
 
         # Cross attention on input
 
-        attn, _, new_cmem, aux_loss = self.cross_attn(x, 
-                                                mem = data, 
-                                                cmem = memories['cross_cmem'].clone().detach(), 
-                                                mask = mask, 
-                                                special_compression = self.special_compression)
+        attn = self.cross_attn(x, context = data, mask = mask)
         data = data.cpu() # to save gpu memory
-        if update_mem:
-            new_cross_cmem = new_cmem.clone().detach()
         x = attn + x
         x = self.cross_ff(x) + x
-        sum_aux_loss= sum_aux_loss + aux_loss
 
         # layers
 
@@ -301,8 +295,6 @@ class PerceiverIO(nn.Module):
                                                                         )
                 mem=memories['layers_mem'][:, i//2].clone().detach().sum()
                 cmem=memories['layers_mem'][:, i//2].clone().detach().sum()
-                if update_mem:
-                    new_layers_mem[:, i//2], new_layers_cmem[:, i//2] = new_mem.clone().detach(), new_cmem.clone().detach()
                 sum_aux_loss= sum_aux_loss + aux_loss
             x = attn + x
             x = self.ff_layers[i](x) + x
@@ -322,6 +314,6 @@ class PerceiverIO(nn.Module):
 
         # final linear out
 
-        memories = {'cross_cmem':new_cross_cmem, 'layers_mem':new_layers_mem, 'layers_cmem':new_layers_cmem}
+        memories = {'cross_cmem':memories['cross_cmem'], 'layers_mem':new_layers_mem, 'layers_cmem':new_layers_cmem}
         
         return output, memories, sum_aux_loss

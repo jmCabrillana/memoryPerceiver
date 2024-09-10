@@ -34,7 +34,7 @@ class Config:
     # Model parameters
     critic_layers = 4
     query_dim = 832
-    depth = 2
+    depth = 1
     mem_size = 4
     cmem_size = 4
     nb_latents = 24
