@@ -4,8 +4,7 @@ from torch import nn, einsum
 from torch.distributions import Normal, MultivariateNormal
 
 from memoryPerceiver.memory_perceiver.core.model_net import PerceiverIO
-from memoryPerceiver.memory_perceiver.processing.vectorize import input_to_tensor
-from memoryPerceiver.memory_perceiver.core.model_wrapper import create_multimodal_perceiver, output_projection
+from memoryPerceiver.memory_perceiver.core.model_wrapper import create_multimodal_perceiver, output_projection, input_embedding
 
 class ActorCritic(nn.Module):
     def __init__(self):
@@ -26,48 +25,46 @@ class ActorCriticSimple(ActorCritic):
         self.dim_actions_ppo = cf.dim_actions_ppo
         self.dim_t = cf.frames_future
         self.hidden_dim = 32
-        self.actor = nn.Sequential( nn.Linear(self.state_dim, self.hidden_dim),
-                                    nn.ReLU(),
-                                    nn.Linear(self.hidden_dim, self.hidden_dim),
-                                    nn.ReLU(),
-                                    nn.Linear(self.hidden_dim, 2*self.dim_actions_ppo+1)
+        self.actor = nn.Sequential( *( [nn.Linear(self.state_dim, self.hidden_dim), nn.ReLU()] +
+                                              [nn.Linear(self.hidden_dim, self.hidden_dim), nn.ReLU()]*(cf.depth-1) )
                                     ).to(device)
         self.actor.reset_memories = lambda *args, **kwargs: None
-        if not self.shared:
-            self.critic = nn.Sequential(nn.Linear(self.state_dim, self.hidden_dim),
-                                        nn.ReLU(),
-                                        nn.Linear(self.hidden_dim, self.hidden_dim),
-                                        nn.ReLU(),
-                                        nn.Linear(self.hidden_dim, 1)
-                                        ).to(device)
+        self.actor_mean = nn.Linear(self.hidden_dim, self.dim_actions_ppo, device=device)
+        self.actor_std = nn.Linear(self.hidden_dim, self.dim_actions_ppo, device=device)
+        nn.init.zeros_(self.actor_std.weight)
+        nn.init.zeros_(self.actor_std.bias)
+        if self.shared:
+            self.actor_critic = nn.Linear(self.hidden_dim, 1, device=device)
+        else:
+            self.critic = nn.Sequential( *( [nn.Linear(self.state_dim, self.hidden_dim), nn.ReLU()] +
+                                            [nn.Linear(self.hidden_dim, self.hidden_dim), nn.ReLU()]*(cf.critic_depth-1) +
+                                            [nn.Linear(self.hidden_dim, 1)]  ) ).to(device)
         
     def forward(self, states, memories, old_actions=None):
         state = states['observations'][:,-1] # last time
+        hidden = self.actor(state)
         
         # Critic
 
         if self.shared:
-            x = self.actor(state)
-            values = x[:, 2*self.dim_actions_ppo:]
+            values = self.actor_critic(hidden)
         else:
             values = self.critic(state)
         values = rearrange(values,  'b 1 -> b')
 
         # Actor
 
-        if self.shared:
-            actions_tmp = torch.tanh(x[:, :2*self.dim_actions_ppo])
-        else:
-            actions_tmp = torch.tanh(self.actor(state))
-        actions_mean,  = actions_tmp[:, 0:self.dim_actions_ppo], 
-        actions_var = ((1+actions_tmp[:, self.dim_actions_ppo:2*self.dim_actions_ppo])/4+1e-5)**2
-        dist = MultivariateNormal(actions_mean, torch.diag_embed(actions_var))
+        actions_mean  = torch.tanh(self.actor_mean(hidden))
+        # actions_var = 0.01 + 0*((1+actions_tmp[:, self.dim_actions_ppo:2*self.dim_actions_ppo])/4+1e-5)**2
+        log_std = self.actor_std(hidden).clip(-20, 2)
+        covariance = torch.diag_embed(log_std.exp() * log_std.exp())
+        dist = MultivariateNormal(actions_mean, covariance) # scale_tril=covariance) # torch.diag(...)
         
         # Act
         if old_actions is None:  
             actions = dist.sample()
             logprobs = dist.log_prob(actions)
-            return actions.detach(), logprobs.detach(), values.detach(), None
+            return actions.detach(), values.detach(), logprobs.detach(), None
         # Evaluate
         else:  
             logprobs = dist.log_prob(old_actions)
@@ -104,46 +101,42 @@ class ActorCriticPerceiver(ActorCritic):
         self.body_outputs = cf.body_outputs
         self.patch_height, self.patch_width, self.bands_video, self.bands_video_t = \
             cf.patch_height, cf.patch_width, cf.bands_video, cf.bands_video_t
-        self.hidden_dim = 64
+        self.patch_audio = cf.patch_audio
+        self.hidden_dim = 32
         self.actor = create_multimodal_perceiver(cf, device)
-        # self.critic = nn.Sequential(nn.Linear(cf.dim_observations, self.hidden_dim),
-        #                             nn.ReLU(),
-        #                             nn.Linear(self.hidden_dim, self.hidden_dim),
-        #                             nn.ReLU(),
-        #                             nn.Linear(self.hidden_dim, self.hidden_dim),
-        #                             nn.ReLU(),
-        #                             nn.Linear(self.hidden_dim, self.hidden_dim),
-        #                             nn.ReLU(),
-        #                             nn.Linear(self.hidden_dim, 1)
-        #                             ).to(device)
+        self.shared = cf.shared
+        if not self.shared:
+            self.critic = nn.Sequential(nn.Linear(cf.dim_observations, self.hidden_dim),
+                                        nn.ReLU(),
+                                        nn.Linear(self.hidden_dim, 1)
+                                        ).to(device)
+        for i in range(self.dim_actions):
+            nn.init.zeros_(self.actor.projections['action_variance_'+str(i)].weight)
+            nn.init.zeros_(self.actor.projections['action_variance_'+str(i)].bias)
         
         
     def forward(self, states, memories, old_actions=None):
         
-        # Critic
-
-        # values = self.critic(states['observations'][:,-1])
-        # values = rearrange(values,  'b 1 -> b')
-
         # Actor
         
         ## Net inference
         
         device = states['observations'].device
+        states_chunk= {}
         for i in range(self.dim_observations):
-            states['observation_'+str(i)] = states['observations'][:, :, i:i+1]
-        input = input_to_tensor(states, self.actor.modality, self.body_parts, device=device,
-            height=self.patch_height, width=self.patch_width, bands_video=self.bands_video, bands_video_t=self.bands_video_t)
-        x, new_memories, _ = self.actor(input, memories, queries=self.actor.queries)
-        output = output_projection(self.actor, x, self.body_outputs, 
-                          self.frames_future, self.audio_future)
+            states_chunk['observation_'+str(i)] = states['observations'][:, :, i:i+1]
+        input = input_embedding(self.actor, states_chunk, device=device,
+                height=self.patch_height, width=self.patch_width, patch_audio=self.patch_audio)
+        x, new_memories = self.actor(input, memories, queries=self.actor.queries)
+        output = output_projection(self.actor, x, self.frames_future, self.audio_future)
+
         actions = []
         actions_var = []
         for i in range(self.dim_actions):
             actions.append(output['action_'+str(i)])
             actions_var.append(output['action_variance_'+str(i)])
         actions = torch.tanh(rearrange(actions, 'd b t () -> b t d'))
-        actions_var = torch.tanh(rearrange(actions_var, 'd b t () -> b t d'))
+        actions_var = rearrange(actions_var, 'd b t () -> b t d')
         dim_t = actions.size()[1]
 
         # Average on time or identity
@@ -155,21 +148,24 @@ class ActorCriticPerceiver(ActorCritic):
         else : 
             actions_mean = rearrange(actions, 'b () d -> b d')
             actions_var_tmp = rearrange(actions_var, 'b () d -> b d')
-        actions_var = ((1+actions_var_tmp)/4+1e-5)**2
-
-
-        dist = MultivariateNormal(actions_mean, torch.diag_embed(actions_var))
+        log_std = actions_var_tmp.clip(-20, 2) # actions_var = ((1+actions_var_tmp)/4+1e-5)**2
+        covariance = torch.diag_embed(log_std.exp() * log_std.exp())
+        dist = MultivariateNormal(actions_mean, covariance)
 
         ## result
 
         # Critic
-        values = rearrange(output['critic'], 'b t () -> b t').mean(dim=-1)
+        if self.shared:
+            values = rearrange(output['critic'], 'b t () -> b t').mean(dim=-1)
+        else : 
+            values = self.critic(states['observations'][:,-1])
+            values = rearrange(values,  'b 1 -> b')
         
         # Act
         if old_actions is None:  
             actions = dist.sample()
             logprobs = dist.log_prob(actions)
-            return actions.detach(), logprobs.detach(), values.detach(), new_memories
+            return actions.detach(), values.detach(), logprobs.detach(), new_memories
         # Evaluate
         else:  
             logprobs = dist.log_prob(old_actions)

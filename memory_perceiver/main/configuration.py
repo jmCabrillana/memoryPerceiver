@@ -2,15 +2,15 @@
 
 class Config:
 
-    experiment_name = "P_0.0_in-1"
+    experiment_name = "S_1.5_large"
 
     # Task
     task = "Isaac-Cartpole-Direct-v0" # Humanoid Cartpole 
-    agent_type = "Perceiver" # Perceiver Simple
+    agent_type = "Simple" # Perceiver Simple
     dim_observations = 4 # 87 4
     dim_actions = 1 # 21 1
-    sim_duration = 64 # 1028 516 260
-    num_envs = 24 # 54 216 864
+    num_envs = 864 # 54 216 864
+    sim_duration = 32 # 1028 516 260
     seed = 68
     render = False
 
@@ -19,27 +19,27 @@ class Config:
     frames_future = 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
     learning_rate = 3e-4 # 3e-4 1e-4 1e-5
-    accumulation_steps = 4 # 2 4
+    accumulation_steps = 2 # 2 4
     entropy = 0.00  # 0.01 to 0.05
-    critic = 4      # 0.5 to 2 4
+    critic = 1      # 0.5 to 2 4
     student_update_step = 1
     eps = 1e-9
     gamma = 0.99
     c_lambda = 0.95
     grad_norm = 1.0  # 0.1 to 1.0
     eps_clip = 0.2
+    value_clip = 0.2 #float('inf')
     num_replay = 1
-    update_probability = 0.6 #0.33
+    update_probability = 0.3 #0.33
 
     # Model parameters
-    critic_layers = 4
-    query_dim = 832
-    depth = 1
-    mem_size = 4
-    cmem_size = 4
-    nb_latents = 24
-    nb_compressed=2
-    shared=True
+    depth = 2
+    critic_depth = 1
+    query_dim = 24 # video > 136 , 832
+    latent_dim_head = 10  # 64
+    nb_latents_mem = 1
+    nb_latents = 4
+    shared=False
     batch_size = num_envs
     body_parts =  {'observation_' + str(i): 1 for i in range(dim_observations)}
     body_outputs = {'action_' + str(i): 1 for i in range(dim_actions)}
@@ -61,7 +61,7 @@ class Config:
     bands_video = 32
     bands_video_t = 4
     channels = 3
-    len_video_frame = 836 # 836 = 456*264/(12*12) # 1824 # 456*256/(8*8)
+    len_video_frame = 836 # 836 = 456*264/(12*12) # 1824 456*256/(8*8) # 448 448*256/(16*16)
     len_audio_frame = 120   # 1920/16
     sample_rate = frames * sample_per_frame
     len_video = frames*len_video_frame
@@ -75,7 +75,7 @@ class Config:
     path_main = '/isaac-sim/memoryPerceiver/memory_perceiver/main/'
     path_experiment = path_main+'experiments/'+task+'/'+experiment_name+'/'
     path_model = path_main+'weights/'+task+'_'+experiment_name+'.pt'
-    path_optimizer = path_main+'weights/'+task+'_'+experiment_name+'_optimizer.pt'
+    path_scaler = path_main+'weights/'+task+'_'+experiment_name+'_scaler.pt'
     path_logs = path_experiment+'isaac.log'
 
 
