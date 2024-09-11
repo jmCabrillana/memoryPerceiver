@@ -99,10 +99,7 @@ class RunningStandardScaler(nn.Module):
         :rtype: torch.Tensor
         """
         if train:
-            if x.dim() == 3:
-                self._parallel_variance(torch.mean(x, dim=(0, 1)), torch.var(x, dim=(0, 1)), x.shape[0] * x.shape[1])
-            else:
-                self._parallel_variance(torch.mean(x, dim=0), torch.var(x, dim=0), x.shape[0])
+            self._parallel_variance(torch.mean(x), torch.var(x), torch.numel(x))
 
         # scale back the data to the original representation
         if inverse:

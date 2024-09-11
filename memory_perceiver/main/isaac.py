@@ -66,7 +66,7 @@ def isaac_training(cf, rank, size):
         print(f"[INFO]: Gym action space: {env.action_space}")
         seed_isaac = set_seed(cf.seed, torch_deterministic=False)
         env.reset()
-        value_scaler = RunningStandardScaler(size=(cf.sim_duration, cf.num_envs), device=device)  
+        value_scaler = RunningStandardScaler(size=1, device=device)  
         # if os.path.exists(cf.path_scaler):
         #     try:
         #         value_scaler.load_state_dict(torch.load(cf.path_scaler))  
@@ -183,7 +183,12 @@ def isaac_training(cf, rank, size):
                             if key == 'actions':
                                 print(f"{key}: {value[:,0, 0]}")
                                 #print(f"{key}1: {value[:,0, 1]}")
-                        
+                    if rank == rank_sim:
+                        print('returns mean', previous_history['returns'].mean())
+                        print('values mean', unscaled_values.mean())
+                        print('values mean', (tmp_advantages + unscaled_values).mean())
+                        print('scaler mean', value_scaler.running_mean)
+                        print('scaler var', value_scaler.running_variance)
                 if rank in rank_agents:
                     torch.cuda.empty_cache()
                     optimizer.zero_grad(set_to_none=True)

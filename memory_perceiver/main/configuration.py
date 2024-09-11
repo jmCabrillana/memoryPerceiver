@@ -2,15 +2,15 @@
 
 class Config:
 
-    experiment_name = "S_1.5_large"
+    experiment_name = "S_1.9_entropy"
 
     # Task
     task = "Isaac-Cartpole-Direct-v0" # Humanoid Cartpole 
     agent_type = "Simple" # Perceiver Simple
     dim_observations = 4 # 87 4
     dim_actions = 1 # 21 1
-    num_envs = 864 # 54 216 864
-    sim_duration = 32 # 1028 516 260
+    num_envs = 24 # 54 216 864
+    sim_duration = 64 # 1028 516 260
     seed = 68
     render = False
 
@@ -20,7 +20,7 @@ class Config:
     dim_actions_ppo = min(2, frames_future)*dim_actions
     learning_rate = 3e-4 # 3e-4 1e-4 1e-5
     accumulation_steps = 2 # 2 4
-    entropy = 0.00  # 0.01 to 0.05
+    entropy = 0.01 # 0.01 to 0.05
     critic = 1      # 0.5 to 2 4
     student_update_step = 1
     eps = 1e-9
@@ -30,10 +30,10 @@ class Config:
     eps_clip = 0.2
     value_clip = 0.2 #float('inf')
     num_replay = 1
-    update_probability = 0.3 #0.33
+    update_probability = 0.2 #0.33
 
     # Model parameters
-    depth = 2
+    depth = 1
     critic_depth = 1
     query_dim = 24 # video > 136 , 832
     latent_dim_head = 10  # 64
