@@ -24,7 +24,7 @@ class ActorCriticSimple(ActorCritic):
         self.dim_actions = cf.dim_actions
         self.dim_actions_ppo = cf.dim_actions_ppo
         self.dim_t = cf.frames_future
-        self.hidden_dim = 32
+        self.hidden_dim = cf.hidden_dim
         self.actor = nn.Sequential( *( [nn.Linear(self.state_dim, self.hidden_dim), nn.ReLU()] +
                                               [nn.Linear(self.hidden_dim, self.hidden_dim), nn.ReLU()]*(cf.depth-1) )
                                     ).to(device)
@@ -33,6 +33,8 @@ class ActorCriticSimple(ActorCritic):
         self.actor_std = nn.Linear(self.hidden_dim, self.dim_actions_ppo, device=device)
         nn.init.zeros_(self.actor_std.weight)
         nn.init.zeros_(self.actor_std.bias)
+        nn.init.zeros_(self.actor_mean.weight)
+        nn.init.zeros_(self.actor_mean.bias)
         if self.shared:
             self.actor_critic = nn.Linear(self.hidden_dim, 1, device=device)
         else:
@@ -102,14 +104,13 @@ class ActorCriticPerceiver(ActorCritic):
         self.patch_height, self.patch_width, self.bands_video, self.bands_video_t = \
             cf.patch_height, cf.patch_width, cf.bands_video, cf.bands_video_t
         self.patch_audio = cf.patch_audio
-        self.hidden_dim = 32
+        self.hidden_dim = cf.hidden_dim
         self.actor = create_multimodal_perceiver(cf, device)
         self.shared = cf.shared
         if not self.shared:
-            self.critic = nn.Sequential(nn.Linear(cf.dim_observations, self.hidden_dim),
-                                        nn.ReLU(),
-                                        nn.Linear(self.hidden_dim, 1)
-                                        ).to(device)
+            self.critic = nn.Sequential( *( [nn.Linear(self.dim_observations, self.hidden_dim), nn.ReLU()] +
+                                            [nn.Linear(self.hidden_dim, self.hidden_dim), nn.ReLU()]*(cf.critic_depth-1) +
+                                            [nn.Linear(self.hidden_dim, 1)]  ) ).to(device)
         for i in range(self.dim_actions):
             nn.init.zeros_(self.actor.projections['action_variance_'+str(i)].weight)
             nn.init.zeros_(self.actor.projections['action_variance_'+str(i)].bias)

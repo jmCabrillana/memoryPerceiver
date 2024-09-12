@@ -2,15 +2,15 @@
 
 class Config:
 
-    experiment_name = "S_0.5_b64"
+    experiment_name = "P_0.0_new"
 
     # Task
-    task = "Isaac-Cartpole-Direct-v0" # Humanoid Cartpole 
-    agent_type = "Simple" # Perceiver Simple
+    task = "Isaac-Cartpole-Direct-Mem-v0" # Humanoid Cartpole 
+    agent_type = "Perceiver" # Perceiver Simple
     dim_observations = 4 # 87 4
     dim_actions = 1 # 21 1
-    num_envs = 64 # 54 216 864
-    sim_duration = 32 # 1028 516 260
+    num_envs = 8 # 54 216 864
+    sim_duration = 64 # 1028 516 260
     seed = 68
     render = False
 
@@ -19,9 +19,10 @@ class Config:
     frames_future = 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
     learning_rate = 3e-4 # 3e-4 1e-4 1e-5
-    accumulation_steps = 2 # 2 4
+    kl_threshold = 0.008
     entropy = 0.00 # 0.01 to 0.05
-    critic = 4     # 0.5 to 2 4
+    critic = 2     # 0.5 to 2 4
+    accumulation_steps = 4 # 2 4
     student_update_step = 1
     eps = 1e-9
     gamma = 0.99
@@ -30,12 +31,13 @@ class Config:
     eps_clip = 0.2
     value_clip = 0.2 #float('inf')
     num_replay = 1
-    update_probability = 0.4 #0.33
+    update_probability = 0.15 #0.33
 
     # Model parameters
-    depth = 1
-    critic_depth = 1
+    depth = 2
+    critic_depth = 2
     query_dim = 24 # video > 136 , 832
+    hidden_dim = 32 # for simple net
     latent_dim_head = 10  # 64
     nb_latents_mem = 1
     nb_latents = 4

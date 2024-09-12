@@ -182,11 +182,11 @@ def isaac_training(cf, rank, size):
                     
                     if rank == 1:
                         plotter.add('returns', previous_history['returns'][0, :].mean().item(), sim_count)
-                        # for key, value in previous_history.items():
-                        #     if key not in ['actions', 'logprobs', 'generator']:
-                        #         print(f"{key}: {value[:,0]}")
-                        #     if key == 'actions':
-                        #         print(f"{key}: {value[:,0, 0]}")
+                        for key, value in previous_history.items():
+                            if key not in ['actions', 'logprobs', 'generator', 'obs']:
+                                print(f"{key}: {value[:,0]}")
+                            if key == 'actions':
+                                print(f"{key}: {value[:,0, 0]}")
                     if rank in rank_agents and isinstance(model, ActorCriticPerceiver):
                             tmp_memories = memories
                             memories = torch.load(cf.path_experiment+'memories.pt')
@@ -197,7 +197,7 @@ def isaac_training(cf, rank, size):
                     if rank == rank_sim:
                         print('returns mean', previous_history['returns'].mean())
                         print('values mean', unscaled_values.mean())
-                        print('values mean', (tmp_advantages + unscaled_values).mean())
+                        print('target mean', (tmp_advantages + unscaled_values).mean())
                         print('scaler mean', value_scaler.running_mean)
                         print('scaler var', value_scaler.running_variance)
 
@@ -230,7 +230,7 @@ def isaac_training(cf, rank, size):
                 if rank == rank_sim:
                     dones = env.unwrapped.last_dones # dones, _ = env.unwrapped._get_dones()
                     dones = dones.int().clone()
-                    if sim_step > 1:
+                    if sim_step >= 1:
                         history['birth_time'][sim_step] = history['birth_time'][sim_step-1]
                     history['birth_time'][sim_step, dones==1] = sim_step
                     history['death_index'][sim_step]=dones
@@ -268,15 +268,15 @@ def isaac_training(cf, rank, size):
                 else:
 
                     ## Process inputs
-                    # sim_step_rand = torch.randint(0, int(0.75*cf.sim_duration), (1,)).item()   
-                    sim_step_rand=sim_step 
+                    sim_step_rand = torch.randint(0, int(1*cf.sim_duration), (1,)).item()   
+                    # sim_step_rand=sim_step 
                     actions, logprobs, values, birth_time = [previous_history[key][sim_step_rand].to(device) \
                                                 for key in ['actions', 'logprobs', 'values', 'birth_time']]  
-                    obs_stack = previous_history['obs'][sim_step-cf.frames+1:sim_step+1]
-                    states=get_states(obs_stack, sim_step, cf, birth_time, device)
+                    obs_stack = previous_history['obs'][sim_step_rand-cf.frames+1:sim_step_rand+1]
+                    states=get_states(obs_stack, sim_step_rand, cf, birth_time, device)
 
-                    perform_update = custom_random(sim_count, sim_step) < cf.update_probability and \
-                                        sim_step <= cf.sim_duration-1
+                    perform_update = custom_random(sim_count, sim_step_rand) < cf.update_probability and \
+                                        sim_step_rand <= cf.sim_duration-1
                     with autocast(device_type='cuda', dtype=torch.bfloat16):
                         if perform_update :
                             returns_targets = previous_history['returns_targets'][sim_step_rand].to(device)
@@ -299,7 +299,7 @@ def isaac_training(cf, rank, size):
 
                         # Adjust the learning rate
                         dist.all_reduce(kl_divergence, op=dist.ReduceOp.AVG, group=group_agents)
-                        lr = tr.update_lr(lr, kl_divergence)
+                        lr = tr.update_lr(lr, kl_divergence, kl_threshold=cf.kl_threshold)
                         for param_group in optimizer.param_groups:
                             param_group['lr'] = lr
 
@@ -323,7 +323,7 @@ def isaac_training(cf, rank, size):
                         plotter.add('loss/loss_critic', loss_critic.item(), sim_count*cf.sim_duration+sim_step)
                         plotter.add('loss/loss_entropy', loss_entropy.item(), sim_count*cf.sim_duration+sim_step)
                         plotter.add('loss/kl_divergence', kl_divergence.item(), sim_count*cf.sim_duration+sim_step)
-                        plotter.add('loss/lr', kl_divergence.item(), sim_count*cf.sim_duration+sim_step)
+                        plotter.add('loss/lr', lr, sim_count*cf.sim_duration+sim_step)
 
                     actions, logprobs, values = [previous_history[key][sim_step].to(device) \
                                                     for key in ['actions', 'logprobs', 'values']]      
