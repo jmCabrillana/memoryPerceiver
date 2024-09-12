@@ -185,16 +185,17 @@ class PerceiverIO(nn.Module):
 
         ## Cross attention on input
         new_layers_mem = torch.zeros(b, self.depth, self.nb_latents_mem, self.query_dim, device=device)
-        state_latents = repeat(self.state_latents, 'n d -> b n d', b = b)
-        attn = self.state_cross_attn(state_latents, context = data, mask = mask)
+        attn = self.state_cross_attn(self.state_latents, context = data, mask = mask)
         # data = data.cpu() # to save gpu memory
-        state_latents = attn + state_latents
-        new_layers_mem[:, 0] = self.state_cross_ff(state_latents) + state_latents
+        x = attn + x
+        x = self.state_cross_ff(x) + x
+        new_layers_mem[:, 0] = x
 
         ## layers
         for i in range(self.depth-1):
-            x = self.state_attn_layers[i](x, layers_mem[:, i], mask=mask)
+            attn = self.state_attn_layers[i](x, context=layers_mem[:, i], mask=mask)
             x = attn + x
-            new_layers_mem[:, i+1] = self.state_ff_layers[i](x) + x
+            x = self.state_ff_layers[i](x) + x
+            new_layers_mem[:, i+1] = x
         
         return output, new_layers_mem
