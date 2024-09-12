@@ -77,6 +77,7 @@ class Config:
     path_main = '/isaac-sim/memoryPerceiver/memory_perceiver/main/'
     path_experiment = path_main+'experiments/'+task+'/'+experiment_name+'/'
     path_model = path_main+'weights/'+task+'_'+experiment_name+'.pt'
+    path_memories = path_main+'weights/'+task+'_'+experiment_name+'_mem.pt'
     path_scaler = path_main+'weights/'+task+'_'+experiment_name+'_scaler.pt'
     path_logs = path_experiment+'isaac.log'
 

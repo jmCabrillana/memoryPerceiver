@@ -111,7 +111,8 @@ def reset_memories(memories, indexes=None):
     batch_size, depth, nb_latents_mem, query_dim = memories.shape
     if indexes is None:
         indexes=torch.arange(batch_size)
-    memories[indexes] *= 0
+    with torch.no_grad():
+        memories[indexes] *= 0
 
 def copy_memories(layers_mem):
     device = layers_mem.device

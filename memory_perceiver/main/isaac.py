@@ -85,6 +85,8 @@ def isaac_training(cf, rank, size):
         model_student = create_agent(cf, rank)
         if isinstance(model, ActorCriticPerceiver):
             memories = create_memories(model.actor, cf.num_envs, device=device)
+            if not os.path.exists(cf.path_memories):
+                torch.save(memories, cf.path_memories)
         else :
             memories = None
             # last_memories = torch.zeros_like(memories['cross_cmem'], device=device)
@@ -143,7 +145,8 @@ def isaac_training(cf, rank, size):
 
                 if is_inference:
                     if rank in rank_agents:
-                        # print(f"MEM:  {F.mse_loss(last_memories, memories['cross_cmem']).item()}")
+                        if isinstance(model, ActorCriticPerceiver):
+                            memories = torch.load(cf.path_memories)
                         if sim_count == 0 and os.path.exists(cf.path_model):
                             state_dict = torch.load(cf.path_model)
                             model.load_state_dict(state_dict['model'])
@@ -189,10 +192,10 @@ def isaac_training(cf, rank, size):
                                 print(f"{key}: {value[:,0, 0]}")
                     if rank in rank_agents and isinstance(model, ActorCriticPerceiver):
                             tmp_memories = memories
-                            memories = torch.load(cf.path_experiment+'memories.pt')
+                            memories = torch.load(cf.path_memories)
                             dist.barrier(group=group_agents)
                             if rank == 1:
-                                torch.save(tmp_memories, cf.path_experiment+'memories.pt')
+                                torch.save(tmp_memories, cf.path_memories)
                             del tmp_memories
                     if rank == rank_sim:
                         print('returns mean', previous_history['returns'].mean())
@@ -268,8 +271,8 @@ def isaac_training(cf, rank, size):
                 else:
 
                     ## Process inputs
-                    sim_step_rand = torch.randint(0, int(1*cf.sim_duration), (1,)).item()   
-                    # sim_step_rand=sim_step 
+                    # sim_step_rand = torch.randint(0, int(1*cf.sim_duration), (1,)).item()   
+                    sim_step_rand=sim_step 
                     actions, logprobs, values, birth_time = [previous_history[key][sim_step_rand].to(device) \
                                                 for key in ['actions', 'logprobs', 'values', 'birth_time']]  
                     obs_stack = previous_history['obs'][sim_step_rand-cf.frames+1:sim_step_rand+1]
