@@ -12,6 +12,10 @@ tmux set-option history-limit 10000 \; new-window => more history, default 2000
 ^b n => switch window
 ^b d => detach
 
+# IsaacLab
+alias python=/isaac-sim/python.sh
+python -m pip install skrl
+
 #Common errors
 - Duplicate driver files:
     To verify the proper NVIDIA driver installation, only one of the following icd.d folders should contain nvidia_icd.json file:                
