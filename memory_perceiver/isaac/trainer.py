@@ -82,7 +82,7 @@ def create_mask(birth_time, sim_step, frames=32):
     mask = repeat(torch.arange(frames, device=device), '... -> b ...', b=num_envs) < repeat(past_horizon, '... -> ... t', t=frames)
     return mask
 
-def update_lr(current_lr, kl_div, kl_threshold=0.024, min_lr=1e-6, max_lr=1e-2):
+def update_lr(current_lr, kl_div, kl_threshold=0.024, min_lr=1e-5, max_lr=1e-2):
     lr = current_lr
     if kl_div > (2.0 * kl_threshold):
         lr = max(current_lr / 1.5, min_lr)

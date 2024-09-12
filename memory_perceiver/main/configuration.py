@@ -2,14 +2,14 @@
 
 class Config:
 
-    experiment_name = "S_0.2_scaler-train"
+    experiment_name = "S_0.5_b64"
 
     # Task
     task = "Isaac-Cartpole-Direct-v0" # Humanoid Cartpole 
     agent_type = "Simple" # Perceiver Simple
     dim_observations = 4 # 87 4
     dim_actions = 1 # 21 1
-    num_envs = 2048 # 54 216 864
+    num_envs = 64 # 54 216 864
     sim_duration = 32 # 1028 516 260
     seed = 68
     render = False

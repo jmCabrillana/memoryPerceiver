@@ -89,6 +89,7 @@ def isaac_training(cf, rank, size):
             memories = None
             # last_memories = torch.zeros_like(memories['cross_cmem'], device=device)
         optimizer = torch.optim.Adam(model_student.parameters(), lr=cf.learning_rate)
+        lr=cf.learning_rate
         scaler = GradScaler()
         if rank == 1:
             plotter = Plotter('tensorboard', titles=['loss_actor', 'loss_critic', 'loss_entropy', 'actions_gap', 'returns'],
@@ -171,7 +172,7 @@ def isaac_training(cf, rank, size):
                         previous_history['returns'] = tr.calculate_returns(history['rewards'], history['death_index'], gamma=cf.gamma)
                         tmp_advantages = tr.calculate_gae(history['rewards'], unscaled_values, history['death_index'], 
                                                           gamma=cf.gamma, gae_lambda=cf.c_lambda)
-                        previous_history['values'] = value_scaler(unscaled_values) # != history['values'] because update
+                        previous_history['values'] = value_scaler(unscaled_values, train=True) # != history['values'] because update
                         previous_history['returns_targets'] = value_scaler(tmp_advantages + unscaled_values, train=True)
                         previous_history['advantages'] = (tmp_advantages - tmp_advantages.mean()) / (tmp_advantages.std() + 1e-8)  #dim=1 keepdim=True
                     for key in ['obs', 'rewards', 'death_index', 'returns', 'values', 'returns_targets', 'advantages']:
@@ -292,16 +293,20 @@ def isaac_training(cf, rank, size):
                             loss_critic = cf.critic * F.mse_loss(clipped_values, returns_targets)
                             loss =  (loss_actor + loss_critic + loss_entropy) / cf.accumulation_steps
                             kl_divergence = ((ratios - 1) - (new_logprobs - logprobs)).mean()
-
                         _, _, _, memories = model(states, memories) 
 
                     if perform_update :
+
+                        # Adjust the learning rate
+                        dist.all_reduce(kl_divergence, op=dist.ReduceOp.AVG, group=group_agents)
+                        lr = tr.update_lr(lr, kl_divergence)
+                        for param_group in optimizer.param_groups:
+                            param_group['lr'] = lr
+
+        
+                        # Step optimizer
                         scaler.scale(loss).backward()
                         backward_count += 1
-
-
-                        # Step optimizer
-
                         if backward_count % cf.accumulation_steps == 0 and backward_count != 0:
                             average_gradients(model_student, size-1, group_agents) # ALL REDUCE on scaled loss
                             scaler.unscale_(optimizer)
@@ -318,6 +323,7 @@ def isaac_training(cf, rank, size):
                         plotter.add('loss/loss_critic', loss_critic.item(), sim_count*cf.sim_duration+sim_step)
                         plotter.add('loss/loss_entropy', loss_entropy.item(), sim_count*cf.sim_duration+sim_step)
                         plotter.add('loss/kl_divergence', kl_divergence.item(), sim_count*cf.sim_duration+sim_step)
+                        plotter.add('loss/lr', kl_divergence.item(), sim_count*cf.sim_duration+sim_step)
 
                     actions, logprobs, values = [previous_history[key][sim_step].to(device) \
                                                     for key in ['actions', 'logprobs', 'values']]      
