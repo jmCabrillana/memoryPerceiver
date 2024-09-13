@@ -33,8 +33,6 @@ class ActorCriticSimple(ActorCritic):
         self.actor_std = nn.Linear(self.hidden_dim, self.dim_actions_ppo, device=device)
         nn.init.zeros_(self.actor_std.weight)
         nn.init.zeros_(self.actor_std.bias)
-        nn.init.zeros_(self.actor_mean.weight)
-        nn.init.zeros_(self.actor_mean.bias)
         if self.shared:
             self.actor_critic = nn.Linear(self.hidden_dim, 1, device=device)
         else:

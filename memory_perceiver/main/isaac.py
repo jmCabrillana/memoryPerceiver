@@ -192,7 +192,7 @@ def isaac_training(cf, rank, size):
                                 print(f"{key}: {value[:,0, 0]}")
                     if rank in rank_agents and isinstance(model, ActorCriticPerceiver):
                             tmp_memories = memories
-                            memories = torch.load(cf.path_memories)
+                            memories = torch.load(cf.path_memories).detach()
                             dist.barrier(group=group_agents)
                             if rank == 1:
                                 torch.save(tmp_memories, cf.path_memories)
@@ -308,7 +308,7 @@ def isaac_training(cf, rank, size):
 
         
                         # Step optimizer
-                        scaler.scale(loss).backward()
+                        scaler.scale(loss).backward(retain_graph=True)
                         backward_count += 1
                         if backward_count % cf.accumulation_steps == 0 and backward_count != 0:
                             average_gradients(model_student, size-1, group_agents) # ALL REDUCE on scaled loss

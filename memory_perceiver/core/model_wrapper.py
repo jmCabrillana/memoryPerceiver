@@ -119,6 +119,7 @@ def copy_memories(layers_mem):
     return layers_mem.clone().detach().to(device)
 
 def create_memories(model, batch_size, device=torch.device('cpu')):
-    layers_mem = torch.zeros(batch_size, model.depth, model.nb_latents_mem, model.query_dim, device=device)
+    layers_mem = torch.zeros(batch_size, model.depth, model.nb_latents_mem, model.query_dim,
+                              device=device, requires_grad=True)
     return layers_mem
 

@@ -199,4 +199,4 @@ class PerceiverIO(nn.Module):
             x = self.state_ff_layers[i](x) + x
             new_layers_mem[:, i+1] = x
         
-        return output, new_layers_mem.detach()
+        return output, new_layers_mem
