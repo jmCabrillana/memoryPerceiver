@@ -2,7 +2,7 @@
 
 class Config:
 
-    experiment_name = "P_1.0_corrected"
+    experiment_name = "P_1.1_d1"
 
     # Task
     task = "Isaac-Cartpole-Direct-v0" # Humanoid Cartpole 
@@ -18,10 +18,11 @@ class Config:
     frames = 1
     frames_future = 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
-    learning_rate = 1e-5 # 3e-4 1e-4 1e-5
+    learning_rate = 1e-4 # 3e-4 1e-4 1e-5
     kl_threshold = 0.008
+    kl_scheduler = True
     entropy = 0.00 # 0.01 to 0.05
-    critic = 2    # 0.5 to 2 4
+    critic = 4    # 0.5 to 2 4
     accumulation_steps = 6 # 2 4
     student_update_step = 1
     eps = 1e-9
@@ -34,7 +35,7 @@ class Config:
     update_probability = 0.5 #0.33
 
     # Model parameters
-    depth = 2
+    depth = 1
     critic_depth = 2
     query_dim = 24 # video > 136 , 832
     hidden_dim = 32 # for simple net

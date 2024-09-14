@@ -294,9 +294,10 @@ def isaac_training(cf, rank, size):
 
                         # Adjust the learning rate
                         dist.all_reduce(kl_divergence, op=dist.ReduceOp.AVG, group=group_agents)
-                        lr = tr.update_lr(lr, kl_divergence, kl_threshold=cf.kl_threshold)
-                        for param_group in optimizer.param_groups:
-                            param_group['lr'] = lr
+                        if cf.kl_scheduler:
+                            lr = tr.update_lr(lr, kl_divergence, kl_threshold=cf.kl_threshold)
+                            for param_group in optimizer.param_groups:
+                                param_group['lr'] = lr
 
         
                         # Step optimizer
