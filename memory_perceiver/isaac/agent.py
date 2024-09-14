@@ -5,6 +5,7 @@ from torch.distributions import Normal, MultivariateNormal
 
 from memoryPerceiver.memory_perceiver.core.model_net import PerceiverIO
 from memoryPerceiver.memory_perceiver.core.model_wrapper import create_multimodal_perceiver, output_projection, input_embedding
+from memoryPerceiver.memory_perceiver.core.miscellaneous import layer_init
 
 class ActorCritic(nn.Module):
     def __init__(self):
@@ -25,20 +26,18 @@ class ActorCriticSimple(ActorCritic):
         self.dim_actions_ppo = cf.dim_actions_ppo
         self.dim_t = cf.frames_future
         self.hidden_dim = cf.hidden_dim
-        self.actor = nn.Sequential( *( [nn.Linear(self.state_dim, self.hidden_dim), nn.ReLU()] +
-                                              [nn.Linear(self.hidden_dim, self.hidden_dim), nn.ReLU()]*(cf.depth-1) )
+        self.actor = nn.Sequential( *( [layer_init(nn.Linear(self.state_dim, self.hidden_dim)), nn.ReLU()] +
+                                        [layer_init(nn.Linear(self.hidden_dim, self.hidden_dim)), nn.ReLU()]*(cf.depth-1) )
                                     ).to(device)
         self.actor.reset_memories = lambda *args, **kwargs: None
-        self.actor_mean = nn.Linear(self.hidden_dim, self.dim_actions_ppo, device=device)
-        self.actor_std = nn.Linear(self.hidden_dim, self.dim_actions_ppo, device=device)
-        nn.init.zeros_(self.actor_std.weight)
-        nn.init.zeros_(self.actor_std.bias)
+        self.actor_mean = layer_init(nn.Linear(self.hidden_dim, self.dim_actions_ppo, device=device), std=0.01)
+        self.actor_std = layer_init(nn.Linear(self.hidden_dim, self.dim_actions_ppo, device=device), std=0.01)
         if self.shared:
             self.actor_critic = nn.Linear(self.hidden_dim, 1, device=device)
         else:
-            self.critic = nn.Sequential( *( [nn.Linear(self.state_dim, self.hidden_dim), nn.ReLU()] +
-                                            [nn.Linear(self.hidden_dim, self.hidden_dim), nn.ReLU()]*(cf.critic_depth-1) +
-                                            [nn.Linear(self.hidden_dim, 1)]  ) ).to(device)
+            self.critic = nn.Sequential( *( [layer_init(nn.Linear(self.state_dim, self.hidden_dim)), nn.ReLU()] +
+                                            [layer_init(nn.Linear(self.hidden_dim, self.hidden_dim)), nn.ReLU()]*(cf.critic_depth-1) +
+                                            [layer_init(nn.Linear(self.hidden_dim, 1), std=1)]  ) ).to(device)
         
     def forward(self, states, memories, old_actions=None):
         state = states['observations'][:,-1] # last time
@@ -55,8 +54,7 @@ class ActorCriticSimple(ActorCritic):
         # Actor
 
         actions_mean  = torch.tanh(self.actor_mean(hidden))
-        # actions_var = 0.01 + 0*((1+actions_tmp[:, self.dim_actions_ppo:2*self.dim_actions_ppo])/4+1e-5)**2
-        log_std = self.actor_std(hidden).clip(-20, 2)
+        log_std = self.actor_std(hidden).clip(-20, 2) # ((1+actions_tmp[:, self.dim_actions_ppo:2*self.dim_actions_ppo])/4+1e-5)**2
         covariance = torch.diag_embed(log_std.exp() * log_std.exp())
         dist = MultivariateNormal(actions_mean, covariance) # scale_tril=covariance) # torch.diag(...)
         
@@ -106,13 +104,13 @@ class ActorCriticPerceiver(ActorCritic):
         self.actor = create_multimodal_perceiver(cf, device)
         self.shared = cf.shared
         if not self.shared:
-            self.critic = nn.Sequential( *( [nn.Linear(self.dim_observations, self.hidden_dim), nn.ReLU()] +
-                                            [nn.Linear(self.hidden_dim, self.hidden_dim), nn.ReLU()]*(cf.critic_depth-1) +
-                                            [nn.Linear(self.hidden_dim, 1)]  ) ).to(device)
+            self.critic = nn.Sequential( *( [layer_init(nn.Linear(self.dim_observations, self.hidden_dim)), nn.ReLU()] +
+                                            [layer_init(nn.Linear(self.hidden_dim, self.hidden_dim)), nn.ReLU()]*(cf.critic_depth-1) +
+                                            [layer_init(nn.Linear(self.hidden_dim, 1), std=1)]  ) ).to(device)
         for i in range(self.dim_actions):
-            nn.init.zeros_(self.actor.projections['action_variance_'+str(i)].weight)
-            nn.init.zeros_(self.actor.projections['action_variance_'+str(i)].bias)
-        
+            layer_init(self.actor.projections['action_variance_'+str(i)], std=0.01)
+            layer_init(self.actor.projections['action_'+str(i)], std=0.01)   
+            layer_init(self.actor.projections['critic'], std=1)          
         
     def forward(self, states, memories, old_actions=None):
         

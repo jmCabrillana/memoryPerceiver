@@ -55,7 +55,7 @@ def calculate_returns(mem_rewards, death_index, gamma=0.99):
     return returns_estimates
 
 
-def calculate_gae(mem_rewards, mem_values, death_index, gamma=0.99, gae_lambda=0.95):
+def calculate_gae(mem_rewards, mem_values, next_values, death_index, gamma=0.99, gae_lambda=0.95):
     device = mem_rewards.device
     sim_duration, num_envs = mem_rewards.size()
     gae_estimates = torch.zeros(sim_duration, num_envs, device=device)
@@ -66,10 +66,8 @@ def calculate_gae(mem_rewards, mem_values, death_index, gamma=0.99, gae_lambda=0
         gae *= 1-death_index[t, :]
 
         # Calculate the TD error and gae
-        if t == sim_duration-1:
-            delta_t = 0 #mem_rewards[t, :] - mem_values[t, :]
-        else:
-            delta_t= mem_rewards[t, :] + gamma * mem_values[t+1, :] - mem_values[t, :]
+        tmp_values = next_values if (t == sim_duration-1) else mem_values[t+1, :]
+        delta_t = mem_rewards[t, :] + gamma * tmp_values - mem_values[t, :]
         gae = delta_t + gamma * gae_lambda * gae
         gae_estimates[t, :] = gae
         

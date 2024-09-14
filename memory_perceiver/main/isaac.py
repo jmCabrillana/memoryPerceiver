@@ -90,7 +90,7 @@ def isaac_training(cf, rank, size):
         else :
             memories = None
             # last_memories = torch.zeros_like(memories['cross_cmem'], device=device)
-        optimizer = torch.optim.Adam(model_student.parameters(), lr=cf.learning_rate)
+        optimizer = torch.optim.Adam(model_student.parameters(), lr=cf.learning_rate, eps=1e-5)
         lr=cf.learning_rate
         scaler = GradScaler()
         if rank == 1:
@@ -98,13 +98,11 @@ def isaac_training(cf, rank, size):
                                 path_plots=cf.path_experiment)
 
     history_keys = ['obs', 'actions', 'values', 'logprobs', 'rewards', 'returns', 'returns_targets', 
-                    'advantages', 'birth_time', 'death_index', 'generator']
+                    'advantages', 'birth_time', 'death_index']
     history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, cf.dim_observations, device)
     previous_history = deepcopy(history)
     buffer = {'video':[], 'audio':[], 'obs':[], 'rewards':[], 'actions_star':[]}
-    obs = torch.zeros(cf.num_envs, cf.dim_observations, device=rank)
-    video = torch.zeros(cf.num_envs, cf.height, cf.width, cf.channels, device=rank, dtype=torch.uint8)
-    reward = torch.zeros(cf.num_envs, 1, device=rank)
+    next_values = torch.zeros(cf.num_envs, device=rank)
     actions_star = torch.zeros(cf.frames_future, cf.num_envs, cf.dim_actions, device=rank)     
     sim_count, sim_step = -1, 0
     sim_running = torch.tensor(False, device=rank)
@@ -169,11 +167,13 @@ def isaac_training(cf, rank, size):
                     history['values'] = rearrange(history['values'], 't b -> b t').contiguous()
                     gather_dummy_src(history['values'], rank, size-1)
                     history['values'] = rearrange(history['values'], 'b t -> t b')
+                    # gather_dummy_src(next_values, rank, size-1)
                     if rank == rank_sim:
+                        next_values = value_scaler(next_values, inverse=True) 
                         unscaled_values = value_scaler(history['values'], inverse=True) 
                         print('unscaled_values:', unscaled_values[:, 0])
                         previous_history['returns'] = tr.calculate_returns(history['rewards'], history['death_index'], gamma=cf.gamma)
-                        tmp_advantages = tr.calculate_gae(history['rewards'], unscaled_values, history['death_index'], 
+                        tmp_advantages = tr.calculate_gae(history['rewards'], unscaled_values, next_values, history['death_index'],
                                                           gamma=cf.gamma, gae_lambda=cf.c_lambda)
                         previous_history['values'] = value_scaler(unscaled_values, train=True) # != history['values'] because update
                         previous_history['returns_targets'] = value_scaler(tmp_advantages + unscaled_values, train=True)
@@ -190,13 +190,14 @@ def isaac_training(cf, rank, size):
                                 print(f"{key}: {value[:,0]}")
                             if key == 'actions':
                                 print(f"{key}: {value[:,0, 0]}")
+                            if key == 'obs':
+                                print(f"{key}: {value[:,0, 0]}")
                     if rank in rank_agents and isinstance(model, ActorCriticPerceiver):
                             tmp_memories = memories
                             memories = torch.load(cf.path_memories).detach()
                             dist.barrier(group=group_agents)
                             if rank == 1:
                                 torch.save(tmp_memories, cf.path_memories)
-                            del tmp_memories
                     if rank == rank_sim:
                         print('returns mean', previous_history['returns'].mean())
                         print('values mean', unscaled_values.mean())
@@ -209,56 +210,44 @@ def isaac_training(cf, rank, size):
 
             if is_inference:
                 
-                ### Get agent observations 
+                ### Get agent observations and dones
 
                 if rank == rank_sim:
+
+                    # obs
                     all_obs = env.unwrapped._get_observations()
-                    obs = all_obs['policy'].clone()    # (num_envs, d)
+                    history['obs'][sim_step] = all_obs['policy'].clone()    # (num_envs, d)
                     if cf.render:
                         video = all_obs['camera'].clone()  # (num_envs, 256, 456, 3)
                         #ts.save(video[0], '/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/live.jpg')
                         full_video.append(video.cpu())
-                    reward=env.unwrapped._get_rewards()    # (num_envs, 1)
-                    history['rewards'][sim_step] = reward
-                for x in [obs, reward]: #video
-                    scatter_dummy_src(x, rank, size-1) 
-                tr.update_buffers(buffer, {'obs': obs, 'video': video, 'rewards': reward}, frames=cf.frames)
-                if cf.render:
-                    scatter_dummy_src(video, rank, size-1)
-                    tr.update_buffers(buffer, {'video': video}, frames=cf.frames)
-
-                ### Record dones and birth index
-
-                dones = torch.zeros(cf.num_envs, device=rank)
-                if rank == rank_sim:
-                    dones = env.unwrapped.last_dones # dones, _ = env.unwrapped._get_dones()
-                    dones = dones.int().clone()
+                    
+                    #dones
+                    dones = env.unwrapped.last_dones.int().clone()
                     if sim_step >= 1:
                         history['birth_time'][sim_step] = history['birth_time'][sim_step-1]
                     history['birth_time'][sim_step, dones==1] = sim_step
                     history['death_index'][sim_step]=dones
 
+                scatter_dummy_src(history['obs'][sim_step], rank, size-1)
+                tr.update_buffers(buffer, {'obs': history['obs'][sim_step]}, frames=cf.frames) 
                 scatter_dummy_src(history['death_index'][sim_step], rank, size-1) 
                 scatter_dummy_src(history['birth_time'][sim_step], rank, size-1) 
-
-            ## reset memories
-
-            if rank in rank_agents and isinstance(model, ActorCriticPerceiver):
-                if is_inference :
-                    dones_list = torch.nonzero(history['death_index'][sim_step].int()).flatten().tolist()
-                else: 
-                    dones_list = torch.nonzero(previous_history['death_index'][sim_step].int()).flatten().tolist()
-                reset_memories(memories, indexes=dones_list)
+                if cf.render:
+                    scatter_dummy_src(video, rank, size-1)
+                    tr.update_buffers(buffer, {'video': video}, frames=cf.frames)                  
 
             ### Agent
             
             if sim_step % cf.frames_future == 0 and rank in rank_agents:
                 if is_inference:
                     ## Inference, save history and memory update
-
+                    
+                    if isinstance(model, ActorCriticPerceiver):
+                        dones_list = torch.nonzero(history['death_index'][sim_step].int()).flatten().tolist()
+                        reset_memories(memories, indexes=dones_list)
                     obs_stack = torch.stack(buffer['obs'])
                     states=get_states(obs_stack, sim_step, cf, history['birth_time'][sim_step], device)
-                    history['generator'][sim_step, rank] = torch.cuda.get_rng_state(rank).clone() 
                     with autocast(device_type='cuda', dtype=torch.bfloat16):
                         actions, values, logprobs, memories = model(states, memories)   
                     history['actions'][sim_step] = actions  
@@ -273,8 +262,11 @@ def isaac_training(cf, rank, size):
                     ## Process inputs
                     # sim_step_rand = torch.randint(0, int(1*cf.sim_duration), (1,)).item()   
                     sim_step_rand=sim_step 
-                    actions, logprobs, values, birth_time = [previous_history[key][sim_step_rand].to(device) \
-                                                for key in ['actions', 'logprobs', 'values', 'birth_time']]  
+                    actions, logprobs, values, birth_time, death_index = [previous_history[key][sim_step_rand].to(device) \
+                                                for key in ['actions', 'logprobs', 'values', 'birth_time', 'death_index']]
+                    if isinstance(model, ActorCriticPerceiver):
+                        dones_list = torch.nonzero(death_index.int()).flatten().tolist()
+                        reset_memories(memories, indexes=dones_list) 
                     obs_stack = previous_history['obs'][sim_step_rand-cf.frames+1:sim_step_rand+1]
                     states=get_states(obs_stack, sim_step_rand, cf, birth_time, device)
 
@@ -331,7 +323,7 @@ def isaac_training(cf, rank, size):
                     actions, logprobs, values = [previous_history[key][sim_step].to(device) \
                                                     for key in ['actions', 'logprobs', 'values']]      
 
-            # Gather and process action
+            # Gather action and step env
             if is_inference:
                 actions_star = rearrange(actions_star, 't b d -> b t d').contiguous()
                 gather_dummy_src(actions_star, rank, size-1)
@@ -349,9 +341,37 @@ def isaac_training(cf, rank, size):
                     action = torch.dzeros(cf.num_envs, 1)
 
                 # Step environment
+                
                 if rank == rank_sim:
                     env.step(action.to(rank_sim))
-                    
+                    history['rewards'][sim_step] = env.unwrapped._get_rewards()    # (num_envs, 1)
+
+                # Get next values at the last iteration
+                
+                if sim_step == cf.sim_duration-1:
+                    next_obs = torch.zeros(cf.num_envs, cf.dim_observations, device=rank)
+                    next_birth_time = torch.zeros(cf.num_envs, device=rank)
+                    if rank == rank_sim:
+                        all_obs = env.unwrapped._get_observations()
+                        next_obs = all_obs['policy'].clone()    # (num_envs, d)
+                        if cf.render:
+                            video = all_obs['camera'].clone()  # (num_envs, 256, 456, 3)
+                        dones = env.unwrapped.last_dones.int().clone()
+                        next_birth_time = history['birth_time'][sim_step-1]
+                        history['birth_time'][sim_step, dones==1] = sim_step
+                        history['death_index'][sim_step]=dones
+                    scatter_dummy_src(next_obs, rank, size-1) 
+                    scatter_dummy_src(next_birth_time, rank, size-1) 
+                    tr.update_buffers(buffer, {'obs': next_obs}, frames=cf.frames)
+                    if cf.render:
+                        scatter_dummy_src(video, rank, size-1)
+                        tr.update_buffers(buffer, {'video': video}, frames=cf.frames)
+                    if rank in rank_agents:
+                        obs_stack = torch.stack(buffer['obs'])
+                        states=get_states(obs_stack, sim_step, cf, next_birth_time, device)
+                        with autocast(device_type='cuda', dtype=torch.bfloat16):
+                            _, next_values, _, _ = model_student(states, memories) 
+                        
                 if sim_count % 10 == 0 and sim_step % cf.sim_duration == 256 and rank == 0 and cf.render :
                     torchvision.io.write_video('/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/test_'  + str(sim_count) + '_vid_.mp4', 
                                                 torch.stack(full_video)[:,1], 8*cf.frames)

@@ -189,14 +189,14 @@ class PerceiverIO(nn.Module):
         attn = self.state_cross_attn(x, context = data, mask = mask)
         # data = data.cpu() # to save gpu memory
         x = attn + x
-        x = self.state_cross_ff(x) + x
+        x = self.state_cross_ff(x) + x + layers_mem[:, 0]
         new_layers_mem[:, 0] = x
 
         ## layers
-        for i in range(self.depth-1):
-            attn = self.state_attn_layers[i](x, context=layers_mem[:, i], mask=mask)
+        for i in range(1, self.depth):
+            attn = self.state_attn_layers[i](x, mask=mask)
             x = attn + x
-            x = self.state_ff_layers[i](x) + x
-            new_layers_mem[:, i+1] = x
+            x = self.state_ff_layers[i](x) + x + layers_mem[:, i]
+            new_layers_mem[:, i] = x
         
         return output, new_layers_mem

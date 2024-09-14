@@ -2,15 +2,15 @@
 
 class Config:
 
-    experiment_name = "S_1.4_discount09"
+    experiment_name = "P_1.0_corrected"
 
     # Task
     task = "Isaac-Cartpole-Direct-v0" # Humanoid Cartpole 
     agent_type = "Perceiver" # Perceiver Simple
     dim_observations = 4 # 87 4
     dim_actions = 1 # 21 1
-    num_envs = 2048 # 54 216 864
-    sim_duration = 64 # 1028 516 260
+    num_envs = 128 # 54 216 864
+    sim_duration = 32 # 1028 516 260
     seed = 68
     render = False
 
@@ -31,11 +31,11 @@ class Config:
     eps_clip = 0.2
     value_clip = 0.2 #float('inf')
     num_replay = 1
-    update_probability = 0.3 #0.33
+    update_probability = 0.5 #0.33
 
     # Model parameters
-    depth = 1
-    critic_depth = 1
+    depth = 2
+    critic_depth = 2
     query_dim = 24 # video > 136 , 832
     hidden_dim = 32 # for simple net
     latent_dim_head = 10  # 64
