@@ -101,8 +101,8 @@ class ActorCriticPerceiver(ActorCritic):
             cf.patch_height, cf.patch_width, cf.bands_video, cf.bands_video_t
         self.patch_audio = cf.patch_audio
         self.hidden_dim = cf.hidden_dim
-        self.actor = create_multimodal_perceiver(cf, device)
         self.shared = cf.shared
+        self.actor = create_multimodal_perceiver(cf, device)
         if not self.shared:
             self.critic = nn.Sequential( *( [layer_init(nn.Linear(self.dim_observations, self.hidden_dim)), nn.ReLU()] +
                                             [layer_init(nn.Linear(self.hidden_dim, self.hidden_dim)), nn.ReLU()]*(cf.critic_depth-1) +

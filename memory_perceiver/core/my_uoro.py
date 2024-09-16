@@ -62,7 +62,7 @@ class UORO():
         self.s_tilda = None
         self.theta_tilda = None
 
-    def step(self, model, x, state_new, state_old, loss, arg=None):
+    def step(self, model, x, state_new, state_old, loss, arg=None, unpack=False):
         """
         x: input of size (1, 1, input_size)
         s: previous recurrent state of size (1, 1, hidden_size)
@@ -74,9 +74,14 @@ class UORO():
         # print('---')
         device = state_old.device
         # update weights
+        if unpack:
+            b, d, h = state_old.shape
+        state_new = state_new.flatten()
+        state_old = state_old.flatten()
         delta_s = grad(loss, state_old, retain_graph=True, allow_unused=True)[0]
         delta_theta = grad(loss, self.nn_param.param_list, retain_graph=True, allow_unused=True)
-        delta_theta_vec = self.nn_param.merge(delta_theta)
+        print(delta_theta)
+        delta_theta_vec = self.nn_param.merge(delta_theta, device=device)
 
         if self.s_tilda is None or self.theta_tilda is None:
             self.s_tilda = Variable(torch.zeros(*state_old.squeeze().size(), device=device))  # (batch_size, state_dim)
@@ -94,7 +99,7 @@ class UORO():
         nu_vec = Variable(torch.round(torch.rand(*state_old.size(), device=device)) * 2 - 1)
         delta_theta_g = grad(outputs=state_new, inputs=self.nn_param.param_list, grad_outputs=nu_vec, allow_unused=True,
                              retain_graph=True)
-        delta_theta_g_vec = self.nn_param.merge(delta_theta_g, device)
+        delta_theta_g_vec = self.nn_param.merge(delta_theta_g, device=device)
 
         rho_0 = torch.sqrt(self.theta_tilda.norm()/(s_forwarddiff.norm() + self.epsilon_stability)) + self.epsilon_stability
         rho_1 = torch.sqrt(delta_theta_g_vec.norm()/(nu_vec.norm() + self.epsilon_stability)) + self.epsilon_stability
