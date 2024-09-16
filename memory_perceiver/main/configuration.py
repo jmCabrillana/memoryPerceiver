@@ -6,10 +6,10 @@ class Config:
 
     # Task
     task = "Isaac-Cartpole-Direct-v0" # Humanoid Cartpole 
-    agent_type = "Simple" # Perceiver Simple
-    dim_observations = 4 # 87 4
+    agent_type = "Perceiver" # Perceiver Simple
+    dim_observations = 3 # 87 4
     dim_actions = 1 # 21 1
-    num_envs = 128 # 54 216 864
+    num_envs = 4 # 54 216 864
     sim_duration = 32 # 1028 516 260
     seed = 68
     render = False

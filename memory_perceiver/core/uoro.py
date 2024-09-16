@@ -2,6 +2,7 @@ import torch
 from torch.autograd import grad, Variable
 from .rnn import SimpleRNN, SimpleLSTM
 import numpy as np
+from memoryPerceiver.memory_perceiver.isaac.agent import ActorCritic, ActorCriticSimple, ActorCriticPerceiver, create_agent
 
 
 class Param2Vec():
@@ -62,10 +63,11 @@ class UOROModel():
         self.epsilon_perturbation = epsilon_perturbation
         self.epsilon_stability = epsilon_stability
         self.criterion = torch.nn.CrossEntropyLoss()
-        if optimizer_type == 'SGD':
-            self.optimizer = torch.optim.SGD(self.rnn_model.parameters(), lr=lr)
-        else:
-            self.optimizer = torch.optim.RMSprop(self.rnn_model.parameters(), lr=lr, alpha=0.99)
+        self.optimizer = torch.optim.Adam(self.rnn_model.parameters(), lr=lr)
+        # if optimizer_type == 'SGD':
+        #     self.optimizer = torch.optim.SGD(self.rnn_model.parameters(), lr=lr)
+        # else:
+        #     self.optimizer = torch.optim.RMSprop(self.rnn_model.parameters(), lr=lr, alpha=0.99)
 
         # lambda1 = lambda epoch: 1 / (1 + 0.003 * np.sqrt(epoch))
         # self.scheduler = torch.optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda=lambda1)
@@ -77,7 +79,7 @@ class UOROModel():
         self._state = None
 
     def initialize_state(self, device='cpu'):
-        self._state = torch.zeros(size=[1, 1, self.hidden_size], requires_grad=True, device=device).float()
+        self._state = torch.zeros(size=[1, 1, self.hidden_size], requires_grad=True, device=device)
 
     def forward(self, x, y):
         """
@@ -93,11 +95,8 @@ class UOROModel():
         state_old = self._state.clone().detach().requires_grad_(True)
 
         y_1, state_new = self.rnn_model(x, state_old)
-        # print(x.size())
-        # print(y.size())
-        # print(y_1[-1].size())
-        # loss = torch.nn.functional.cross_entropy(y_1[0], y) 
-        loss = torch.nn.functional.mse_loss(y_1[0], y)/10
+        loss = self.criterion(y_1, y) 
+        # loss = torch.nn.functional.mse_loss(y_1[0], y)
 
         # correct_prediction = torch.equal(torch.argmax(y_1[-1], 1), y)  #torch.argmax(y, 1)
         # accuracy = correct_prediction.__float__()
@@ -135,8 +134,12 @@ class UOROModel():
 
         # self.optimizer.zero_grad()
         for i in range(len(self.nn_param.param_list)):
-            self.nn_param.param_list[i].grad = g_t1_list[i]
-        self.optimizer.step()
+            if self.nn_param.param_list[i].grad is None:
+                self.nn_param.param_list[i].grad = g_t1_list[i]
+            else:
+                self.nn_param.param_list[i].grad += g_t1_list[i]
+        # self.optimizer.step()
+        # self.optimizer.zero_grad()
         # self.scheduler.step()
 
         self._state = state_new
