@@ -57,7 +57,7 @@ class UOROModel():
         assert optimizer_type in ['SGD', 'RMSprop']
         self.hidden_size = hidden_size
         self.device = device
-        self.rnn_model = SimpleRNN(input_size, hidden_size, output_size).to(device)
+        self.rnn_model = SimpleLSTM(input_size, hidden_size, output_size).to(device)
 
         self.epsilon_perturbation = epsilon_perturbation
         self.epsilon_stability = epsilon_stability
@@ -96,10 +96,11 @@ class UOROModel():
         # print(x.size())
         # print(y.size())
         # print(y_1[-1].size())
-        loss = torch.nn.functional.mse_loss(y_1[-1], y)
+        # loss = torch.nn.functional.cross_entropy(y_1[0], y) 
+        loss = torch.nn.functional.mse_loss(y_1[0], y)/10
 
-        correct_prediction = torch.equal(torch.argmax(y_1[-1], 1), y)  #torch.argmax(y, 1)
-        accuracy = correct_prediction.__float__()
+        # correct_prediction = torch.equal(torch.argmax(y_1[-1], 1), y)  #torch.argmax(y, 1)
+        # accuracy = correct_prediction.__float__()
 
         # update weights
         delta_s = grad(loss, state_old, retain_graph=True)[0]
@@ -140,7 +141,7 @@ class UOROModel():
 
         self._state = state_new
 
-        return loss.item(), accuracy, state_old, state_new
+        return loss.item(), None, state_old, state_new
 
     def predict_mnist(self, x, y):
         """

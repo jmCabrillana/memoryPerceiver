@@ -33,7 +33,7 @@ class ActorCriticSimple(ActorCritic):
         self.actor_mean = layer_init(nn.Linear(self.hidden_dim, self.dim_actions_ppo, device=device), std=0.01)
         self.actor_std = layer_init(nn.Linear(self.hidden_dim, self.dim_actions_ppo, device=device), std=0.01)
         if self.shared:
-            self.actor_critic = nn.Linear(self.hidden_dim, 1, device=device)
+            self.actor_critic = layer_init(nn.Linear(self.hidden_dim, 1, device=device), std=1)
         else:
             self.critic = nn.Sequential( *( [layer_init(nn.Linear(self.state_dim, self.hidden_dim)), nn.ReLU()] +
                                             [layer_init(nn.Linear(self.hidden_dim, self.hidden_dim)), nn.ReLU()]*(cf.critic_depth-1) +

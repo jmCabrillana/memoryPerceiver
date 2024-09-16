@@ -5,6 +5,7 @@ class SimpleRNN(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super(SimpleRNN, self).__init__()
         self.hidden_size = hidden_size
+        # self.embed = nn.Linear(input_size, hidden_size)
         self.rnn_layer = nn.RNN(input_size, hidden_size, 1, batch_first=False)
         self.output_layer = nn.Linear(hidden_size, output_size)
 

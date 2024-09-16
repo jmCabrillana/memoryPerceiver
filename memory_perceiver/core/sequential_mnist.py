@@ -7,7 +7,7 @@ class MnistDataset(torch.utils.data.Dataset):
     inherit torch.utils.data.Dataset (https://pytorch.org/docs/stable/_modules/torch/utils/data/dataset.html#Dataset)
     """
     def __init__(self, dataset_folder):
-        self.mnist_dataset = datasets.MNIST(dataset_folder, train=True, download=False,
+        self.mnist_dataset = datasets.MNIST(dataset_folder, train=True, download=True,
                                             transform=transforms.Compose([
                                                 transforms.ToTensor(),
                                                 transforms.Normalize((0.5,), (0.5,)),

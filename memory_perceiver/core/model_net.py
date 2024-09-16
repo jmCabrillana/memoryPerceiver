@@ -68,12 +68,19 @@ class Attention(nn.Module):
         self.to_kv = nn.Linear(context_dim, inner_dim * 2, bias = False)
         self.to_out = nn.Linear(inner_dim, query_dim)
 
-    def forward(self, x, context = None, mask = None):
+    def forward(self, x, context = None, mask = None, use_x=True):
         h = self.heads
 
         q = self.to_q(x)
-        context = default(context, x)
-        k, v = self.to_kv(context).chunk(2, dim = -1)
+        if context is None:
+            full_input = x
+        else : 
+            if not use_x:
+                full_input = context
+            else: 
+                full_input = torch.concat([context, x], dim=1)
+                
+        k, v = self.to_kv(full_input).chunk(2, dim = -1)
 
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> (b h) n d', h = h), (q, k, v))
 

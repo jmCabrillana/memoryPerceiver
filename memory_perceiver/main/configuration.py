@@ -2,11 +2,11 @@
 
 class Config:
 
-    experiment_name = "P_1.1_d1"
+    experiment_name = "P_1.3_shared_d2"
 
     # Task
     task = "Isaac-Cartpole-Direct-v0" # Humanoid Cartpole 
-    agent_type = "Perceiver" # Perceiver Simple
+    agent_type = "Simple" # Perceiver Simple
     dim_observations = 4 # 87 4
     dim_actions = 1 # 21 1
     num_envs = 128 # 54 216 864
@@ -22,7 +22,7 @@ class Config:
     kl_threshold = 0.008
     kl_scheduler = True
     entropy = 0.00 # 0.01 to 0.05
-    critic = 4    # 0.5 to 2 4
+    critic = 2    # 0.5 to 2 4
     accumulation_steps = 6 # 2 4
     student_update_step = 1
     eps = 1e-9
@@ -35,14 +35,14 @@ class Config:
     update_probability = 0.5 #0.33
 
     # Model parameters
-    depth = 1
+    depth = 2
     critic_depth = 2
     query_dim = 24 # video > 136 , 832
     hidden_dim = 32 # for simple net
     latent_dim_head = 10  # 64
     nb_latents_mem = 1
     nb_latents = 4
-    shared=False
+    shared=True
     batch_size = num_envs
     body_parts =  {'observation_' + str(i): 1 for i in range(dim_observations)}
     body_outputs = {'action_' + str(i): 1 for i in range(dim_actions)}
