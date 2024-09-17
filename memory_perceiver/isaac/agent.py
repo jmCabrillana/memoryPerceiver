@@ -112,7 +112,7 @@ class ActorCriticPerceiver(ActorCritic):
             layer_init(self.actor.projections['action_'+str(i)], std=0.01)   
             layer_init(self.actor.projections['critic'], std=1)          
         
-    def forward(self, states, memories, old_actions=None):
+    def forward(self, states, memories, old_actions=None, flattened_mem=None):
         
         # Actor
         
@@ -124,6 +124,9 @@ class ActorCriticPerceiver(ActorCritic):
             states_chunk['observation_'+str(i)] = states['observations'][:, :, i:i+1]
         input = input_embedding(self.actor, states_chunk, device=device,
                 height=self.patch_height, width=self.patch_width, patch_audio=self.patch_audio)
+        if flattened_mem is not None:
+            b, d, l, h = flattened_mem
+            memories = rearrange(memories, '(b d l h) -> b d l h', b=b, d=d, l=l, h=h)
         x, new_memories = self.actor(input, memories, queries=self.actor.queries)
         output = output_projection(self.actor, x, self.frames_future, self.audio_future)
 
@@ -153,12 +156,15 @@ class ActorCriticPerceiver(ActorCritic):
 
         # Critic
         if self.shared:
-            values = rearrange(output['critic'], 'b t () -> b t').mean(dim=-1)
+            # values = rearrange(output['critic'], 'b t () -> b t').mean(dim=-1)
+            values = rearrange(output['critic'], 'b () d -> b d')
         else : 
             values = self.critic(states['observations'][:,-1])
             values = rearrange(values,  'b 1 -> b')
         
         # Act
+        if flattened_mem is not None:
+            new_memories = rearrange(new_memories, 'b d l h -> (b d l h)')
         if old_actions is None:  
             actions = dist.sample()
             logprobs = dist.log_prob(actions)

@@ -2,6 +2,7 @@ import torch
 from torch.autograd import grad, Variable
 from .rnn import SimpleRNN, SimpleLSTM
 import numpy as np
+from einops import rearrange
 from memoryPerceiver.memory_perceiver.isaac.agent import ActorCritic, ActorCriticSimple, ActorCriticPerceiver, create_agent
 
 
@@ -11,16 +12,11 @@ class Param2Vec():
         get a list of trainable variables
         """
         self.param_list = []
-        # self.state_param_list = []
         self.size_list = []
         for p in model.parameters():
             if p.requires_grad:
                 self.param_list.append(p)
                 self.size_list.append(p.size())
-
-        # for p in model.rnn_layer.parameters():
-        #     if p.requires_grad:
-        #         self.state_param_list.append(p)
 
         self.num_list = len(self.param_list)
 
@@ -62,7 +58,7 @@ class UORO():
         self.s_tilda = None
         self.theta_tilda = None
 
-    def step(self, model, x, state_new, state_old, loss, arg=None, unpack=False):
+    def step(self, model, x, state_new, state_old, loss, **kwargs):
         """
         x: input of size (1, 1, input_size)
         s: previous recurrent state of size (1, 1, hidden_size)
@@ -73,14 +69,9 @@ class UORO():
         """
         # print('---')
         device = state_old.device
-        # update weights
-        if unpack:
-            b, d, h = state_old.shape
-        state_new = state_new.flatten()
-        state_old = state_old.flatten()
-        delta_s = grad(loss, state_old, retain_graph=True, allow_unused=True)[0]
+
+        delta_s = grad(loss, state_old, retain_graph=True)[0]
         delta_theta = grad(loss, self.nn_param.param_list, retain_graph=True, allow_unused=True)
-        print(delta_theta)
         delta_theta_vec = self.nn_param.merge(delta_theta, device=device)
 
         if self.s_tilda is None or self.theta_tilda is None:
@@ -92,7 +83,7 @@ class UORO():
 
         # ForwardDiff
         state_old_perturbed = state_old + self.s_tilda * self.epsilon_perturbation  #.detach()
-        state_new_perturbed = model(x, state_old_perturbed, arg)[-1]
+        state_new_perturbed = model(x, state_old_perturbed, **kwargs)[-1]
         s_forwarddiff = (state_new_perturbed - state_new)/self.epsilon_perturbation
 
         # Backprop
