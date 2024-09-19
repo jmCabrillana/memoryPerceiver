@@ -53,7 +53,7 @@ class Config:
     input_audio = False
     input_video = False
     output_audio = False
-    sample_per_frame = 1920
+    sample_audio_frame = 1920
     width = 456
     height = 264
     patch_audio = 16
@@ -65,10 +65,10 @@ class Config:
     channels = 3
     len_video_frame = 836 # 836 = 456*264/(12*12) # 1824 456*256/(8*8) # 448 448*256/(16*16)
     len_audio_frame = 120   # 1920/16
-    sample_rate = frames * sample_per_frame
+    sample_rate = frames * sample_audio_frame
     len_video = frames*len_video_frame
     len_audio = frames*len_audio_frame
-    len_audio_raw = frames*sample_per_frame
+    len_audio_raw = frames*sample_audio_frame
     video_future = frames_future*len_video_frame
     audio_future = frames_future*len_audio_frame 
 

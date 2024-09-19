@@ -121,6 +121,7 @@ class PerceiverIO(nn.Module):
         self.nb_latents = nb_latents
         self.nb_latents_mem = nb_latents_mem
         self.depth = depth
+        self.pos_encoding=None
 
         # F_output
 
@@ -161,24 +162,41 @@ class PerceiverIO(nn.Module):
         for part, params in output_parameters.items():
             self.projections[part] = nn.Linear(query_dim, params, device=device)
 
+        # test
+        # self.rnn_layer = nn.RNN(3, 8, 1, batch_first=False)
+        # self.output_layer = nn.Linear(8, 4)
+
     def forward(self, data, layers_mem, mask = None, queries = None):
 
-        # Init data
+        dummy = next(iter(data.values()))
+        b, device = dummy.shape[0], dummy.device
 
-        b, *_, device, dtype = *data.shape, data.device, data.dtype
-        data.to(device)
+        # xx = torch.tensor([], device=device)
+        # for val in data.values():
+        #     xx=torch.cat([xx, val], dim=-1)
+        # output, state = self.rnn_layer(xx, rearrange(layers_mem, '() () l d -> () () (l d)'))  # output = (T, batch_size, hidden_size)
+        # state = rearrange(state, '1 1 (l d) -> 1 1 l d', l=2, d=4)
+        # y = self.output_layer(output) # 1 1 3 -> 1 3 4 
+        # y = repeat(y, '1 1 d -> 1 t d', t=3)
+        # return y, state
 
         # Compute output
 
+        ## Embedding
+        out_context = torch.tensor([], device=device)
+        for key, value in data.items():
+            context = self.out_embedding[key](value) + repeat(self.pos_encoding[key], '... -> b ...', b=b)
+            out_context = torch.cat([out_context, context], dim=1)
+
         ## Cross attention on input
         x = repeat(self.out_latents, 'n d -> b n d', b = b)
-        attn = self.out_cross_attn(x, context = data, mask = mask)
+        attn = self.out_cross_attn(x, context = torch.cat([out_context, layers_mem[:, 0]], dim=1), mask = mask)
         # data = data.cpu() # to save gpu memory
         x = attn + x
         x = self.out_cross_ff(x) + x
 
         ## layers
-        for i in range(self.depth):
+        for i in range(1, self.depth):
             attn = self.out_attn_layers[i](x, context=layers_mem[:, i], mask=mask)
             x = attn + x
             x = self.out_ff_layers[i](x) + x
@@ -190,20 +208,25 @@ class PerceiverIO(nn.Module):
         
         # Compute next state
 
-        ## Cross attention on input
+        # Embedding
+        state_context = torch.tensor([], device=device)
+        for key, value in data.items():
+            context = self.state_embedding[key](value) + repeat(self.pos_encoding[key], '... -> b ...', b=b)
+            state_context = torch.cat([state_context, context], dim=1)
+
+        ## Cross attention on input # context = context.cpu() # to save gpu memory
         new_layers_mem = torch.zeros(b, self.depth, self.nb_latents_mem, self.query_dim, device=device)
         x = repeat(self.state_latents, 'n d -> b n d', b = b)
-        attn = self.state_cross_attn(x, context = data, mask = mask)
-        # data = data.cpu() # to save gpu memory
+        attn = self.state_cross_attn(x, context = torch.cat([state_context, layers_mem[:, 0]], dim=1), mask = mask)
         x = attn + x
-        x = self.state_cross_ff(x) + x + layers_mem[:, 0]
+        x = self.state_cross_ff(x) + x
         new_layers_mem[:, 0] = x
 
         ## layers
         for i in range(1, self.depth):
-            attn = self.state_attn_layers[i](x, mask=mask)
+            attn = self.state_attn_layers[i](x, context=layers_mem[:, i] , mask=mask)
             x = attn + x
-            x = self.state_ff_layers[i](x) + x + layers_mem[:, i]
+            x = self.state_ff_layers[i](x) + x
             new_layers_mem[:, i] = x
         
         return output, new_layers_mem

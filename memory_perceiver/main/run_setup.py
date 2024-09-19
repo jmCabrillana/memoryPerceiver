@@ -180,7 +180,7 @@ def _mp_fn(index, flags):
     nb_frames = flags.duration*cf.fps
     frames_future = int(flags.duration_future*cf.fps)
     len_audio = nb_frames*len_audio_frame
-    len_audio_raw = len_audio*cf.sample_per_frame
+    len_audio_raw = len_audio*cf.sample_audio_frame
     audio_future = frames_future*len_audio_frame
     max_stream_nbs = (duration_total-duration)/duration_future
 

@@ -4,8 +4,9 @@ from torch import nn, einsum
 from torch.distributions import Normal, MultivariateNormal
 
 from memoryPerceiver.memory_perceiver.core.model_net import PerceiverIO
-from memoryPerceiver.memory_perceiver.core.model_wrapper import create_multimodal_perceiver, output_projection, input_embedding
+from memoryPerceiver.memory_perceiver.core.model_wrapper import create_multimodal_perceiver, output_projection
 from memoryPerceiver.memory_perceiver.core.miscellaneous import layer_init
+from memoryPerceiver.memory_perceiver.processing.vectorize import patchify
 
 class ActorCritic(nn.Module):
     def __init__(self):
@@ -122,8 +123,9 @@ class ActorCriticPerceiver(ActorCritic):
         states_chunk= {}
         for i in range(self.dim_observations):
             states_chunk['observation_'+str(i)] = states['observations'][:, :, i:i+1]
-        input = input_embedding(self.actor, states_chunk, device=device,
-                height=self.patch_height, width=self.patch_width, patch_audio=self.patch_audio)
+        # input = input_embedding(self.actor, states_chunk, device=device,
+        #         )
+        input = patchify(states_chunk, height=self.patch_height, width=self.patch_width, patch_audio=self.patch_audio)
         if flattened_mem is not None:
             b, d, l, h = flattened_mem
             memories = rearrange(memories, '(b d l h) -> b d l h', b=b, d=d, l=l, h=h)

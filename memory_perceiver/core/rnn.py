@@ -20,11 +20,7 @@ class SimpleRNN(nn.Module):
         state: (1, batch_size, hidden_size)
         """
         output, state = self.rnn_layer(x, state)  # output = (T, batch_size, hidden_size)
-        # print(output.size())
-        # print(state.size())
         y = self.output_layer(output)
-        # print(y.size())
-        # print('---')
         return y, state
 
     # def make_module_parameter(self):

@@ -62,29 +62,34 @@ def create_multimodal_perceiver(cf, device):
         queries.append( (part_query + part_pos).to(device))
     model.queries=torch.cat(queries)
 
+    # Position embedding
+    model.pos_encoding = compute_fourier_encoding(cf.body_parts, device=device, query_dim=cf.query_dim, frames=cf.frames, 
+                                                  height=cf.height, width=cf.width, audio=cf.sample_audio_frame,
+                                                  patch_height=cf.patch_height,patch_width=cf.patch_width, patch_audio=cf.patch_audio)
+
     return model
 
-def input_embedding(model, data, device='cpu', 
+def input_embedding(data, embedding, query_dim, device='cpu', 
                     height=8, width=8, patch_audio=16):
     b = len(next(iter(data.values())))
 
-    fourier_encoding = compute_fourier_encoding(data, model.query_dim, device=device,
+    fourier_encoding = compute_fourier_encoding(data, query_dim, device=device,
                                                 height=height, width=width, patch_audio=patch_audio)
     multi_mod = torch.tensor([], device=device)
     for key, value in data.items():
         if key == 'video':
             video = rearrange(value, "b c t (h h1) (w w1) -> b (t h w) (h1 w1 c)", h1=height, w1=width)
             video_encodding = repeat(fourier_encoding['video'], '... -> b ...', b=b)
-            x = model.out_embedding['video'](video) + video_encodding
+            x = embedding['video'](video) + video_encodding
             multi_mod = torch.cat([multi_mod, x], dim=1)
         elif key == 'audio':
             audio = rearrange(audio, "b (t t1) -> b t t1", t1=patch_audio)
             audio_encoding = repeat(fourier_encoding['audio'], '... -> b ...', b=b)
-            x = model.out_embedding['audio'](audio) + audio_encoding
+            x = embedding['audio'](audio) + audio_encoding
             multi_mod = torch.cat([multi_mod, x], dim=1)
         else:
             value_encoding = repeat(fourier_encoding[key], '... -> b ...', b=b)
-            x = model.out_embedding[key](value) + value_encoding
+            x = embedding[key](value) + value_encoding
             multi_mod = torch.cat([multi_mod, x], dim=1)
     return multi_mod
 
