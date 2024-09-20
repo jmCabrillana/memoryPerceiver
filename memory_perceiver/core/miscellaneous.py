@@ -5,6 +5,7 @@ def layer_init(layer, std=1.4, bias_const=0.0):
     torch.nn.init.constant_(layer.bias, bias_const)
     return layer
 
+
 def batch_dictionary(dicts):
     out_dict = {}
     for key in dicts[0].keys():

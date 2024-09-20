@@ -57,7 +57,7 @@ class FeedForward(nn.Module):
         return self.net(x)
 
 class Attention(nn.Module):
-    def __init__(self, query_dim, context_dim = None, heads = 8, dim_head = 64):
+    def __init__(self, query_dim, context_dim = None, heads = 8, dim_head = 64, init=False):
         super().__init__()
         inner_dim = dim_head * heads
         context_dim = default(context_dim, query_dim)
@@ -67,6 +67,12 @@ class Attention(nn.Module):
         self.to_q = nn.Linear(query_dim, inner_dim, bias = False)
         self.to_kv = nn.Linear(context_dim, inner_dim * 2, bias = False)
         self.to_out = nn.Linear(inner_dim, query_dim)
+
+        if init:
+            nn.init.zeros_(self.to_q.weight)
+            nn.init.eye_(self.to_kv.weight)
+            nn.init.eye_(self.to_out.weight)
+
 
     def forward(self, x, context = None, mask = None, use_x=True):
         h = self.heads
@@ -116,7 +122,6 @@ class PerceiverIO(nn.Module):
     ):
         super().__init__()
         latent_dim = query_dim
-        mem_dim = query_dim
         self.query_dim = query_dim
         self.nb_latents = nb_latents
         self.nb_latents_mem = nb_latents_mem
@@ -134,7 +139,7 @@ class PerceiverIO(nn.Module):
         self.out_attn_layers = nn.ModuleList([])
         self.out_ff_layers = nn.ModuleList([])
         for i in range(self.depth):
-            self.out_attn_layers.append(PreNormContext(latent_dim, Attention(latent_dim, mem_dim, heads=latent_heads, dim_head=latent_dim_head), mem_dim))
+            self.out_attn_layers.append(PreNormContext(latent_dim, Attention(latent_dim, query_dim, heads=latent_heads, dim_head=latent_dim_head), query_dim))
             self.out_ff_layers.append(PreNormContext(latent_dim, FeedForward(latent_dim)))
         self.out_decoder_cross_attn = PreNormContext(query_dim, Attention(query_dim, latent_dim, heads = cross_heads, dim_head = latent_dim_head), context_dim = query_dim)
         self.modality = {}
@@ -144,17 +149,18 @@ class PerceiverIO(nn.Module):
 
         # F_state
 
-        self.state_embedding = nn.ModuleDict({})
-        for part, params in input_parameters.items():
-            self.state_embedding[part] = nn.Linear(params, query_dim, device=device)
-        self.state_latents = nn.Parameter(torch.randn(nb_latents_mem, mem_dim, device=device))
-        self.state_cross_attn = PreNormContext(mem_dim, Attention(mem_dim, query_dim, heads = cross_heads, dim_head = latent_dim_head), query_dim)
-        self.state_cross_ff = PreNormContext(mem_dim, FeedForward(mem_dim))
+        # self.state_embedding = nn.ModuleDict({})
+        # for part, params in input_parameters.items():
+        #     self.state_embedding[part] = nn.Linear(params, query_dim, device=device)
+        self.state_latents = nn.Parameter(torch.randn(nb_latents_mem, query_dim, device=device))
+        self.state_cross_attn = PreNormContext(query_dim, Attention(query_dim, query_dim, heads = cross_heads, dim_head = latent_dim_head, init=True), query_dim)
+        self.state_cross_ff = PreNormContext(query_dim, FeedForward(query_dim))
+        self.state_mixing = nn.Linear(query_dim*nb_latents_mem , query_dim)
         self.state_attn_layers = nn.ModuleList([])
         self.state_ff_layers = nn.ModuleList([])
         for i in range(self.depth):
-            self.state_attn_layers.append(PreNormContext(mem_dim, Attention(mem_dim, heads = latent_heads, dim_head = latent_dim_head)))
-            self.state_ff_layers.append( PreNormContext(mem_dim, FeedForward(mem_dim)))
+            self.state_attn_layers.append(PreNormContext(query_dim, Attention(query_dim, heads = latent_heads, dim_head = latent_dim_head)))
+            self.state_ff_layers.append( PreNormContext(query_dim, FeedForward(query_dim)))
 
         # Projection to return modalities
 
@@ -163,8 +169,8 @@ class PerceiverIO(nn.Module):
             self.projections[part] = nn.Linear(query_dim, params, device=device)
 
         # test
-        # self.rnn_layer = nn.RNN(3, 8, 1, batch_first=False)
-        # self.output_layer = nn.Linear(8, 4)
+        self.rnn_layer = nn.RNN(3, 8, 1, batch_first=False)
+        self.output_layer = nn.Linear(8, 4)
 
     def forward(self, data, layers_mem, mask = None, queries = None):
 
@@ -209,18 +215,21 @@ class PerceiverIO(nn.Module):
         # Compute next state
 
         # Embedding
-        state_context = torch.tensor([], device=device)
-        for key, value in data.items():
-            context = self.state_embedding[key](value) + repeat(self.pos_encoding[key], '... -> b ...', b=b)
-            state_context = torch.cat([state_context, context], dim=1)
+        # state_context = torch.tensor([], device=device)
+        # for key, value in data.items():
+        #     context = self.state_embedding[key](value) + repeat(self.pos_encoding[key], '... -> b ...', b=b)
+        #     state_context = torch.cat([state_context, context], dim=1)
 
         ## Cross attention on input # context = context.cpu() # to save gpu memory
         new_layers_mem = torch.zeros(b, self.depth, self.nb_latents_mem, self.query_dim, device=device)
-        x = repeat(self.state_latents, 'n d -> b n d', b = b)
-        attn = self.state_cross_attn(x, context = torch.cat([state_context, layers_mem[:, 0]], dim=1), mask = mask)
+        # x = repeat(self.state_latents, 'n d -> b n d', b = b)
+        attn = self.state_cross_attn(layers_mem[:, 0], context = out_context, mask = mask)
         x = attn + x
         x = self.state_cross_ff(x) + x
-        new_layers_mem[:, 0] = x
+        x = rearrange(x, 'b n d -> b (n d)')
+        new_mem = self.state_mixing(x)
+        new_mem = rearrange(new_mem, 'b d0 -> b () d0')
+        new_layers_mem[:, 0] = torch.cat([layers_mem[:, 0, :1], new_mem], dim=1)
 
         ## layers
         for i in range(1, self.depth):
