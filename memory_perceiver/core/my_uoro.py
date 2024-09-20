@@ -52,7 +52,6 @@ class UORO():
 
         self.epsilon_perturbation = epsilon_perturbation
         self.epsilon_stability = epsilon_stability
-        self.criterion = torch.nn.CrossEntropyLoss()
 
         self.nn_param = Param2Vec(model)
         self.s_tilda = None
