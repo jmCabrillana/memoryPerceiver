@@ -24,12 +24,11 @@ class Param2Vec():
         """
         merge a list of variables to a vector
         """
-        assert len(var_list) == len(self.size_list)
+        # assert len(var_list) == len(self.size_list)
         theta_list = []
         for i in range(len(var_list)):
-            var = var_list[i]
-            if var is not None:
-                theta_list.append(var.flatten())
+            if var_list[i] is not None:
+                theta_list.append(var_list[i].flatten())
             else:
                 theta_list.append(torch.zeros(self.size_list[i], device=device).flatten())
         return torch.cat(theta_list)
@@ -45,6 +44,14 @@ class Param2Vec():
             var_list.append(var_vec[count:(count+prod_size)].reshape(self.size_list[i]))
             count += prod_size
         return var_list
+
+def jacobian(out_vec, in_vec):
+    """
+    :param out_vec:
+    :param in_vec:
+    :return: An (len(out_vec), len(in_vec)) jacobian
+    """
+    return torch.cat([grad(o, in_vec, retain_graph=True, allow_unused=True,)[0][None] for o in out_vec], dim=0)
 
 
 class RTRL():
@@ -69,22 +76,34 @@ class RTRL():
         delta_theta = grad(loss, self.nn_param.param_list, retain_graph=True, allow_unused=True)
         delta_theta_vec = self.nn_param.merge(delta_theta, device=device)
 
-        if self.s_tilda is None or self.theta_tilda is None:
-            self.d_state_d_theta = Variable(torch.zeros(len(state_old), len(delta_theta_vec), device=device))
+        len_state = len(state_old)
+        len_param = len(delta_theta_vec)
+
+        if self.d_state_d_theta is None:
+            self.d_state_d_theta = Variable(torch.zeros(len_state, len_param, device=device))
 
 
         # Backprop
-        d_state_new_d_theta= grad(outputs=state_new, inputs=self.nn_param.param_list, allow_unused=True, retain_graph=True)
-        d_state_new_d_state_old = grad(outputs=state_new, inputs=state_old, allow_unused=True, retain_graph=True)
-        d_state_new_d_theta_vec = self.nn_param.merge(d_state_new_d_theta, device=device)
+        # jacobian(state_new, nn_param_vec)
+        d_state_new_d_theta = [grad(outputs=o, inputs=self.nn_param.param_list, allow_unused=True, retain_graph=True)
+                                    for o in state_new]
+        d_state_new_d_theta = torch.cat([self.nn_param.merge(o, device=device) for o in d_state_new_d_theta])
+        d_state_new_d_theta = d_state_new_d_theta.reshape([len_state, len_param])
+
+        d_state_new_d_state_old = [grad(outputs=o, inputs=state_old, allow_unused=True, retain_graph=True)[0]
+                                    for o in state_new]
+        d_state_new_d_state_old = torch.cat(d_state_new_d_state_old).reshape([len_state, len_state])
+
+        # print('delta_s', delta_s.shape)
+        # print('delta_theta_vec', delta_theta_vec.shape)
+        # print('d_state_d_theta', self.d_state_d_theta.shape)
+        # print('delta_s', delta_s.shape)
+        # print('d_state_new_d_theta_vec', d_state_new_d_theta.shape)
 
 
-        self.theta.grad = delta_s.view(1, -1).mm(self.dstate_dtheta).view(-1) + delta_theta_vec
-        self.d_state_d_theta = d_state_new_d_state_old.mm(self.d_state_d_theta) + d_state_new_d_theta_vec
-
-
-        # g_t1 = torch.dot(delta_s.squeeze(), self.s_tilda) * self.theta_tilda + delta_theta_vec
-        # g_t1_list = self.nn_param.split(g_t1)
+        g_t1 = delta_s.unsqueeze(0).mm(self.d_state_d_theta) + delta_theta_vec
+        g_t1_list = self.nn_param.split(g_t1[0])
+        self.d_state_d_theta = d_state_new_d_state_old.mm(self.d_state_d_theta) + d_state_new_d_theta
 
         # self.optimizer.zero_grad()
         for i in range(len(self.nn_param.param_list)):
