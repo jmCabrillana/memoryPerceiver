@@ -164,13 +164,9 @@ class PerceiverIO(nn.Module):
 
         # Projection to return modalities
 
-        self.projections = nn.ModuleDict({})
+        self.out_projections = nn.ModuleDict({})
         for part, params in output_parameters.items():
-            self.projections[part] = nn.Linear(query_dim, params, device=device)
-
-        # test
-        self.rnn_layer = nn.RNN(3, 8, 1, batch_first=False)
-        self.output_layer = nn.Linear(8, 4)
+            self.out_projections[part] = nn.Linear(query_dim, params, device=device)
 
     def forward(self, data, layers_mem, mask = None, queries = None):
 
@@ -215,15 +211,15 @@ class PerceiverIO(nn.Module):
         # Compute next state
 
         # Embedding
-        # state_context = torch.tensor([], device=device)
-        # for key, value in data.items():
-        #     context = self.state_embedding[key](value) + repeat(self.pos_encoding[key], '... -> b ...', b=b)
-        #     state_context = torch.cat([state_context, context], dim=1)
+        state_context = torch.tensor([], device=device)
+        for key, value in data.items():
+            context = self.state_embedding[key](value) + repeat(self.pos_encoding[key], '... -> b ...', b=b)
+            state_context = torch.cat([state_context, context], dim=1)
 
         ## Cross attention on input # context = context.cpu() # to save gpu memory
         new_layers_mem = torch.zeros(b, self.depth, self.nb_latents_mem, self.query_dim, device=device)
         # x = repeat(self.state_latents, 'n d -> b n d', b = b)
-        attn = self.state_cross_attn(layers_mem[:, 0], context = out_context, mask = mask)
+        attn = self.state_cross_attn(layers_mem[:, 0], context = state_context, mask = mask)
         x = attn + x
         x = self.state_cross_ff(x) + x
         x = rearrange(x, 'b n d -> b (n d)')

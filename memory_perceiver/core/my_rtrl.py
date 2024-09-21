@@ -113,3 +113,4 @@ class RTRL():
                 self.nn_param.param_list[i].grad += g_t1_list[i]
 
         # all-reduce grad/ other params 
+

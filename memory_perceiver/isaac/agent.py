@@ -109,9 +109,9 @@ class ActorCriticPerceiver(ActorCritic):
                                             [layer_init(nn.Linear(self.hidden_dim, self.hidden_dim)), nn.ReLU()]*(cf.critic_depth-1) +
                                             [layer_init(nn.Linear(self.hidden_dim, 1), std=1)]  ) ).to(device)
         for i in range(self.dim_actions):
-            layer_init(self.actor.projections['action_variance_'+str(i)], std=0.01)
-            layer_init(self.actor.projections['action_'+str(i)], std=0.01)   
-            layer_init(self.actor.projections['critic'], std=1)          
+            layer_init(self.actor.out_projections['action_variance_'+str(i)], std=0.01)
+            layer_init(self.actor.out_projections['action_'+str(i)], std=0.01)   
+            layer_init(self.actor.out_projections['critic'], std=1)          
         
     def forward(self, states, memories, old_actions=None, flattened_mem=None):
         
