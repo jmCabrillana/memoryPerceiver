@@ -149,9 +149,9 @@ class PerceiverIO(nn.Module):
 
         # F_state
 
-        # self.state_embedding = nn.ModuleDict({})
-        # for part, params in input_parameters.items():
-        #     self.state_embedding[part] = nn.Linear(params, query_dim, device=device)
+        self.state_embedding = nn.ModuleDict({})
+        for part, params in input_parameters.items():
+            self.state_embedding[part] = nn.Linear(params, query_dim, device=device)
         self.state_latents = nn.Parameter(torch.randn(nb_latents_mem, query_dim, device=device))
         self.state_cross_attn = PreNormContext(query_dim, Attention(query_dim, query_dim, heads = cross_heads, dim_head = latent_dim_head, init=True), query_dim)
         self.state_cross_ff = PreNormContext(query_dim, FeedForward(query_dim))

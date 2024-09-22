@@ -98,13 +98,13 @@ def input_embedding(data, embedding, query_dim, device='cpu',
 def output_projection(model, x, frames_future, audio_future):
     output = {}
     start_modality = 0
-    for part in model.projections.keys():
+    for part in model.out_projections.keys():
         if part == 'audio':
-            output['audio'] = rearrange(model.projections['audio'](
+            output['audio'] = rearrange(model.out_projections['audio'](
                                             x[:, :audio_future, :]), "b t t1 -> b (t t1)" )
             start_modality = audio_future
         else:
-            output[part] = model.projections[part](
+            output[part] = model.out_projections[part](
                                 x[:, start_modality:start_modality+frames_future, :] )
             start_modality += frames_future
     return output

@@ -7,14 +7,14 @@ from memoryPerceiver.memory_perceiver.isaac.agent import ActorCritic, ActorCriti
 
 
 class Param2Vec():
-    def __init__(self, model, filter=''):
+    def __init__(self, model, param_filter=''):
         """
         get a list of trainable variables
         """
         self.param_list = []
         self.size_list = []
         for name, p in model.named_parameters():
-            if p.requires_grad and name.startswith(filter):
+            if p.requires_grad and name.startswith(param_filter):
                 self.param_list.append(p)
                 self.size_list.append(p.size())
 
@@ -54,64 +54,5 @@ def jacobian(out_vec, in_vec):
     return torch.cat([grad(o, in_vec, retain_graph=True, allow_unused=True,)[0][None] for o in out_vec], dim=0)
 
 
-class RTRL():
-    def __init__(self, model):
 
-        self.nn_param_out = Param2Vec(model, filter='out_')
-        self.nn_param_state = Param2Vec(model, filter='state_')
-        self.d_state_d_theta = None
-
-    def step(self, model, x, state_new, state_old, loss, **kwargs):
-        """
-        x: input of size (1, 1, input_size)
-        s: previous recurrent state of size (1, 1, hidden_size)
-        y: target of size (1,)
-
-        self.s_toupee: column vector of size (state, )
-        self.theta_toupee: row vector of size (params, )
-        """
-        # print('---')
-        device = state_old.device
-
-        delta_s = grad(loss, state_old, retain_graph=True)[0]
-        delta_theta = grad(loss, self.nn_param_state.param_list, retain_graph=True, allow_unused=True)
-        delta_theta_vec = self.nn_param_state.merge(delta_theta, device=device)
-
-        len_state = len(state_old)
-        len_param = len(delta_theta_vec)
-
-        if self.d_state_d_theta is None:
-            self.d_state_d_theta = Variable(torch.zeros(len_state, len_param, device=device))
-
-
-        # Backprop
-        # jacobian(state_new, nn_param_vec)
-        d_state_new_d_theta = [grad(outputs=o, inputs=self.nn_param_state.param_list, allow_unused=True, retain_graph=True)
-                                    for o in state_new]
-        d_state_new_d_theta = torch.cat([self.nn_param_state.merge(o, device=device) for o in d_state_new_d_theta])
-        d_state_new_d_theta = d_state_new_d_theta.reshape([len_state, len_param])
-
-        d_state_new_d_state_old = [grad(outputs=o, inputs=state_old, allow_unused=True, retain_graph=True)[0]
-                                    for o in state_new]
-        d_state_new_d_state_old = torch.cat(d_state_new_d_state_old).reshape([len_state, len_state])
-
-        # print('delta_s', delta_s.shape)
-        # print('delta_theta_vec', delta_theta_vec.shape)
-        # print('d_state_d_theta', self.d_state_d_theta.shape)
-        # print('delta_s', delta_s.shape)
-        # print('d_state_new_d_theta_vec', d_state_new_d_theta.shape)
-
-
-        g_t1 = delta_s.unsqueeze(0).mm(self.d_state_d_theta)  # + delta_theta_vec # for param out
-        g_t1_list = self.nn_param_state.split(g_t1[0])
-        self.d_state_d_theta = d_state_new_d_state_old.mm(self.d_state_d_theta) + d_state_new_d_theta
-
-        # self.optimizer.zero_grad()
-        for i in range(len(self.nn_param.param_list)):
-            if self.nn_param.param_list[i].grad is None:
-                self.nn_param.param_list[i].grad = g_t1_list[i]
-            else:
-                self.nn_param.param_list[i].grad += g_t1_list[i]
-
-        # all-reduce grad/ other params 
 
