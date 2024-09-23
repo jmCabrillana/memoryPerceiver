@@ -40,6 +40,7 @@ def create_multimodal_perceiver(cf, device):
     model = PerceiverIO(
             cf.depth,
             device=device,
+            depth_f_state=cf.depth_f_state,
             query_dim=cf.query_dim,
             latent_dim_head=cf.latent_dim_head,
             nb_latents = cf.nb_latents,
@@ -113,7 +114,7 @@ def reset_memories(memories, indexes=None):
 
     # Reset memory for new lifelong learning
 
-    batch_size, depth, nb_latents_mem, query_dim = memories.shape
+    batch_size, nb_latents_mem, query_dim = memories.shape
     if indexes is None:
         indexes=torch.arange(batch_size)
     with torch.no_grad():
@@ -124,7 +125,14 @@ def copy_memories(layers_mem):
     return layers_mem.clone().detach().to(device)
 
 def create_memories(model, batch_size, device=torch.device('cpu')):
-    layers_mem = torch.zeros(batch_size, model.depth, model.nb_latents_mem, model.query_dim,
+    layers_mem = torch.zeros(batch_size, model.nb_latents_mem, model.query_dim,
                               device=device, requires_grad=True)
     return layers_mem
 
+def freeze_parameters(model, filter):
+    for name, p in model.named_parameters():
+        if name.startswith('actor.state_'):
+            if name.startswith(filter):
+                p.requires_grad = True
+            else:
+                p.requires_grad = False

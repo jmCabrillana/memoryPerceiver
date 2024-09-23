@@ -1,6 +1,14 @@
 import os
 import torch
 import torch.distributed as dist
+from einops import rearrange
+
+def swap_unswap_arguments(f, *args, **kwargs):
+    args = list(args)
+    args[0] = rearrange(args[0], 't b ... -> b t ...').contiguous()
+    out = f(*args, **kwargs)
+    out = rearrange(out, 'b t ... -> t b ...')
+    return out
 
 def setup_distributed(rank, size):
     os.environ['MASTER_ADDR'] = 'localhost'

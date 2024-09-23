@@ -22,7 +22,7 @@ sys.path.append(os.getcwd())
 
 from omni.isaac.lab.app import AppLauncher
 from memoryPerceiver.memory_perceiver.main.configuration import cf
-from memoryPerceiver.memory_perceiver.core.model_wrapper import create_memories, reset_memories
+from memoryPerceiver.memory_perceiver.core.model_wrapper import create_memories, reset_memories, freeze_parameters
 from memoryPerceiver.memory_perceiver.core.distributed import setup_distributed, average_gradients, scatter_dummy_src, gather_dummy_src
 from memoryPerceiver.memory_perceiver.core.miscellaneous import custom_random, print_cuda_tensors
 import memoryPerceiver.memory_perceiver.isaac.trainer as tr
@@ -83,10 +83,11 @@ def isaac_training(cf, rank, size):
     if rank in rank_agents:
         model = create_agent(cf, rank)
         model_student = create_agent(cf, rank)
+        freeze_parameters(model_student, 'actor.state_')
         if isinstance(model, ActorCriticPerceiver):
             memories = create_memories(model.actor, cf.num_envs, device=device)
             if not os.path.exists(cf.path_memories):
-                torch.save(memories, cf.path_memories)
+                torch.save(memories, cf.path_memories+str(rank)+'.pt')
         else :
             memories = None
             # last_memories = torch.zeros_like(memories['cross_cmem'], device=device)
@@ -144,7 +145,7 @@ def isaac_training(cf, rank, size):
                 if is_inference:
                     if rank in rank_agents:
                         if isinstance(model, ActorCriticPerceiver):
-                            memories = torch.load(cf.path_memories)
+                            memories = torch.load(cf.path_memories+str(rank)+'.pt')
                         if sim_count == 0 and os.path.exists(cf.path_model):
                             state_dict = torch.load(cf.path_model)
                             model.load_state_dict(state_dict['model'])
@@ -194,10 +195,9 @@ def isaac_training(cf, rank, size):
                                 print(f"{key}: {value[:,0, 0]}")
                     if rank in rank_agents and isinstance(model, ActorCriticPerceiver):
                             tmp_memories = memories
-                            memories = torch.load(cf.path_memories).detach()
+                            memories = torch.load(cf.path_memories+str(rank)+'.pt').detach()
                             dist.barrier(group=group_agents)
-                            if rank == 1:
-                                torch.save(tmp_memories, cf.path_memories)
+                            torch.save(tmp_memories, cf.path_memories+str(rank)+'.pt')
                     if rank == rank_sim:
                         print('returns mean', previous_history['returns'].mean())
                         print('values mean', unscaled_values.mean())

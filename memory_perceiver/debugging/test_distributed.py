@@ -102,6 +102,9 @@ if __name__ == '__main__':
     world_size = torch.cuda.device_count()
     print(world_size)
 
+    # manager=torch.multiprocessing.Manager()
+    # d=manager.dict()
+
     # Spawn processes
     processes = []
     for rank in range(world_size):

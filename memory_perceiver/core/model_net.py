@@ -110,7 +110,8 @@ class PerceiverIO(nn.Module):
     def __init__(
         self,
         depth,
-        device,
+        depth_f_state=0,
+        device='cpu',
         query_dim=832,
         nb_latents = 512,
         nb_latents_mem = 1024,
@@ -126,6 +127,7 @@ class PerceiverIO(nn.Module):
         self.nb_latents = nb_latents
         self.nb_latents_mem = nb_latents_mem
         self.depth = depth
+        self.depth_f_state = depth_f_state
         self.pos_encoding=None
 
         # F_output
@@ -155,10 +157,9 @@ class PerceiverIO(nn.Module):
         self.state_latents = nn.Parameter(torch.randn(nb_latents_mem, query_dim, device=device))
         self.state_cross_attn = PreNormContext(query_dim, Attention(query_dim, query_dim, heads = cross_heads, dim_head = latent_dim_head, init=True), query_dim)
         self.state_cross_ff = PreNormContext(query_dim, FeedForward(query_dim))
-        # self.state_mixing = nn.Linear(query_dim*nb_latents_mem , query_dim)
         self.state_attn_layers = nn.ModuleList([])
         self.state_ff_layers = nn.ModuleList([])
-        for i in range(self.depth):
+        for i in range(self.depth_f_state):
             self.state_attn_layers.append(PreNormContext(query_dim, Attention(query_dim, heads = latent_heads, dim_head = latent_dim_head)))
             self.state_ff_layers.append( PreNormContext(query_dim, FeedForward(query_dim)))
 
@@ -173,15 +174,6 @@ class PerceiverIO(nn.Module):
         dummy = next(iter(data.values()))
         b, device = dummy.shape[0], dummy.device
 
-        # xx = torch.tensor([], device=device)
-        # for val in data.values():
-        #     xx=torch.cat([xx, val], dim=-1)
-        # output, state = self.rnn_layer(xx, rearrange(layers_mem, '() () l d -> () () (l d)'))  # output = (T, batch_size, hidden_size)
-        # state = rearrange(state, '1 1 (l d) -> 1 1 l d', l=2, d=4)
-        # y = self.output_layer(output) # 1 1 3 -> 1 3 4 
-        # y = repeat(y, '1 1 d -> 1 t d', t=3)
-        # return y, state
-
         # Compute output
 
         ## Embedding
@@ -192,14 +184,14 @@ class PerceiverIO(nn.Module):
 
         ## Cross attention on input
         x = repeat(self.out_latents, 'n d -> b n d', b = b)
-        attn = self.out_cross_attn(x, context = torch.cat([out_context, layers_mem[:, 0]], dim=1), mask = mask)
+        attn = self.out_cross_attn(x, context = torch.cat([out_context, layers_mem], dim=1), mask = mask)
         # data = data.cpu() # to save gpu memory
         x = attn + x
         x = self.out_cross_ff(x) + x
 
         ## layers
         for i in range(1, self.depth):
-            attn = self.out_attn_layers[i](x, context=layers_mem[:, i], mask=mask)
+            attn = self.out_attn_layers[i](x, mask=mask)
             x = attn + x
             x = self.out_ff_layers[i](x) + x
 
@@ -217,21 +209,21 @@ class PerceiverIO(nn.Module):
             state_context = torch.cat([state_context, context], dim=1)
 
         ## Cross attention on input # context = context.cpu() # to save gpu memory
-        new_layers_mem = torch.zeros(b, self.depth, self.nb_latents_mem, self.query_dim, device=device)
-        x = repeat(self.state_latents, 'n d -> b n d', b = b)
-        attn = self.state_cross_attn(layers_mem[:, 0], context = state_context, mask = mask)
+        # x = repeat(self.state_latents, 'n d -> b n d', b = b)
+        x = layers_mem
+        attn = self.state_cross_attn(x, context = state_context, mask = mask)
         x = attn + x
         x = self.state_cross_ff(x) + x
-        new_mem = x.mean(dim=1) # 'b n d -> b d'
-        # new_mem = self.state_mixing(x)
-        new_mem = rearrange(new_mem, 'b d0 -> b () d0')
-        new_layers_mem[:, 0] = torch.cat([layers_mem[:, 0, :-1], new_mem], dim=1)
 
         ## layers
-        # for i in range(1, self.depth):
-        #     attn = self.state_attn_layers[i](x, context=layers_mem[:, i] , mask=mask)
-        #     x = attn + x
-        #     x = self.state_ff_layers[i](x) + x
-        #     new_layers_mem[:, i] = x
+        for i in range(self.depth_f_state):
+            attn = self.state_attn_layers[i](x, mask=mask)
+            x = attn + x
+            x = self.state_ff_layers[i](x) + x
+
+        ## Update mem
+        new_mem = x.mean(dim=1) # 'b n d -> b d'
+        new_mem = rearrange(new_mem, 'b d0 -> b () d0')
+        new_layers_mem = torch.cat([layers_mem[:, :-1], new_mem], dim=1)
         
         return output, new_layers_mem

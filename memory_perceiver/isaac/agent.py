@@ -103,6 +103,7 @@ class ActorCriticPerceiver(ActorCritic):
         self.patch_audio = cf.patch_audio
         self.hidden_dim = cf.hidden_dim
         self.shared = cf.shared
+        self.flattened_mem = None
         self.actor = create_multimodal_perceiver(cf, device)
         if not self.shared:
             self.critic = nn.Sequential( *( [layer_init(nn.Linear(self.dim_observations, self.hidden_dim)), nn.ReLU()] +
@@ -113,7 +114,7 @@ class ActorCriticPerceiver(ActorCritic):
             layer_init(self.actor.out_projections['action_'+str(i)], std=0.01)   
             layer_init(self.actor.out_projections['critic'], std=1)          
         
-    def forward(self, states, memories, old_actions=None, flattened_mem=None):
+    def forward(self, states, memories, old_actions=None):
         
         # Actor
         
@@ -126,9 +127,9 @@ class ActorCriticPerceiver(ActorCritic):
         # input = input_embedding(self.actor, states_chunk, device=device,
         #         )
         input = patchify(states_chunk, height=self.patch_height, width=self.patch_width, patch_audio=self.patch_audio)
-        if flattened_mem is not None:
-            b, d, l, h = flattened_mem
-            memories = rearrange(memories, '(b d l h) -> b d l h', b=b, d=d, l=l, h=h)
+        if self.flattened_mem is not None:
+            b, l, h = self.flattened_mem
+            memories = rearrange(memories, '(b l h) -> b l h', b=b, l=l, h=h)
         x, new_memories = self.actor(input, memories, queries=self.actor.queries)
         output = output_projection(self.actor, x, self.frames_future, self.audio_future)
 
@@ -158,15 +159,15 @@ class ActorCriticPerceiver(ActorCritic):
 
         # Critic
         if self.shared:
-            # values = rearrange(output['critic'], 'b t () -> b t').mean(dim=-1)
-            values = rearrange(output['critic'], 'b () d -> b d')
+            values = rearrange(output['critic'], 'b t () -> b t').mean(dim=-1)
+            # values = rearrange(output['critic'], 'b () d -> b d') # For test anbn
         else : 
             values = self.critic(states['observations'][:,-1])
             values = rearrange(values,  'b 1 -> b')
         
         # Act
-        if flattened_mem is not None:
-            new_memories = rearrange(new_memories, 'b d l h -> (b d l h)')
+        if self.flattened_mem is not None:
+            new_memories = rearrange(new_memories, 'b l h -> (b l h)')
         if old_actions is None:  
             actions = dist.sample()
             logprobs = dist.log_prob(actions)
