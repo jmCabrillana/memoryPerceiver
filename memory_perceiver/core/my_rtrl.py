@@ -3,6 +3,26 @@ from torch.autograd import grad, Variable
 import numpy as np
 from torch.func import jacrev, functional_call
 
+def cat_CSR_rows(csr_list):
+    device = csr_list[0].device
+    dtype = csr_list[0].dtype
+    rows = 0
+    cols = csr_list[0].size()[1]
+    crow_indices_list, col_indices_list, values_list = [], [], []
+    ccol_sum = 0
+    for i, csr in enumerate(csr_list):
+        rows += csr.size()[0]
+        crow_indices_tmp = csr.crow_indices()
+        crow_indices_list.append(crow_indices_tmp+ccol_sum)
+        ccol_sum += crow_indices_tmp[-1]
+        col_indices_list.append(csr.col_indices())
+        values_list.append(csr.values())
+    crow_indices = torch.cat(crow_indices_list)
+    col_indices = torch.cat(col_indices_list)
+    values = torch.cat(values_list)
+    return torch.sparse_csr_tensor(crow_indices, col_indices, values, size=(rows, cols), device=device, dtype=dtype)
+
+
 class Param2Vec():
     def __init__(self, model, param_filter=''):
         """
@@ -30,7 +50,7 @@ class Param2Vec():
                 theta_list.append(torch.zeros(self.size_list[i], device=device).flatten())
         return torch.cat(theta_list)
 
-    def merge_matrix(self, var_list, batch_size, device='cpu', sparsity=None):
+    def merge_matrix(self, var_list, batch_size, device='cpu'):
         """
         merge a list of variables to a matrix
         """
@@ -39,14 +59,9 @@ class Param2Vec():
         for i in range(len(var_list)):
             if var_list[i] is not None:
                 var_tmp = var_list[i].flatten(start_dim=1)
-                if sparsity is not None:
-                    var_tmp = var_tmp.to_sparse_bsr(blocksize=(sparsity, sparsity))
                 theta_list.append(var_tmp)
             else:
-                if sparsity is not None:
-                    zeros = torch.sparse_bsr_tensor([0], [], [], size=(batch_size, np.prod(self.size_list[i])), device=device)
-                else:
-                    zeros = torch.zeros(batch_size, np.prod(self.size_list[i]), device=device)
+                zeros = torch.zeros(batch_size, np.prod(self.size_list[i]), device=device)
                 theta_list.append(zeros)
 
         return torch.cat(theta_list, dim=1)
@@ -128,7 +143,7 @@ class RTRL():
 
 #e.to_sparse_bsr(blocksize=(100, 100))
 class RTRL_partial():
-    def __init__(self, model, param_state_filter, block_dim=None):
+    def __init__(self, model, param_state_filter, chunks=1):
 
         # Init params
         self.nn_param_state = Param2Vec(model, param_filter=param_state_filter)
@@ -136,7 +151,7 @@ class RTRL_partial():
         
         # Iterative sensitivity
         self.d_state_d_theta = None
-        self.block_dim=block_dim
+        self.chunks=chunks
 
     def step(self, model, x, state_new, state_old, loss, **kwargs):
         """
@@ -161,28 +176,47 @@ class RTRL_partial():
         delta_s = grad(loss, state_old, retain_graph=True)[0]
 
         len_state = len(state_old)
-        len_param_state = len(self.nn_param_state.merge(self.nn_param.param_list, device=device))
-        b_dim = self.block_dim
+        len_param_state = len(self.nn_param_state.merge(self.nn_param_state.param_list, device=device))
+        assert(len_state % self.chunks == 0)
+        chunk_size = len_state//self.chunks
 
         if self.d_state_d_theta is None:
-            self.d_state_d_theta = Variable(torch.zeros(len_state, len_param_state, device=device))
+            # self.d_state_d_theta = Variable(torch.zeros(len_state, len_param_state, device=device))
+            self.d_state_d_theta = torch.sparse_csr_tensor([0],[],[], size=(len_state, len_param_state), device=device)
 
 
         # Jacobians
 
-        def fmodel(params, old_s): #functional version of model
-            _, _, _, new_s = functional_call(model, params, (x, old_s), kwargs)
-            return new_s
         dict_param_state = dict(zip(self.nn_param_state.name_list, self.nn_param_state.param_list))
+        if self.chunks == 1:
+            def fmodel(params, old_s): #functional version of model
+                _, _, _, new_s = functional_call(model, params, (x, old_s), kwargs)
+                return new_s
 
-        ## ds/dtheta: dim S T
-        d_state_new_d_theta = jacrev(fmodel, argnums=(0))(dict_param_state, state_old)
-        d_state_new_d_theta = self.nn_param_state.merge_matrix(list(d_state_new_d_theta.values()), len_state, 
-                                    device=device, sparsity=b_dim)
-        ## ds_new/ds_old: dim S S
-        d_state_new_d_state_old = jacrev(fmodel, argnums=(1))(dict_param_state, state_old)
-        if b_dim is not None:
-            d_state_new_d_state_old = d_state_new_d_state_old.to_sparse_bsr(blocksize=(b_dim, b_dim))
+            ## ds/dtheta: dim S T
+            d_state_new_d_theta = jacrev(fmodel, argnums=(0))(dict_param_state, state_old)
+            d_state_new_d_theta = self.nn_param_state.merge_matrix(list(d_state_new_d_theta.values()), len_state, 
+                                        device=device).to_sparse_csr()
+            
+            ## ds_new/ds_old: dim S S
+            d_state_new_d_state_old = jacrev(fmodel, argnums=(1))(dict_param_state, state_old).to_sparse_csr()
+        else:
+            d_state_new_d_theta_list, d_state_new_d_state_old_list = [], []
+            for i in range(self.chunks):
+                def fmodel(params, old_s): #functional version of model
+                    _, _, _, new_s = functional_call(model, params, (x, old_s), kwargs)
+                    return new_s[i*chunk_size:(i+1)*chunk_size]
+                
+                ## ds/dtheta: dim S T
+                d_state_new_d_theta_tmp = jacrev(fmodel, argnums=(0))(dict_param_state, state_old)
+                d_state_new_d_theta_list.append( self.nn_param_state.merge_matrix(list(d_state_new_d_theta_tmp.values()), 
+                                                            chunk_size, device=device).to_sparse_csr() )
+
+                ## ds_new/ds_old: dim S S
+                d_state_new_d_state_old_list.append( jacrev(fmodel, argnums=(1))(dict_param_state, state_old).to_sparse_csr() )
+
+            d_state_new_d_theta = cat_CSR_rows(d_state_new_d_theta_list)
+            d_state_new_d_state_old = cat_CSR_rows(d_state_new_d_state_old_list)
 
         # Recursion formula and compute gradient
 
