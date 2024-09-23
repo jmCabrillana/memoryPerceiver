@@ -10,12 +10,15 @@ def cat_CSR_rows(csr_list):
     rows = 0
     cols = csr_list[0].size()[1]
     crow_indices_list, col_indices_list, values_list = [], [], []
-    ccol_sum = 0
+    crow_sum = 0
     for i, csr in enumerate(csr_list):
         rows += csr.size()[0]
-        crow_indices_tmp = csr.crow_indices()
-        crow_indices_list.append(crow_indices_tmp+ccol_sum)
-        ccol_sum += crow_indices_tmp[-1]
+        if i == 0:
+            crow_indices_tmp = csr.crow_indices()
+        else:
+            crow_indices_tmp = csr.crow_indices()[1:]
+        crow_indices_list.append(crow_indices_tmp+crow_sum)
+        crow_sum += crow_indices_tmp[-1]
         col_indices_list.append(csr.col_indices())
         values_list.append(csr.values())
     crow_indices = torch.cat(crow_indices_list)
