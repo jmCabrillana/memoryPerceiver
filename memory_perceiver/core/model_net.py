@@ -155,7 +155,7 @@ class PerceiverIO(nn.Module):
         self.state_latents = nn.Parameter(torch.randn(nb_latents_mem, query_dim, device=device))
         self.state_cross_attn = PreNormContext(query_dim, Attention(query_dim, query_dim, heads = cross_heads, dim_head = latent_dim_head, init=True), query_dim)
         self.state_cross_ff = PreNormContext(query_dim, FeedForward(query_dim))
-        self.state_mixing = nn.Linear(query_dim*nb_latents_mem , query_dim)
+        # self.state_mixing = nn.Linear(query_dim*nb_latents_mem , query_dim)
         self.state_attn_layers = nn.ModuleList([])
         self.state_ff_layers = nn.ModuleList([])
         for i in range(self.depth):
@@ -218,20 +218,20 @@ class PerceiverIO(nn.Module):
 
         ## Cross attention on input # context = context.cpu() # to save gpu memory
         new_layers_mem = torch.zeros(b, self.depth, self.nb_latents_mem, self.query_dim, device=device)
-        # x = repeat(self.state_latents, 'n d -> b n d', b = b)
+        x = repeat(self.state_latents, 'n d -> b n d', b = b)
         attn = self.state_cross_attn(layers_mem[:, 0], context = state_context, mask = mask)
         x = attn + x
         x = self.state_cross_ff(x) + x
-        x = rearrange(x, 'b n d -> b (n d)')
-        new_mem = self.state_mixing(x)
+        new_mem = x.mean(dim=1) # 'b n d -> b d'
+        # new_mem = self.state_mixing(x)
         new_mem = rearrange(new_mem, 'b d0 -> b () d0')
-        new_layers_mem[:, 0] = torch.cat([layers_mem[:, 0, :1], new_mem], dim=1)
+        new_layers_mem[:, 0] = torch.cat([layers_mem[:, 0, :-1], new_mem], dim=1)
 
         ## layers
-        for i in range(1, self.depth):
-            attn = self.state_attn_layers[i](x, context=layers_mem[:, i] , mask=mask)
-            x = attn + x
-            x = self.state_ff_layers[i](x) + x
-            new_layers_mem[:, i] = x
+        # for i in range(1, self.depth):
+        #     attn = self.state_attn_layers[i](x, context=layers_mem[:, i] , mask=mask)
+        #     x = attn + x
+        #     x = self.state_ff_layers[i](x) + x
+        #     new_layers_mem[:, i] = x
         
         return output, new_layers_mem

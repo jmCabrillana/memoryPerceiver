@@ -2,6 +2,7 @@ import torch
 from torch.autograd import grad, Variable
 import numpy as np
 from torch.func import jacrev, functional_call
+import os
 
 def cat_CSR_rows(csr_list):
     device = csr_list[0].device
@@ -78,14 +79,6 @@ class Param2Vec():
             count += prod_size
         return var_list
 
-def jacobian(out_vec, in_vec):
-    """
-    :param out_vec:
-    :param in_vec:
-    :return: An (len(out_vec), len(in_vec)) jacobian
-    """
-    return torch.cat([grad(o, in_vec, retain_graph=True, allow_unused=True,)[0][None] for o in out_vec], dim=0)
-
 
 class RTRL():
     def __init__(self, model):
@@ -143,7 +136,7 @@ class RTRL():
 
 #e.to_sparse_bsr(blocksize=(100, 100))
 class RTRL_partial():
-    def __init__(self, model, param_state_filter, chunks=1):
+    def __init__(self, model, param_state_filter, chunks=1, slice_indexes=None, table_save=None):
 
         # Init params
         self.nn_param_state = Param2Vec(model, param_filter=param_state_filter)
@@ -152,14 +145,23 @@ class RTRL_partial():
         # Iterative sensitivity
         self.d_state_d_theta = None
         self.chunks=chunks
+        self.slice_indexes=slice_indexes
+        self.table_save = None
 
-    def step(self, model, x, state_new, state_old, loss, **kwargs):
+    def save_influence(self, table):
+        " Save to bigquery"
+        pass
+
+
+    def step(self, model, x, state_old, loss, **kwargs):
         """
         x: input 
         state_old: previous recurrent state of size (state)
         state_new: previous recurrent state of size (state)
         """
         device = state_old.device
+        if self.slice_indexes is None:
+            self.slice_indexes = list(range(len(state_old)))
 
         # Update online gradient 
 
@@ -173,56 +175,58 @@ class RTRL_partial():
 
         # RTRL for state operations
 
-        delta_s = grad(loss, state_old, retain_graph=True)[0]
+        delta_s = grad(loss, state_old, retain_graph=True)[0][self.slice_indexes]
 
-        len_state = len(state_old)
+        state_old_slice = state_old[self.slice_indexes]
+        len_state = len(state_old_slice)
         len_param_state = len(self.nn_param_state.merge(self.nn_param_state.param_list, device=device))
         assert(len_state % self.chunks == 0)
         chunk_size = len_state//self.chunks
 
         if self.d_state_d_theta is None:
-            # self.d_state_d_theta = Variable(torch.zeros(len_state, len_param_state, device=device))
-            self.d_state_d_theta = torch.sparse_csr_tensor([0],[],[], size=(len_state, len_param_state), device=device)
+            self.d_state_d_theta = torch.zeros(len_state, len_param_state, device=device)
+            # self.d_state_d_theta = torch.sparse_csr_tensor([0],[],[], size=(len_state, len_param_state), device=device)
 
 
         # Jacobians
 
         dict_param_state = dict(zip(self.nn_param_state.name_list, self.nn_param_state.param_list))
-        if self.chunks == 1:
-            def fmodel(params, old_s): #functional version of model
-                _, _, _, new_s = functional_call(model, params, (x, old_s), kwargs)
-                return new_s
+        dict_param_state = {k:v.detach() for k, v in dict_param_state.items()}
+        state_old_detached = state_old_slice.detach()
+        d_state_new_d_theta_list, d_state_new_d_state_old_list = [], []
+        for i in range(self.chunks):
 
-            ## ds/dtheta: dim S T
-            d_state_new_d_theta = jacrev(fmodel, argnums=(0))(dict_param_state, state_old)
-            d_state_new_d_theta = self.nn_param_state.merge_matrix(list(d_state_new_d_theta.values()), len_state, 
-                                        device=device).to_sparse_csr()
+            def fmodel(params, old_s): #functional version of 
+                state_old_clone = state_old.clone().detach()
+                state_old_clone[self.slice_indexes] = old_s
+                _, _, _, state_new = functional_call(model, params, (x, state_old_clone), kwargs)
+                return state_new[self.slice_indexes][i*chunk_size:(i+1)*chunk_size]
+            def jacobian(argnum):
+                return jacrev(fmodel, argnums=(argnum))(dict_param_state, state_old_detached)
             
-            ## ds_new/ds_old: dim S S
-            d_state_new_d_state_old = jacrev(fmodel, argnums=(1))(dict_param_state, state_old).to_sparse_csr()
-        else:
-            d_state_new_d_theta_list, d_state_new_d_state_old_list = [], []
-            for i in range(self.chunks):
-                def fmodel(params, old_s): #functional version of model
-                    _, _, _, new_s = functional_call(model, params, (x, old_s), kwargs)
-                    return new_s[i*chunk_size:(i+1)*chunk_size]
-                
-                ## ds/dtheta: dim S T
-                d_state_new_d_theta_tmp = jacrev(fmodel, argnums=(0))(dict_param_state, state_old)
-                d_state_new_d_theta_list.append( self.nn_param_state.merge_matrix(list(d_state_new_d_theta_tmp.values()), 
-                                                            chunk_size, device=device).to_sparse_csr() )
+            ## ds/dtheta: dim (S/C) T
+            d_state_new_d_theta_tmp = jacobian(0)
+            d_state_new_d_theta_list.append( self.nn_param_state.merge_matrix(list(d_state_new_d_theta_tmp.values()), 
+                                                        chunk_size, device=device).to_sparse_csr() )
+            torch.cuda.empty_cache() 
 
-                ## ds_new/ds_old: dim S S
-                d_state_new_d_state_old_list.append( jacrev(fmodel, argnums=(1))(dict_param_state, state_old).to_sparse_csr() )
+            ## ds_new/ds_old: dim (S/C) S
+            d_state_new_d_state_old_list.append( jacobian(1).to_sparse_csr() )
+            torch.cuda.empty_cache() 
 
-            d_state_new_d_theta = cat_CSR_rows(d_state_new_d_theta_list)
-            d_state_new_d_state_old = cat_CSR_rows(d_state_new_d_state_old_list)
+        d_state_new_d_theta = cat_CSR_rows(d_state_new_d_theta_list)
+        d_state_new_d_state_old = cat_CSR_rows(d_state_new_d_state_old_list)
 
         # Recursion formula and compute gradient
 
         g_t1 = delta_s.unsqueeze(0).mm(self.d_state_d_theta)  # + delta_theta_vec # Already done in online update
         g_t1_list = self.nn_param_state.split(g_t1[0])
-        self.d_state_d_theta = d_state_new_d_state_old.mm(self.d_state_d_theta) + d_state_new_d_theta
+        # print('d_state_new_d_state_old', d_state_new_d_state_old._nnz())
+        # print('d_state_new_d_theta', d_state_new_d_theta._nnz())
+        try:
+            self.d_state_d_theta = d_state_new_d_state_old.mm(self.d_state_d_theta) + d_state_new_d_theta
+        except Exception as e:
+            print(e)
 
         for i in range(len(self.nn_param_state.param_list)):
             if self.nn_param_state.param_list[i].grad is None:
