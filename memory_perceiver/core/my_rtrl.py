@@ -2,7 +2,6 @@ import torch
 from torch.autograd import grad, Variable
 import numpy as np
 from torch.func import jacrev, functional_call
-import os
 
 def cat_CSR_rows(csr_list):
     device = csr_list[0].device
@@ -28,7 +27,7 @@ def cat_CSR_rows(csr_list):
 
 
 class Param2Vec():
-    def __init__(self, model, param_filter=''):
+    def __init__(self, model, param_filter='', num_parameters=None):
         """
         get a list of trainable variables
         """
@@ -40,6 +39,22 @@ class Param2Vec():
                 self.param_list.append(p)
                 self.name_list.append(name)
                 self.size_list.append(p.size())
+
+        if num_parameters is not None:
+            new_param_list, new_name_list, new_size_list = [], [], []
+            cnt_parameters = 0
+            while cnt_parameters < num_parameters and len(self.param_list) > 0 :
+                i = torch.randint(len(self.param_list), (1,)).item()
+                new_param_list.append(self.param_list.pop(i)) 
+                new_name_list.append(self.name_list.pop(i))
+                size_list = self.size_list.pop(i)
+                new_size_list.append(size_list)
+                cnt_parameters += np.prod(size_list)
+
+            self.param_list = new_param_list
+            self.name_list = new_name_list
+            self.size_list = new_size_list
+            
 
     def merge(self, var_list, device='cpu'):
         """
@@ -139,10 +154,10 @@ class RTRL():
 
 #e.to_sparse_bsr(blocksize=(100, 100))
 class RTRL_partial():
-    def __init__(self, model, param_state_filter, chunks=1, slice_indexes=None, table_save=None):
+    def __init__(self, model, param_state_filter, chunks=1, num_parameters=None, slice_indexes=None, table_save=None):
 
         # Init params
-        self.nn_param_state = Param2Vec(model, param_filter=param_state_filter)
+        self.nn_param_state = Param2Vec(model, param_filter=param_state_filter, num_parameters=num_parameters)
         self.nn_param = Param2Vec(model)
         
         # Iterative sensitivity
@@ -171,10 +186,11 @@ class RTRL_partial():
         delta_theta = grad(loss, self.nn_param.param_list, retain_graph=True, allow_unused=True)
 
         for i in range(len(self.nn_param.param_list)):
-            if self.nn_param.param_list[i].grad is None:
-                self.nn_param.param_list[i].grad = delta_theta[i]
-            else:
-                self.nn_param.param_list[i].grad += delta_theta[i]
+            if delta_theta[i] is not None:
+                if self.nn_param.param_list[i].grad is None:
+                    self.nn_param.param_list[i].grad = delta_theta[i]
+                else:
+                    self.nn_param.param_list[i].grad += delta_theta[i]
 
         # RTRL for state operations
 
