@@ -9,7 +9,7 @@ class Config:
     agent_type = "Perceiver" # Perceiver Simple
     dim_observations = 4 # 87 4
     dim_actions = 1 # 21 1
-    num_envs = 8 # 54 216 864
+    num_envs = 128 # 54 216 864
     sim_duration = 32 # 1028 516 260
     seed = 68
     render = False
@@ -18,11 +18,12 @@ class Config:
     frames = 1
     frames_future = 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
-    learning_rate = 1e-4 # 3e-4 1e-4 1e-5
+    learning_rate = 1e-5 # 3e-4 1e-4 1e-5
     kl_threshold = 0.008
-    kl_scheduler = False
+    kl_scheduler = True
+    range_lr = [1e-5, 1e-2]
     entropy = 0.00 # 0.01 to 0.05
-    critic = 2    # 0.5 to 2 4
+    critic = 2   # 0.5 to 2 4
     accumulation_steps = 6 # 2 4
     student_update_step = 1
     eps = 1e-9
@@ -35,7 +36,7 @@ class Config:
     update_probability = 0.5 #0.33
 
     # Model parameters
-    depth = 2
+    depth = 1
     critic_depth = 2
     depth_f_state = 0
     query_dim = 24 # video > 136 , 832
@@ -43,7 +44,7 @@ class Config:
     latent_dim_head = 10  # 64
     nb_latents_mem = 1
     nb_latents = 4
-    shared=True
+    shared=False
     batch_size = num_envs
     body_parts =  {'observation_' + str(i): 1 for i in range(dim_observations)}
     body_outputs = {'action_' + str(i): 1 for i in range(dim_actions)}

@@ -131,8 +131,7 @@ def create_memories(model, batch_size, device=torch.device('cpu')):
 
 def freeze_parameters(model, filter):
     for name, p in model.named_parameters():
-        if name.startswith('actor.state_'):
-            if name.startswith(filter):
-                p.requires_grad = True
-            else:
-                p.requires_grad = False
+        if name.startswith(filter):
+            p.requires_grad = False
+        else:
+            p.requires_grad = True

@@ -93,7 +93,7 @@ def isaac_training(cf, rank, size):
             # last_memories = torch.zeros_like(memories['cross_cmem'], device=device)
         optimizer = torch.optim.Adam(model_student.parameters(), lr=cf.learning_rate, eps=1e-5)
         lr=cf.learning_rate
-        scaler = GradScaler()
+        scaler = GradScaler(n)
         if rank == 1:
             plotter = Plotter('tensorboard', titles=['loss_actor', 'loss_critic', 'loss_entropy', 'actions_gap', 'returns'],
                                 path_plots=cf.path_experiment)
@@ -249,7 +249,7 @@ def isaac_training(cf, rank, size):
                     obs_stack = torch.stack(buffer['obs'])
                     states=get_states(obs_stack, sim_step, cf, history['birth_time'][sim_step], device)
                     with autocast(device_type='cuda', dtype=torch.bfloat16):
-                        actions, values, logprobs, memories = model(states, memories)   
+                        actions, values, logprobs, memories = model(states, memories)  # !!!! no update mem 
                     history['actions'][sim_step] = actions  
                     history['logprobs'][sim_step] = logprobs 
                     history['values'][sim_step:sim_step+cf.frames_future] = values  # for cumulative sum  
@@ -295,11 +295,12 @@ def isaac_training(cf, rank, size):
                         # Adjust the learning rate
                         dist.all_reduce(kl_divergence, op=dist.ReduceOp.AVG, group=group_agents)
                         if cf.kl_scheduler:
-                            lr = tr.update_lr(lr, kl_divergence, kl_threshold=cf.kl_threshold)
+                            lr = tr.update_lr(lr, kl_divergence, kl_threshold=cf.kl_threshold, min_lr=cf.range_lr[0], max_lr=cf.range_lr[1])
                             for param_group in optimizer.param_groups:
                                 param_group['lr'] = lr
+                            if kl_divergence > 3*cf.kl_threshold:
+                                loss *= 0
 
-        
                         # Step optimizer
                         scaler.scale(loss).backward(retain_graph=True)
                         backward_count += 1

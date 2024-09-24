@@ -20,6 +20,8 @@ class Config:
     dim_actions_ppo = min(2, frames_future)*dim_actions
     learning_rate = 1e-5 # 3e-4 1e-4 1e-5
     kl_threshold = 0.008
+    kl_scheduler = True
+    range_lr = [1e-5, 1e-2]
     entropy = 0.00 # 0.01 to 0.05
     critic = 2    # 0.5 to 2 4
     accumulation_steps = 6 # 2 4
@@ -77,7 +79,7 @@ class Config:
     path_main = '/isaac-sim/memoryPerceiver/memory_perceiver/main/'
     path_experiment = path_main+'experiments/'+task+'/'+experiment_name+'/'
     path_model = path_main+'weights/'+task+'_'+experiment_name+'.pt'
-    path_memories = path_main+'weights/'+task+'_'+experiment_name+'_mem.pt'
+    path_memories = path_main+'weights/'+task+'_'+experiment_name+'_mem_'
     path_scaler = path_main+'weights/'+task+'_'+experiment_name+'_scaler.pt'
     path_logs = path_experiment+'isaac.log'
 
