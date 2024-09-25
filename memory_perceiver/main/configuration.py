@@ -44,7 +44,7 @@ class Config:
     latent_dim_head = 10  # 64
     nb_latents_mem = 1
     nb_latents = 4
-    shared=False
+    shared=True
     batch_size = num_envs
     body_parts =  {'observation_' + str(i): 1 for i in range(dim_observations)}
     body_outputs = {'action_' + str(i): 1 for i in range(dim_actions)}

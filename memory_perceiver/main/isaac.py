@@ -93,7 +93,7 @@ def isaac_training(cf, rank, size):
             # last_memories = torch.zeros_like(memories['cross_cmem'], device=device)
         optimizer = torch.optim.Adam(model_student.parameters(), lr=cf.learning_rate, eps=1e-5)
         lr=cf.learning_rate
-        scaler = GradScaler(n)
+        scaler = GradScaler()
         if rank == 1:
             plotter = Plotter('tensorboard', titles=['loss_actor', 'loss_critic', 'loss_entropy', 'actions_gap', 'returns'],
                                 path_plots=cf.path_experiment)
