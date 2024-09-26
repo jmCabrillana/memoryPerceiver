@@ -45,7 +45,7 @@ class GEGLU(nn.Module):
         return x * F.gelu(gates)
 
 class FeedForward(nn.Module):
-    def __init__(self, dim, mult = 4):
+    def __init__(self, dim, mult = 2):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(dim, dim * mult),
@@ -90,17 +90,15 @@ class Attention(nn.Module):
 
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> (b h) n d', h = h), (q, k, v))
 
-        sim = einsum('b i d, b j d -> b i j', q, k) / self.scale
-
         if exists(mask):
-            max_neg_value = -torch.finfo(sim.dtype).max
             mask = repeat(mask, 'b j -> (b h) () j', h = h)
-            sim.masked_fill_(mask, max_neg_value)
+        #     max_neg_value = -torch.finfo(sim.dtype).max
+        #     sim.masked_fill_(mask, max_neg_value)
+        # sim = einsum('b i d, b j d -> b i j', q, k) / self.scale
+        # attn = sim.softmax(dim = -1)
+        # out = einsum('b i j, b j d -> b i d', attn, v)
 
-        # attention, what we cannot get enough of
-        attn = sim.softmax(dim = -1)
-
-        out = einsum('b i j, b j d -> b i d', attn, v)
+        out = nn.functional.scaled_dot_product_attention(q, k, v, attn_mask=mask)
         out = rearrange(out, '(b h) n d -> b n (h d)', h = h)
         return self.to_out(out)
 
@@ -137,7 +135,7 @@ class PerceiverIO(nn.Module):
             self.out_embedding[part] = nn.Linear(params, query_dim, device=device)
         self.out_latents = nn.Parameter(torch.randn(nb_latents, latent_dim, device=device))
         self.out_cross_attn = PreNormContext(latent_dim, Attention(latent_dim, query_dim, heads=cross_heads, dim_head=latent_dim_head), query_dim)
-        self.out_cross_ff = PreNormContext(latent_dim, FeedForward(latent_dim))
+        self.out_cross_ff =  FeedForward(latent_dim) #PreNormContext(latent_dim, FeedForward(latent_dim))
         self.out_attn_layers = nn.ModuleList([])
         self.out_ff_layers = nn.ModuleList([])
         for i in range(self.depth):

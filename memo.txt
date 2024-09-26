@@ -22,3 +22,7 @@ python -m pip install skrl
     /etc/vulkan/icd.d: Location of ICDs installed from non-Linux-distribution-provided packages                                                  
     /usr/share/vulkan/icd.d : Location of ICDs installed from Linux-distribution-provided packages  
     >> Clear config in /etc/vulkan/icd.d/nvidia_icd.json
+
+# Container 
+ --shm-size=1g --ulimit memlock=-1 # may solve memory errors
+ 

@@ -1,7 +1,11 @@
 import torch
 from torch.autograd import grad, Variable
 import numpy as np
+import random
+import time
 from torch.func import jacrev, functional_call
+from google.cloud import bigquery
+from google.oauth2 import service_account
 
 def cat_CSR_rows(csr_list):
     device = csr_list[0].device
@@ -60,7 +64,7 @@ class Param2Vec():
         """
         merge a list of variables to a vector
         """
-        # assert len(var_list) == len(self.size_list)
+        assert len(var_list) == len(self.size_list)
         theta_list = []
         for i in range(len(var_list)):
             if var_list[i] is not None:
@@ -69,12 +73,13 @@ class Param2Vec():
                 theta_list.append(torch.zeros(self.size_list[i], device=device).flatten())
         return torch.cat(theta_list)
 
-    def merge_matrix(self, var_list, batch_size, device='cpu'):
+    def merge_matrix(self, var_list, device='cpu'):
         """
         merge a list of variables to a matrix
         """
         assert len(var_list) == len(self.size_list)
         theta_list = []
+        batch_size = len(var_list[0])
         for i in range(len(var_list)):
             if var_list[i] is not None:
                 var_tmp = var_list[i].flatten(start_dim=1)
@@ -97,38 +102,130 @@ class Param2Vec():
             count += prod_size
         return var_list
 
-    def split_matrix(self, var_mat):
-        """
-        split a mat to a list of mat corresponding to each parameter
-        """
-        var_list = []
-        count = 0
-        for i in range(len(self.size_list)):
-            prod_size = np.prod(self.size_list[i])
-            var_list.append(var_mat[:, count:(count+prod_size)])
-            count += prod_size
-        return var_list
 
-
-
-#e.to_sparse_bsr(blocksize=(100, 100))
 class RTRL_partial():
-    def __init__(self, model, param_state_filter, chunks=1, num_parameters=None, slice_indexes=None, table_save=None):
+    def __init__(self, model, param_state_filter, chunk_size=100, num_parameters=None, slice_indexes=None, table_save=None):
 
         # Init params
+        self.num_parameters = num_parameters
+        self.slice_indexes=slice_indexes
+        self.param_state_filter = param_state_filter
         self.nn_param_state = Param2Vec(model, param_filter=param_state_filter, num_parameters=num_parameters)
         self.nn_param = Param2Vec(model)
         
         # Iterative sensitivity
         self.d_state_d_theta = None
-        self.chunks=chunks
-        self.slice_indexes=slice_indexes
+        self.chunk_size=chunk_size
         self.table_save = None
 
-    def save_influence(self, table):
+    def save_influence(self):
         " Save to bigquery"
-        pass
+        if self.table_save is not None:
 
+            # Set up bigquery
+            credentials = service_account.Credentials.from_service_account_file('/isaac-sim/memoryPerceiver/service_account.json')
+            client = bigquery.Client(credentials=credentials)
+            try:
+                table = client.get_table(f"influence.{self.table_save}")
+            except Exception:
+                schema =[
+                            bigquery.SchemaField("h_i", "INTEGER"),
+                            bigquery.SchemaField("param", "STRING"),
+                            bigquery.SchemaField("p_i", "INTEGER"),
+                            bigquery.SchemaField("dh_dtheta", "FLOAT"),
+                        ]
+                table = bigquery.Table(f"influence.{self.table_save}", schema=schema)
+                client.create_table(table)
+            
+            # Iterate and save influence matrix
+            rows_to_insert = []
+            n, p = self.d_state_d_theta.shape
+            k, j_k, param_count = 0, 0, 0
+            param_size = self.nn_param_state.size_list[0]
+            for j in range(p):
+                j_k = j - param_count
+                if j >= param_count + param_size:
+                    param_count += param_size
+                    k += 1
+                    param_size = np.prod(self.nn_param_state.size_list[k])
+                j_k = j - param_count
+                for i in range(n):
+                    if not self.d_state_d_theta.shape[i, j].isnan():
+                        rows_to_insert.append( { "h_i": self.slice_indexes[i], 
+                                                "param": self.nn_param_state.name_list[k],
+                                                "p_j": j_k, 
+                                                "dh_dtheta": self.d_state_d_theta.shape[i, j].item()} )
+            errors = client.insert_rows_json(table, rows_to_insert)
+            print(errors) if errors != [] else print("Influence matrix saved")
+
+
+    def load_influence(self):
+        " Load influence from bigquery"
+        if self.table_save is not None:
+            # rows_to_query
+            n, p = self.d_state_d_theta.shape
+            k, j_k, param_count = 0, 0, 0
+            param_size = self.nn_param_state.size_list[0]
+            rows_to_query = []
+            for j in range(p):
+                j_k = j - param_count
+                if j >= param_count + param_size:
+                    param_count += param_size
+                    k += 1
+                    param_size = np.prod(self.nn_param_state.size_list[k])
+                j_k = j - param_count
+                for i in range(n):
+                    rows_to_query.append( { "h_i": self.slice_indexes[i], 
+                                             "param": self.nn_param_state.name_list[k],
+                                             "p_j": j_k } )
+            conditions = ''.join(f"({row['h_i']}, '{row['param']}', {row['p_j']})" for row in rows_to_query)
+            query = f"""
+                    SELECT h_i, param, p_i, dh_dtheta 
+                    FROM `influence.{self.table_save}` 
+                    WHERE (h_i, param, p_j) IN ({conditions})
+                    """
+            try:
+                credentials = service_account.Credentials.from_service_account_file('/isaac-sim/memoryPerceiver/service_account.json')
+                client = bigquery.Client(credentials=credentials)
+                results = client.query(query).result() 
+            except Exception as e:
+                print(e)
+                return
+            
+            # Fill the influence matrix with existing values
+            k, j_k, param_count = 0, 0, 0
+            param_size = self.nn_param_state.size_list[0]
+            for j in range(p):
+                j_k = j - param_count
+                if j >= param_count + param_size:
+                    param_count += param_size
+                    k += 1
+                    param_size = np.prod(self.nn_param_state.size_list[k])
+                j_k = j - param_count
+                for i in range(n):
+                    key = f"{self.slice_indexes[i]}_{self.nn_param_state.name_list[k]}_{j_k}"
+                    if key in results:
+                        self.d_state_d_theta[i, j] = results[key]
+
+
+    def step_safe(self, model, x, state_old, loss, **kwargs):
+        try:
+            self.step(model, x, state_old, loss, **kwargs)
+        except RuntimeError as e:
+            raise(e)
+            print('RTRL step exception', e)
+            if 'out of memory' in str(e):
+                print('Reset RTRL with less parameters to prevent out of memory errors')
+                self.num_parameters = max(1, int(self.num_parameters / 1.5))
+                self.chunk_size = max(1, int(self.chunk_size / 1.5))
+                slice_len = max(1, int(len(self.slice_indexes) / 1.5))
+                self.slice_indexes = random.sample(self.slice_indexes, slice_len)
+                self.slice_indexes.sort()
+                self.nn_param_state = Param2Vec(model, param_filter=self.param_state_filter, num_parameters=self.num_parameters)
+                self.d_state_d_theta = None
+                torch.cuda.empty_cache()
+                time.sleep(1)
+        
 
     def step(self, model, x, state_old, loss, **kwargs):
         """
@@ -158,12 +255,11 @@ class RTRL_partial():
         state_old_slice = state_old[self.slice_indexes]
         len_state = len(state_old_slice)
         len_param_state = len(self.nn_param_state.merge(self.nn_param_state.param_list, device=device))
-        assert(len_state % self.chunks == 0)
-        chunk_size = len_state//self.chunks
 
         if self.d_state_d_theta is None:
             self.d_state_d_theta = torch.zeros(len_state, len_param_state, device=device)
             # self.d_state_d_theta = torch.sparse_csr_tensor([0],[],[], size=(len_state, len_param_state), device=device)
+        print(self.d_state_d_theta.shape)
 
 
         # Jacobians
@@ -172,25 +268,26 @@ class RTRL_partial():
         dict_param_state = {k:v.detach() for k, v in dict_param_state.items()}
         state_old_detached = state_old_slice.detach()
         d_state_new_d_theta_list, d_state_new_d_state_old_list = [], []
-        for i in range(self.chunks):
+        chunks = int(np.ceil(len_state/self.chunk_size))
+        for i in range(chunks):
 
-            def fmodel(params, old_s): #functional version of 
-                state_old_clone = state_old.clone().detach()
-                state_old_clone[self.slice_indexes] = old_s
-                _, _, _, state_new = functional_call(model, params, (x, state_old_clone), kwargs)
-                return state_new[self.slice_indexes][i*chunk_size:(i+1)*chunk_size]
-            def jacobian(argnum):
-                return jacrev(fmodel, argnums=(argnum))(dict_param_state, state_old_detached)
-            
-            ## ds/dtheta: dim (S/C) T
-            d_state_new_d_theta_tmp = jacobian(0)
-            d_state_new_d_theta_list.append( self.nn_param_state.merge_matrix(list(d_state_new_d_theta_tmp.values()), 
-                                                        chunk_size, device=device).to_sparse_csr() )
-            torch.cuda.empty_cache() 
+                def fmodel(params, old_s): #functional version of 
+                    state_old_clone = state_old.clone().detach()
+                    state_old_clone[self.slice_indexes] = old_s
+                    _, _, _, state_new = functional_call(model, params, (x, state_old_clone), kwargs)
+                    return state_new[self.slice_indexes][i*self.chunk_size:(i+1)*self.chunk_size]
+                def jacobian(argnum):
+                    return jacrev(fmodel, argnums=(argnum))(dict_param_state, state_old_detached)
+                
+                ## ds/dtheta: dim (S/C) T
+                d_state_new_d_theta_tmp = jacobian(0)
+                torch.cuda.empty_cache() 
+                d_state_new_d_theta_list.append( self.nn_param_state.merge_matrix(list(d_state_new_d_theta_tmp.values()), 
+                                                                            device=device).to_sparse_csr() )
 
-            ## ds_new/ds_old: dim (S/C) S
-            d_state_new_d_state_old_list.append( jacobian(1).to_sparse_csr() )
-            torch.cuda.empty_cache() 
+                ## ds_new/ds_old: dim (S/C) S
+                d_state_new_d_state_old_list.append( jacobian(1).to_sparse_csr() )
+                torch.cuda.empty_cache() 
 
         d_state_new_d_theta = cat_CSR_rows(d_state_new_d_theta_list)
         d_state_new_d_state_old = cat_CSR_rows(d_state_new_d_state_old_list)
@@ -199,12 +296,7 @@ class RTRL_partial():
 
         g_t1 = delta_s.unsqueeze(0).mm(self.d_state_d_theta)  # + delta_theta_vec # Already done in online update
         g_t1_list = self.nn_param_state.split(g_t1[0])
-        # print('d_state_new_d_state_old', d_state_new_d_state_old._nnz())
-        # print('d_state_new_d_theta', d_state_new_d_theta._nnz())
-        try:
-            self.d_state_d_theta = d_state_new_d_state_old.mm(self.d_state_d_theta) + d_state_new_d_theta
-        except Exception as e:
-            print(e)
+        self.d_state_d_theta = d_state_new_d_state_old.mm(self.d_state_d_theta) + d_state_new_d_theta
 
         for i in range(len(self.nn_param_state.param_list)):
             if self.nn_param_state.param_list[i].grad is None:
