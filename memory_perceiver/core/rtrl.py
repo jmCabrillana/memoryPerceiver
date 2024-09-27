@@ -1,6 +1,7 @@
 import torch
 from torch.autograd import grad, Variable
 import numpy as np
+import pandas as pd
 import random
 import time
 from torch.func import jacrev, functional_call
@@ -58,6 +59,9 @@ class Param2Vec():
             self.param_list = new_param_list
             self.name_list = new_name_list
             self.size_list = new_size_list
+            for name, p in model.named_parameters():
+                if name.startswith(param_filter) and name not in self.name_list:
+                    p.requires_grad = False
             
 
     def merge(self, var_list, device='cpu'):
@@ -118,71 +122,83 @@ class RTRL_partial():
         self.chunk_size=chunk_size
         self.table_save = None
 
+    def get_j_mappings(self):
+        n, p = self.d_state_d_theta.shape
+        k, j_k, param_count = 0, 0, 0
+        param_size = np.prod(self.nn_param_state.size_list[0])
+        j__k, j__j_k = [], []
+        for j in range(p):
+            j_k = j - param_count
+            if j >= param_count + param_size:
+                param_count += param_size
+                k += 1
+                param_size = np.prod(self.nn_param_state.size_list[k])
+            j_k = j - param_count
+            j__k.append(k)
+            j__j_k.append(j_k)
+        return j__k, j__j_k
+
     def save_influence(self):
         " Save to bigquery"
         if self.table_save is not None:
+            device = self.d_state_d_theta.device
 
             # Set up bigquery
             credentials = service_account.Credentials.from_service_account_file('/isaac-sim/memoryPerceiver/service_account.json')
             client = bigquery.Client(credentials=credentials)
+            table_name = f"{credentials.project_id}.influence.{self.table_save}"
             try:
-                table = client.get_table(f"influence.{self.table_save}")
+                table = client.get_table(table_name)
             except Exception:
                 schema =[
                             bigquery.SchemaField("h_i", "INTEGER"),
-                            bigquery.SchemaField("param", "STRING"),
-                            bigquery.SchemaField("p_i", "INTEGER"),
+                            bigquery.SchemaField("param", "INTEGER"),
+                            bigquery.SchemaField("p_j", "INTEGER"),
                             bigquery.SchemaField("dh_dtheta", "FLOAT"),
                         ]
-                table = bigquery.Table(f"influence.{self.table_save}", schema=schema)
+                table = bigquery.Table(table_name, schema=schema)
+                print(f'Create influence table: {table_name}')
                 client.create_table(table)
+                table = client.get_table(table_name)
             
             # Iterate and save influence matrix
-            rows_to_insert = []
-            n, p = self.d_state_d_theta.shape
-            k, j_k, param_count = 0, 0, 0
-            param_size = self.nn_param_state.size_list[0]
-            for j in range(p):
-                j_k = j - param_count
-                if j >= param_count + param_size:
-                    param_count += param_size
-                    k += 1
-                    param_size = np.prod(self.nn_param_state.size_list[k])
-                j_k = j - param_count
-                for i in range(n):
-                    if not self.d_state_d_theta.shape[i, j].isnan():
-                        rows_to_insert.append( { "h_i": self.slice_indexes[i], 
-                                                "param": self.nn_param_state.name_list[k],
-                                                "p_j": j_k, 
-                                                "dh_dtheta": self.d_state_d_theta.shape[i, j].item()} )
-            errors = client.insert_rows_json(table, rows_to_insert)
+            j__k, j__j_k = map(lambda x: torch.tensor(x, device=device), self.get_j_mappings())
+            valid_mask = ~self.d_state_d_theta.isnan() & (self.d_state_d_theta != 0)
+            valid_indices = valid_mask.nonzero()
+            slice_indexes_t = torch.tensor(self.slice_indexes, device=device)
+            name_array = np.array([hash(s) for s in self.nn_param_state.name_list])
+            df = pd.DataFrame( {"h_i": slice_indexes_t[valid_indices[:, 0]].cpu().numpy(),
+                    "param": name_array[j__k[valid_indices[:, 1]]],
+                    "p_j": j__j_k[valid_indices[:, 1]].cpu().numpy(),
+                    "dh_dtheta": self.d_state_d_theta[valid_indices[:, 0], valid_indices[:, 1]].cpu().numpy()} )
+            print('inserting')
+            errors = client.insert_rows_from_dataframe(table, df)
+            errors = client.load_table_from_dataframe(table, df)
             print(errors) if errors != [] else print("Influence matrix saved")
 
 
     def load_influence(self):
         " Load influence from bigquery"
         if self.table_save is not None:
-            # rows_to_query
+            device = self.d_state_d_theta.device
+
+            # Rows to query
             n, p = self.d_state_d_theta.shape
-            k, j_k, param_count = 0, 0, 0
-            param_size = self.nn_param_state.size_list[0]
-            rows_to_query = []
-            for j in range(p):
-                j_k = j - param_count
-                if j >= param_count + param_size:
-                    param_count += param_size
-                    k += 1
-                    param_size = np.prod(self.nn_param_state.size_list[k])
-                j_k = j - param_count
-                for i in range(n):
-                    rows_to_query.append( { "h_i": self.slice_indexes[i], 
-                                             "param": self.nn_param_state.name_list[k],
-                                             "p_j": j_k } )
-            conditions = ''.join(f"({row['h_i']}, '{row['param']}', {row['p_j']})" for row in rows_to_query)
+            j__k, j__j_k = map(lambda x: torch.tensor(x, device=device), self.get_j_mappings())
+            j_indexes = torch.range(0, p, device=device)
+            slice_indexes_t = torch.tensor(self.slice_indexes, device=device)
+            name_array = np.array([hash(s) for s in self.nn_param_state.name_list])
+            df = pd.DataFrame( {"h_i": slice_indexes_t.cpu().numpy(),
+                                "param": name_array[j__k[j_indexes]],
+                                "p_j": j__j_k[j_indexes].cpu().numpy()} )
+
+            table_name = f"{credentials.project_id}.influence.{self.table_save}"
+            
             query = f"""
                     SELECT h_i, param, p_i, dh_dtheta 
-                    FROM `influence.{self.table_save}` 
-                    WHERE (h_i, param, p_j) IN ({conditions})
+                    FROM `{table_name}` t
+                    JOIN `{table_name}_{str(device)}` t0
+                    ON t.h_i=t0.h_i, t.param=t0.param, t.p_j=t0.p_j 
                     """
             try:
                 credentials = service_account.Credentials.from_service_account_file('/isaac-sim/memoryPerceiver/service_account.json')
@@ -194,7 +210,7 @@ class RTRL_partial():
             
             # Fill the influence matrix with existing values
             k, j_k, param_count = 0, 0, 0
-            param_size = self.nn_param_state.size_list[0]
+            param_size = np.prod(self.nn_param_state.size_list[0])
             for j in range(p):
                 j_k = j - param_count
                 if j >= param_count + param_size:
@@ -259,8 +275,6 @@ class RTRL_partial():
         if self.d_state_d_theta is None:
             self.d_state_d_theta = torch.zeros(len_state, len_param_state, device=device)
             # self.d_state_d_theta = torch.sparse_csr_tensor([0],[],[], size=(len_state, len_param_state), device=device)
-        print(self.d_state_d_theta.shape)
-
 
         # Jacobians
 

@@ -44,18 +44,32 @@ class GEGLU(nn.Module):
         x, gates = x.chunk(2, dim = -1)
         return x * F.gelu(gates)
 
+class LinearSplit(nn.Module):
+    def __init__(self, d_in, d_out, splits=8):
+        super().__init__()
+        assert(d_in % splits == 0)
+        self.splits = splits
+        d_in_split = d_in//splits
+        self.weights =  nn.ParameterList( [nn.Parameter(torch.randn(d_in_split, d_out)) for _ in range(splits)] )
+        self.bias = nn.Parameter(torch.randn(d_out))
+
+    def forward(self, x):
+        w = torch.cat(list(self.weights))
+        return torch.einsum('i j, ... i -> ... j', w, x) + self.bias
+
+
 class FeedForward(nn.Module):
     def __init__(self, dim, mult = 2):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(dim, dim * mult),
+            LinearSplit(dim, dim * mult),
             nn.ReLU(), #GEGLU()nn.ReLU(),
-            nn.Linear(dim * mult, dim)
+            LinearSplit(dim * mult, dim)
         )
 
     def forward(self, x):
         return self.net(x)
-
+    
 class Attention(nn.Module):
     def __init__(self, query_dim, context_dim = None, heads = 8, dim_head = 64, init=False):
         super().__init__()
@@ -65,12 +79,14 @@ class Attention(nn.Module):
         self.heads = heads
 
         self.to_q = nn.Linear(query_dim, inner_dim, bias = False)
-        self.to_kv = nn.Linear(context_dim, inner_dim * 2, bias = False)
+        self.to_k = nn.Linear(context_dim, inner_dim, bias = False)
+        self.to_v = nn.Linear(context_dim, inner_dim, bias = False)
         self.to_out = nn.Linear(inner_dim, query_dim)
 
         if init:
             nn.init.zeros_(self.to_q.weight)
-            nn.init.eye_(self.to_kv.weight)
+            nn.init.eye_(self.to_k.weight)
+            nn.init.eye_(self.to_v.weight)
             nn.init.eye_(self.to_out.weight)
 
 
@@ -86,7 +102,8 @@ class Attention(nn.Module):
             else: 
                 full_input = torch.concat([context, x], dim=1)
                 
-        k, v = self.to_kv(full_input).chunk(2, dim = -1)
+        k = self.to_k(full_input)
+        v = self.to_v(full_input)
 
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> (b h) n d', h = h), (q, k, v))
 
