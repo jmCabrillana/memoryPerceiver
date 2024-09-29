@@ -127,7 +127,7 @@ class RTRL_partial():
         n, p = self.d_state_d_theta.shape
         k, j_k, param_count = 0, 0, 0
         param_size = np.prod(self.nn_param_state.size_list[0])
-        j__k, j__j_k = [], []
+        j_to_k, j_to_j_k = [], []
         for j in range(p):
             j_k = j - param_count
             if j >= param_count + param_size:
@@ -135,16 +135,16 @@ class RTRL_partial():
                 k += 1
                 param_size = np.prod(self.nn_param_state.size_list[k])
             j_k = j - param_count
-            j__k.append(k)
-            j__j_k.append(j_k)
-        return j__k, j__j_k
+            j_to_k.append(k)
+            j_to_j_k.append(j_k)
+        return j_to_k, j_to_j_k
     
     def get_inverse_j_mappings(self):
         n, p = self.d_state_d_theta.shape
         device = self.d_state_d_theta.device
         k, j_k, param_count = 0, 0, 0
         param_size = np.prod(self.nn_param_state.size_list[0])
-        k_j_k__j = -1 * torch.ones(len(self.nn_param_state.param_list), p, device=device, dtype=torch.long)
+        k_and_j_k_to_j = -1 * torch.ones(len(self.nn_param_state.param_list), p, device=device, dtype=torch.long)
         for j in range(p):
             j_k = j - param_count
             if j >= param_count + param_size:
@@ -152,12 +152,12 @@ class RTRL_partial():
                 k += 1
                 param_size = np.prod(self.nn_param_state.size_list[k])
             j_k = j - param_count
-            k_j_k__j[k ,j_k] = j
-        return k_j_k__j
+            k_and_j_k_to_j[k ,j_k] = j
+        return k_and_j_k_to_j
 
     def get_inverse_slice(self):
         device = self.d_state_d_theta.device
-        inv = torch.arange(0, self.len_state_all, device=device)
+        inv = -1* torch.ones(self.len_state_all, device=device, dtype=torch.long)
         for i, k in enumerate(self.slice_indexes):
             inv[k] = i
         return inv
@@ -184,18 +184,17 @@ class RTRL_partial():
             # table = client.get_table(table_name)
             
             # Iterate and save influence matrix
-            j__k, j__j_k = map(lambda x: torch.tensor(x, device=device), self.get_j_mappings())
+            j_to_k, j_to_j_k = map(lambda x: torch.tensor(x, device=device), self.get_j_mappings())
             valid_mask = ~self.d_state_d_theta.isnan() & (self.d_state_d_theta != 0)
             valid_indices = valid_mask.nonzero()
             slice_indexes_t = torch.tensor(self.slice_indexes, device=device)
             name_array = np.array([hash(s) for s in self.nn_param_state.name_list])
             df = pd.DataFrame( {"h_i": slice_indexes_t[valid_indices[:, 0]].cpu().numpy(),
-                    "param": name_array[j__k[valid_indices[:, 1]].cpu().numpy()],
-                    "p_j": j__j_k[valid_indices[:, 1]].cpu().numpy(),
+                    "param": name_array[j_to_k[valid_indices[:, 1]].cpu().numpy()],
+                    "p_j": j_to_j_k[valid_indices[:, 1]].cpu().numpy(),
                     "dh_dtheta": self.d_state_d_theta[valid_indices[:, 0], valid_indices[:, 1]].cpu().numpy()} )
             print('inserting')
-            errors = client.load_table_from_dataframe(df, table_name, job_config=job_config)
-            print(errors)
+            client.load_table_from_dataframe(df, table_name, job_config=job_config)
 
     def load_influence(self):
         " Load influence from bigquery"
@@ -208,40 +207,47 @@ class RTRL_partial():
             params_string = ', '.join(str(x) for x in name_array)
             h_indexes_string = ', '.join(str(hi.item()) for hi in slice_indexes_t)
             
-            try:
-                credentials = service_account.Credentials.from_service_account_file('/isaac-sim/memoryPerceiver/service_account.json')
-                table_name = f"{credentials.project_id}.influence.{self.table_save}"
-                client = bigquery.Client(credentials=credentials)
-                query = f"""
-                    SELECT h_i, param, p_j, dh_dtheta 
-                    FROM `{table_name}`
-                    WHERE h_i IN ({h_indexes_string})
-                    AND param IN ({params_string})
-                    """
-                
-                results = client.query(query).result() 
-                df = results.to_dataframe()
-                print(query)
-                print(df)
+            # try:
+            credentials = service_account.Credentials.from_service_account_file('/isaac-sim/memoryPerceiver/service_account.json')
+            table_name = f"{credentials.project_id}.influence.{self.table_save}"
+            client = bigquery.Client(credentials=credentials)
+            query = f"""
+                SELECT h_i, param, p_j, dh_dtheta 
+                FROM `{table_name}`
+                WHERE h_i IN ({h_indexes_string})
+                AND param IN ({params_string})
+                """
             
-                # Fill the influence matrix with existing values
-                k_j_k__j = self.get_inverse_j_mappings()
-                inverse_slice = self.get_inverse_slice()
-                fetched_params = df['param'].unique()
-                for k, param in enumerate(self.nn_param_state.name_list):
-                    if hash(param) in fetched_params:
-                        h_i = inverse_slice[df['h_i']]
-                        p_j = k_j_k__j[k, df['p_j']]
-                        self.d_state_d_theta[h_i, p_j] = torch.tensor(df['dh_dtheta'] ,device=device, dtype=torch.float32)
+            results = client.query(query).result() 
+            df = results.to_dataframe()
+            df['param'] = df['param'].astype('category')
+            df.set_index('param', inplace=True)
+            return df
+            print(query)
+            print(df)
+        
+            # Fill the influence matrix with existing values
+            k_and_j_k_to_j = self.get_inverse_j_mappings()
+            inverse_slice = self.get_inverse_slice()
+            fetched_params = df.index.unique()
+            for k, param in enumerate(self.nn_param_state.name_list):
+                param_hash = hash(param) 
+                if param_hash in fetched_params:
+                    print('in', param_hash)
+                    df_param = df.loc[param_hash]
+                    print(df_param)
+                    h_i = inverse_slice[df_param['h_i'].values]
+                    p_j = k_and_j_k_to_j[k, df_param['p_j'].values]
+                    self.d_state_d_theta[h_i, p_j] = torch.tensor(df_param['dh_dtheta'].values, 
+                                                                  device=device, dtype=torch.float32)
 
-            except Exception as e:
-                print(e)
+            # except Exception as e:
+            #     print(e)
 
     def step_safe(self, model, x, state_old, loss, **kwargs):
         try:
             self.step(model, x, state_old, loss, **kwargs)
         except RuntimeError as e:
-            raise(e)
             print('RTRL step exception', e)
             if 'out of memory' in str(e):
                 print('Reset RTRL with less parameters to prevent out of memory errors')
