@@ -15,9 +15,9 @@ def setup_distributed(rank, size):
     os.environ['MASTER_PORT'] = '12355'
     dist.init_process_group("nccl", rank=rank, world_size=size)
 
-def average_gradients(model, size, group):
-    for param in model.parameters():
-        if param.grad is not None: # !!! Temporary, audio not linked to loss for now (modality/projection['audio']) !!!
+def average_gradients(model, size, group, param_filter=''):
+    for name, param in model.named_parameters():
+        if param.grad is not None and name.startswith(param_filter): # !!! Temporary, audio not linked to loss for now (modality/projection['audio']) !!!
             dist.all_reduce(param.grad.data, op=dist.ReduceOp.SUM, group=group)
             param.grad.data /= size
             if dist.get_rank() !=  param.get_device():

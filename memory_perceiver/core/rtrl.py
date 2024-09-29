@@ -178,12 +178,8 @@ class RTRL_partial():
                         bigquery.SchemaField("dh_dtheta", "FLOAT"),
                     ]
             job_config = bigquery.LoadJobConfig(schema=schema, write_disposition="WRITE_APPEND")
-            # table = bigquery.Table(table_name, schema=schema)
-            print(f'Create influence table: {table_name}')
-            # client.create_table(table)
-            # table = client.get_table(table_name)
             
-            # Iterate and save influence matrix
+            # Save influence matrix
             j_to_k, j_to_j_k = map(lambda x: torch.tensor(x, device=device), self.get_j_mappings())
             valid_mask = ~self.d_state_d_theta.isnan() & (self.d_state_d_theta != 0)
             valid_indices = valid_mask.nonzero()
@@ -193,7 +189,6 @@ class RTRL_partial():
                     "param": name_array[j_to_k[valid_indices[:, 1]].cpu().numpy()],
                     "p_j": j_to_j_k[valid_indices[:, 1]].cpu().numpy(),
                     "dh_dtheta": self.d_state_d_theta[valid_indices[:, 0], valid_indices[:, 1]].cpu().numpy()} )
-            print('inserting')
             client.load_table_from_dataframe(df, table_name, job_config=job_config)
 
     def load_influence(self):
@@ -222,9 +217,6 @@ class RTRL_partial():
             df = results.to_dataframe()
             df['param'] = df['param'].astype('category')
             df.set_index('param', inplace=True)
-            return df
-            print(query)
-            print(df)
         
             # Fill the influence matrix with existing values
             k_and_j_k_to_j = self.get_inverse_j_mappings()
@@ -233,9 +225,7 @@ class RTRL_partial():
             for k, param in enumerate(self.nn_param_state.name_list):
                 param_hash = hash(param) 
                 if param_hash in fetched_params:
-                    print('in', param_hash)
                     df_param = df.loc[param_hash]
-                    print(df_param)
                     h_i = inverse_slice[df_param['h_i'].values]
                     p_j = k_and_j_k_to_j[k, df_param['p_j'].values]
                     self.d_state_d_theta[h_i, p_j] = torch.tensor(df_param['dh_dtheta'].values, 

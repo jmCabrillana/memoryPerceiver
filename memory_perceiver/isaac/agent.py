@@ -159,8 +159,8 @@ class ActorCriticPerceiver(ActorCritic):
 
         # Critic
         if self.shared:
-            # values = rearrange(output['critic'], 'b t () -> b t').mean(dim=-1)
-            values = rearrange(output['critic'], 'b () d -> b d') # For test RTRL anbn
+            values = rearrange(output['critic'], 'b t () -> b t').mean(dim=-1)
+            # values = rearrange(output['critic'], 'b () d -> b d') # For test RTRL anbn
         else : 
             values = self.critic(states['observations'][:,-1])
             values = rearrange(values,  'b 1 -> b')

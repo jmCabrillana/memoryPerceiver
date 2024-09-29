@@ -18,6 +18,7 @@ class Config:
     frames = 1
     frames_future = 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
+    training_mode = 'Backward' # Backward TBPTT RTRL
     learning_rate = 1e-5 # 3e-4 1e-4 1e-5
     kl_threshold = 0.008
     kl_scheduler = True

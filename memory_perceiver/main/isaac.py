@@ -196,6 +196,7 @@ def isaac_training(cf, rank, size):
                     if rank in rank_agents and isinstance(model, ActorCriticPerceiver):
                             tmp_memories = memories
                             memories = torch.load(cf.path_memories+str(rank)+'.pt').detach()
+                            memories_student = memories.clone().detach()
                             dist.barrier(group=group_agents)
                             torch.save(tmp_memories, cf.path_memories+str(rank)+'.pt')
                     if rank == rank_sim:
@@ -205,6 +206,7 @@ def isaac_training(cf, rank, size):
                         print('scaler mean', value_scaler.running_mean)
                         print('scaler var', value_scaler.running_variance)
 
+                    loss=torch.tensor(0.0, device=device)
                     backward_count= 0
                 sim_step = 0
 
@@ -270,13 +272,15 @@ def isaac_training(cf, rank, size):
                     obs_stack = previous_history['obs'][sim_step_rand-cf.frames+1:sim_step_rand+1]
                     states=get_states(obs_stack, sim_step_rand, cf, birth_time, device)
 
-                    perform_update = custom_random(sim_count, sim_step_rand) < cf.update_probability and \
-                                        sim_step_rand <= cf.sim_duration-1
+                    perform_update = ( custom_random(sim_count, sim_step_rand) < cf.update_probability and \
+                                        sim_step_rand <= cf.sim_duration-1 ) or cf.training_mode == 'TBPTT'
                     with autocast(device_type='cuda', dtype=torch.bfloat16):
-                        if perform_update :
+                        if perform_update:
                             returns_targets = previous_history['returns_targets'][sim_step_rand].to(device)
                             advantages = previous_history['advantages'][sim_step_rand].to(device)
-                            new_logprobs, new_values, entropies, _ = model_student(states, memories, actions)                            
+                            new_logprobs, new_values, entropies, memories_student = model_student(states, memories_student, actions)  
+                            if cf.training_mode == 'TBPTT' :       
+                                memories_student = memories_student.detach()              
 
                             # Loss
                             ratios = torch.exp(new_logprobs - logprobs)
@@ -286,7 +290,7 @@ def isaac_training(cf, rank, size):
                             loss_entropy = -cf.entropy * entropies.mean()
                             clipped_values = values + torch.clamp(new_values-values, -cf.value_clip, cf.value_clip)
                             loss_critic = cf.critic * F.mse_loss(clipped_values, returns_targets)
-                            loss =  (loss_actor + loss_critic + loss_entropy) / cf.accumulation_steps
+                            loss +=  (loss_actor + loss_critic + loss_entropy) / cf.accumulation_steps
                             kl_divergence = ((ratios - 1) - (new_logprobs - logprobs)).mean()
                         _, _, _, memories = model(states, memories) 
 
@@ -302,10 +306,21 @@ def isaac_training(cf, rank, size):
                                 loss *= 0
 
                         # Step optimizer
-                        scaler.scale(loss).backward(retain_graph=True)
+                        if cf.training_mode == 'Backward':
+                            scaler.scale(loss).backward()
+                            loss = torch.tensor(0.0, device=device)
+                        if cf.training_mode == 'RTRL':
+                            rtrl_grad.step_safe(model_student, states, memories_student, loss, old_actions=actions)
+                            loss = torch.tensor(0.0, device=device)
                         backward_count += 1
                         if backward_count % cf.accumulation_steps == 0 and backward_count != 0:
-                            average_gradients(model_student, size-1, group_agents) # ALL REDUCE on scaled loss
+                            if cf.training_mode == 'TBPTT':
+                                scaler.scale(loss).backward()
+                                memories_student = memories.detach()
+                            if cf.training_mode == 'RTRL':
+                                average_gradients(model_student, size-1, group_agents, param_filter='actor.out_')
+                            else:
+                                average_gradients(model_student, size-1, group_agents)  # ALL REDUCE on scaled loss
                             scaler.unscale_(optimizer)
                             torch.nn.utils.clip_grad_norm_(model_student.parameters(), cf.grad_norm)
                             scaler.step(optimizer)
