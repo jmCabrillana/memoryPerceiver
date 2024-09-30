@@ -278,9 +278,9 @@ def isaac_training(cf, rank, size):
                         if perform_update:
                             returns_targets = previous_history['returns_targets'][sim_step_rand].to(device)
                             advantages = previous_history['advantages'][sim_step_rand].to(device)
-                            new_logprobs, new_values, entropies, memories_student = model_student(states, memories_student, actions)  
-                            if cf.training_mode == 'TBPTT' :       
-                                memories_student = memories_student.detach()              
+                            if cf.training_mode in ['Backward', 'RTRL']:
+                                memories_student = memories.clone().detach()
+                            new_logprobs, new_values, entropies, memories_student = model_student(states, memories_student, actions)             
 
                             # Loss
                             ratios = torch.exp(new_logprobs - logprobs)
@@ -310,13 +310,15 @@ def isaac_training(cf, rank, size):
                             scaler.scale(loss).backward()
                             loss = torch.tensor(0.0, device=device)
                         if cf.training_mode == 'RTRL':
+                            loss = scaler.scale(loss)
                             rtrl_grad.step_safe(model_student, states, memories_student, loss, old_actions=actions)
                             loss = torch.tensor(0.0, device=device)
                         backward_count += 1
                         if backward_count % cf.accumulation_steps == 0 and backward_count != 0:
                             if cf.training_mode == 'TBPTT':
                                 scaler.scale(loss).backward()
-                                memories_student = memories.detach()
+                                memories_student = memories.clone().detach()
+                                loss = torch.tensor(0.0, device=device)
                             if cf.training_mode == 'RTRL':
                                 average_gradients(model_student, size-1, group_agents, param_filter='actor.out_')
                             else:
