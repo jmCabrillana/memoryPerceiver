@@ -30,6 +30,18 @@ def cat_CSR_rows(csr_list):
     values = torch.cat(values_list)
     return torch.sparse_csr_tensor(crow_indices, col_indices, values, size=(rows, cols), device=device, dtype=dtype)
 
+def shuffle_split_indexes(nb_latents_mem, query_dim, nb_chunks):
+    i_mems = list(range(nb_latents_mem-1))
+    len_chunk = int(np.ceil(len(i_mem)/nb_chunks))
+    random.shuffle(i_mems)
+    slice_indexes_list = []
+    end_slice = list(range((nb_latents_mem-1)*query_dim, nb_latents_mem*query_dim))
+    for i in range(nb_chunks):
+        i_mem = i_mems[i*len_chunk: (i+1)*len_chunk]
+        i_mem.sort()
+        slice_indexes = sum( (list(range(i*query_dim, (i+1)*query_dim)) for i in i_mem), start=[])
+        slice_indexes_list.append( slice_indexes + end_slice )
+    return slice_indexes_list
 
 class Param2Vec():
     def __init__(self, model, param_filter='', num_parameters=None):
