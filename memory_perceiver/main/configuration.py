@@ -6,7 +6,7 @@ class Config:
 
     # Task
     task = "Isaac-Cartpole-Direct-v0" # Humanoid Cartpole 
-    agent_type = "Perceiver" # Perceiver Simple
+    agent_type = "Perceiver" # Simple Perceiver
     dim_observations = 4 # 87 4
     dim_actions = 1 # 21 1
     num_envs = 128 # 54 216 864
@@ -19,9 +19,9 @@ class Config:
     frames_future = 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
     training_mode = 'Backward' # Backward TBPTT RTRL
-    learning_rate = 1e-5 # 3e-4 1e-4 1e-5
+    learning_rate = 1e-3 # 3e-4 1e-4 1e-5
     kl_threshold = 0.008
-    kl_scheduler = True
+    kl_scheduler = False
     range_lr = [1e-5, 1e-2]
     entropy = 0.00 # 0.01 to 0.05
     critic = 2   # 0.5 to 2 4

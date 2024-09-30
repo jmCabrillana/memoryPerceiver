@@ -90,6 +90,7 @@ def isaac_training(cf, rank, size):
                 torch.save(memories, cf.path_memories+str(rank)+'.pt')
         else :
             memories = None
+            memories_student = None
             # last_memories = torch.zeros_like(memories['cross_cmem'], device=device)
         optimizer = torch.optim.Adam(model_student.parameters(), lr=cf.learning_rate, eps=1e-5)
         lr=cf.learning_rate
@@ -205,6 +206,7 @@ def isaac_training(cf, rank, size):
                         print('target mean', (tmp_advantages + unscaled_values).mean())
                         print('scaler mean', value_scaler.running_mean)
                         print('scaler var', value_scaler.running_variance)
+                        value_scaler.running_variance = torch.clip(value_scaler.running_variance, 0, 200)
 
                     loss=torch.tensor(0.0, device=device)
                     backward_count= 0
@@ -251,7 +253,9 @@ def isaac_training(cf, rank, size):
                     obs_stack = torch.stack(buffer['obs'])
                     states=get_states(obs_stack, sim_step, cf, history['birth_time'][sim_step], device)
                     with autocast(device_type='cuda', dtype=torch.bfloat16):
-                        actions, values, logprobs, memories = model(states, memories)  # !!!! no update mem 
+                        actions, values, logprobs, new_memories = model(states, memories)  # !!!! no update mem 
+                        if cf.training_mode != 'Backward':
+                            memories = new_memories
                     history['actions'][sim_step] = actions  
                     history['logprobs'][sim_step] = logprobs 
                     history['values'][sim_step:sim_step+cf.frames_future] = values  # for cumulative sum  
@@ -278,7 +282,7 @@ def isaac_training(cf, rank, size):
                         if perform_update:
                             returns_targets = previous_history['returns_targets'][sim_step_rand].to(device)
                             advantages = previous_history['advantages'][sim_step_rand].to(device)
-                            if cf.training_mode in ['Backward', 'RTRL']:
+                            if cf.training_mode in ['Backward', 'RTRL'] and isinstance(model, ActorCriticPerceiver):
                                 memories_student = memories.clone().detach()
                             new_logprobs, new_values, entropies, memories_student = model_student(states, memories_student, actions)             
 
@@ -292,7 +296,8 @@ def isaac_training(cf, rank, size):
                             loss_critic = cf.critic * F.mse_loss(clipped_values, returns_targets)
                             loss +=  (loss_actor + loss_critic + loss_entropy) / cf.accumulation_steps
                             kl_divergence = ((ratios - 1) - (new_logprobs - logprobs)).mean()
-                        _, _, _, memories = model(states, memories) 
+                        if cf.training_mode != 'Backward':
+                            _, _, _, memories = model(states, memories) 
 
                     if perform_update :
 
@@ -317,8 +322,9 @@ def isaac_training(cf, rank, size):
                         if backward_count % cf.accumulation_steps == 0 and backward_count != 0:
                             if cf.training_mode == 'TBPTT':
                                 scaler.scale(loss).backward()
-                                memories_student = memories.clone().detach()
                                 loss = torch.tensor(0.0, device=device)
+                                if isinstance(model, ActorCriticPerceiver):
+                                    memories_student = memories.clone().detach()
                             if cf.training_mode == 'RTRL':
                                 average_gradients(model_student, size-1, group_agents, param_filter='actor.out_')
                             else:
