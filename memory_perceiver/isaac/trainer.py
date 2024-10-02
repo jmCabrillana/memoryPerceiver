@@ -80,14 +80,18 @@ def create_mask(birth_time, sim_step, frames=32):
     mask = repeat(torch.arange(frames, device=device), '... -> b ...', b=num_envs) < repeat(past_horizon, '... -> ... t', t=frames)
     return mask
 
-def update_lr(current_lr, kl_div, kl_threshold=0.008, min_lr=1e-5, max_lr=1e-4):
+def lr_kl_scheduler(current_lr, kl_div, kl_threshold=0.008, min_lr=1e-5, max_lr=1e-4):
     lr = current_lr
     if kl_div > (2.0 * kl_threshold):
         lr = current_lr / 1.5
     if kl_div < (0.5 * kl_threshold):
         lr = current_lr * 1.5
     lr = min(max(lr, min_lr), max_lr)
-    return lr    
+    return lr 
+
+def lr_warm_up(step, min_lr=1e-5, max_lr=1e-4, steps_warm_up=1000):
+    lr_tmp = min_lr + step*(max_lr-min_lr)/steps_warm_up
+    return min(max_lr, lr_tmp)
 
 def set_seeds(seed):
     os.environ['PYTHONHASHSEED'] = str(seed)

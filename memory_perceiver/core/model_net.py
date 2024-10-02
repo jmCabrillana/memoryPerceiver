@@ -59,12 +59,12 @@ class LinearSplit(nn.Module):
 
 
 class FeedForward(nn.Module):
-    def __init__(self, dim, mult = 2):
+    def __init__(self, dim, mult = 4):
         super().__init__()
         self.net = nn.Sequential(
-            LinearSplit(dim, dim * mult),
-            nn.ReLU(), #GEGLU()nn.ReLU(),
-            LinearSplit(dim * mult, dim)
+            nn.Linear(dim, dim * mult),
+            nn.ReLU(), #GEGLU() nn.ReLU(),
+            nn.Linear(dim * mult, dim)
         )
 
     def forward(self, x):
@@ -130,7 +130,6 @@ class PerceiverIO(nn.Module):
         query_dim=832,
         nb_latents = 512,
         nb_latents_mem = 1024,
-        cross_heads = 1,
         latent_heads = 8,
         latent_dim_head = 64,
         input_parameters = None,
@@ -151,14 +150,14 @@ class PerceiverIO(nn.Module):
         for part, params in input_parameters.items():
             self.out_embedding[part] = nn.Linear(params, query_dim, device=device)
         self.out_latents = nn.Parameter(torch.randn(nb_latents, latent_dim, device=device))
-        self.out_cross_attn = PreNormContext(latent_dim, Attention(latent_dim, query_dim, heads=cross_heads, dim_head=latent_dim_head), query_dim)
-        self.out_cross_ff =  FeedForward(latent_dim) #PreNormContext(latent_dim, FeedForward(latent_dim))
+        self.out_cross_attn = PreNormContext(latent_dim, Attention(latent_dim, query_dim, heads=latent_heads, dim_head=latent_dim_head), query_dim)
+        self.out_cross_ff =  PreNormContext(latent_dim, FeedForward(latent_dim))
         self.out_attn_layers = nn.ModuleList([])
         self.out_ff_layers = nn.ModuleList([])
         for i in range(self.depth):
             self.out_attn_layers.append(PreNormContext(latent_dim, Attention(latent_dim, query_dim, heads=latent_heads, dim_head=latent_dim_head), query_dim))
             self.out_ff_layers.append(PreNormContext(latent_dim, FeedForward(latent_dim)))
-        self.out_decoder_cross_attn = PreNormContext(query_dim, Attention(query_dim, latent_dim, heads = cross_heads, dim_head = latent_dim_head), context_dim = query_dim)
+        self.out_decoder_cross_attn = PreNormContext(query_dim, Attention(query_dim, latent_dim, heads = latent_heads, dim_head = latent_dim_head), context_dim = query_dim)
         self.modality = {}
         for part, params in output_parameters.items():
             self.modality[part] = nn.Parameter(torch.randn(query_dim, device=device))
@@ -170,7 +169,7 @@ class PerceiverIO(nn.Module):
         for part, params in input_parameters.items():
             self.state_embedding[part] = nn.Linear(params, query_dim, device=device)
         self.state_latents = nn.Parameter(torch.randn(nb_latents_mem, query_dim, device=device))
-        self.state_cross_attn = PreNormContext(query_dim, Attention(query_dim, query_dim, heads = cross_heads, dim_head = latent_dim_head, init=True), query_dim)
+        self.state_cross_attn = PreNormContext(query_dim, Attention(query_dim, query_dim, heads = latent_heads, dim_head = latent_dim_head, init=True), query_dim)
         self.state_cross_ff = PreNormContext(query_dim, FeedForward(query_dim))
         self.state_attn_layers = nn.ModuleList([])
         self.state_ff_layers = nn.ModuleList([])

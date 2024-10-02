@@ -42,9 +42,10 @@ def create_multimodal_perceiver(cf, device):
             device=device,
             depth_f_state=cf.depth_f_state,
             query_dim=cf.query_dim,
-            latent_dim_head=cf.latent_dim_head,
             nb_latents = cf.nb_latents,
             nb_latents_mem = cf.nb_latents_mem,
+            latent_heads = cf.latent_heads,
+            latent_dim_head = cf.latent_dim_head,
             input_parameters = input_parameters,
             output_parameters = output_parameters
         )

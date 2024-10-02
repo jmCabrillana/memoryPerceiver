@@ -39,10 +39,19 @@ class ActorCriticSimple(ActorCritic):
             self.critic = nn.Sequential( *( [layer_init(nn.Linear(self.state_dim, self.hidden_dim)), nn.ReLU()] +
                                             [layer_init(nn.Linear(self.hidden_dim, self.hidden_dim)), nn.ReLU()]*(cf.critic_depth-1) +
                                             [layer_init(nn.Linear(self.hidden_dim, 1), std=1)]  ) ).to(device)
+        # self.to_tt = nn.Linear(1, self.hidden_dim, device=device)
+        # self.tt1=nn.TransformerEncoderLayer(d_model=self.hidden_dim, nhead=4,  device=device)
+        # self.tt2=nn.TransformerEncoderLayer(d_model=self.hidden_dim, nhead=4,  device=device)
+        # self.tt3=nn.TransformerEncoderLayer(d_model=self.hidden_dim, nhead=4,  device=device)
         
     def forward(self, states, memories, old_actions=None):
         state = states['observations'][:,-1] # last time
         hidden = self.actor(state)
+        # h0 = self.to_tt(state.unsqueeze(-1))
+        # hidden1 = self.tt1(h0).mean(dim=1)
+        # hidden2 = self.tt2(h0).mean(dim=1)
+        # hidden3 = self.tt3(h0).mean(dim=1)
+
         
         # Critic
 
@@ -124,8 +133,6 @@ class ActorCriticPerceiver(ActorCritic):
         states_chunk= {}
         for i in range(self.dim_observations):
             states_chunk['observation_'+str(i)] = states['observations'][:, :, i:i+1]
-        # input = input_embedding(self.actor, states_chunk, device=device,
-        #         )
         input = patchify(states_chunk, height=self.patch_height, width=self.patch_width, patch_audio=self.patch_audio)
         if self.flattened_mem is not None:
             b, l, h = self.flattened_mem

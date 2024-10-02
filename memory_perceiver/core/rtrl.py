@@ -32,7 +32,7 @@ def cat_CSR_rows(csr_list):
 
 def shuffle_split_indexes(nb_latents_mem, query_dim, nb_chunks):
     i_mems = list(range(nb_latents_mem-1))
-    len_chunk = int(np.ceil(len(i_mem)/nb_chunks))
+    len_chunk = int(np.ceil(len(i_mems)/nb_chunks))
     random.shuffle(i_mems)
     slice_indexes_list = []
     end_slice = list(range((nb_latents_mem-1)*query_dim, nb_latents_mem*query_dim))

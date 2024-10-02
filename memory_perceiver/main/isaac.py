@@ -303,12 +303,14 @@ def isaac_training(cf, rank, size):
 
                         # Adjust the learning rate
                         dist.all_reduce(kl_divergence, op=dist.ReduceOp.AVG, group=group_agents)
-                        if cf.kl_scheduler:
-                            lr = tr.update_lr(lr, kl_divergence, kl_threshold=cf.kl_threshold, min_lr=cf.range_lr[0], max_lr=cf.range_lr[1])
-                            for param_group in optimizer.param_groups:
-                                param_group['lr'] = lr
-                            if kl_divergence > 3*cf.kl_threshold:
+                        if kl_divergence > 3*cf.kl_threshold:
                                 loss *= 0
+                        if cf.scheduler == 'kl_div':
+                            lr = tr.lr_kl_scheduler(lr, kl_divergence, kl_threshold=cf.kl_threshold, min_lr=cf.range_lr[0], max_lr=cf.range_lr[1])
+                        if cf.scheduler == 'warm-up':
+                            lr = tr.lr_warm_up(2*sim_count, min_lr=cf.range_lr[0], max_lr=cf.range_lr[1])
+                        for param_group in optimizer.param_groups:
+                            param_group['lr'] = lr
 
                         # Step optimizer
                         if cf.training_mode == 'Backward':
