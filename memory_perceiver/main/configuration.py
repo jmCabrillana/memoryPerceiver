@@ -2,14 +2,14 @@
 
 class Config:
 
-    experiment_name = "P_1.1_TBPTT"
+    experiment_name = "P_1.2_RTRL"
 
     # Task
     task = "Isaac-Cartpole-Direct-v0" # Humanoid Cartpole 
     agent_type = "Perceiver" # Simple Perceiver
     dim_observations = 4 # 87 4
     dim_actions = 1 # 21 1
-    num_envs = 4096 # 54 216 864
+    num_envs = 1 # 54 216 864
     sim_duration = 32 # 1028 516 260
     seed = 68
     render = False
@@ -18,7 +18,7 @@ class Config:
     frames = 1
     frames_future = 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
-    training_mode = 'TBPTT' # Backward TBPTT RTRL
+    training_mode = 'RTRL' # Backward TBPTT RTRL
     learning_rate = 1e-3 # 3e-4 1e-4 1e-5
     kl_threshold = 0.008 # 0.008 1e10
     scheduler = 'warm-up' # kl_div warm-up

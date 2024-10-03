@@ -115,9 +115,12 @@ def reset_memories(memories, indexes=None):
 
     # Reset memory for new lifelong learning
 
-    batch_size, nb_latents_mem, query_dim = memories.shape
-    if indexes is None:
-        indexes=torch.arange(batch_size)
+    if len(memories.shape) == 1:
+        indexes = torch.tensor([0])
+    else:
+        batch_size = len(memories)
+        if indexes is None:
+            indexes=torch.arange(batch_size)
     with torch.no_grad():
         memories[indexes] *= 0
 

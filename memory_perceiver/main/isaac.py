@@ -29,6 +29,7 @@ import memoryPerceiver.memory_perceiver.isaac.trainer as tr
 from memoryPerceiver.memory_perceiver.isaac.scaler import RunningStandardScaler
 from memoryPerceiver.memory_perceiver.isaac.plot import Plotter
 from memoryPerceiver.memory_perceiver.isaac.agent import ActorCritic, ActorCriticSimple, ActorCriticPerceiver, create_agent
+from memoryPerceiver.memory_perceiver.core.rtrl import  RTRL_partial, shuffle_split_indexes
 
 def get_states(obs_stack, sim_step, cf, birth_time, device):
     states={}
@@ -78,15 +79,14 @@ def isaac_training(cf, rank, size):
         env.reset()
         value_scaler = RunningStandardScaler(size=1, device=device)  
         if os.path.exists(cf.path_scaler):
-            value_scaler.load_state_dict(torch.load(cf.path_scaler))  
+            value_scaler.load_state_dict(torch.load(cf.path_scaler))          
 
     if rank in rank_agents:
         model = create_agent(cf, rank)
         model_student = create_agent(cf, rank)
-        freeze_parameters(model_student, 'actor.state_')
         if isinstance(model, ActorCriticPerceiver):
             memories = create_memories(model.actor, cf.num_envs, device=device)
-            if not os.path.exists(cf.path_memories):
+            if not os.path.exists(cf.path_memories) and cf.training_mode != 'RTRL':
                 torch.save(memories, cf.path_memories+str(rank)+'.pt')
         else :
             memories = None
@@ -95,9 +95,34 @@ def isaac_training(cf, rank, size):
         optimizer = torch.optim.Adam(model_student.parameters(), lr=cf.learning_rate, eps=1e-5)
         lr=cf.learning_rate
         scaler = GradScaler()
+        if cf.training_mode == 'Backward':
+            freeze_parameters(model_student, 'actor.state_')
         if rank == 1:
             plotter = Plotter('tensorboard', titles=['loss_actor', 'loss_critic', 'loss_entropy', 'actions_gap', 'returns'],
-                                path_plots=cf.path_experiment)
+                            path_plots=cf.path_experiment)
+            
+    if cf.training_mode == 'RTRL':
+        if rank == rank_sim:
+            slice_indexes_list = shuffle_split_indexes(cf.nb_latents_mem, cf.query_dim, nb_chunks=cf.num_envs)
+            len_slice_indexes = torch.tensor(len(slice_indexes_list[0]), device=device)
+            slice_indexes = torch.tensor(slice_indexes_list, device=device, dtype=torch.long)
+        if rank in rank_agents:
+            mem_dim = memories.shape
+            model.flattened_mem = mem_dim
+            model_student.flattened_mem = mem_dim
+            memories = rearrange(memories, 'b l h -> (b l h)')
+            if not os.path.exists(cf.path_memories):
+                torch.save(memories, cf.path_memories+str(rank)+'.pt')
+            len_slice_indexes = torch.tensor(0, device=device)
+        dist.broadcast(len_slice_indexes, src=rank_sim)  
+        if rank in rank_agents:
+            slice_indexes = torch.zeros(cf.num_envs, len_slice_indexes, device=device, dtype=torch.long)
+        dist.broadcast(slice_indexes, src=rank_sim)  
+        if rank in rank_agents:
+            slice_indexes = slice_indexes[rank-1]
+            print(f"{rank} {slice_indexes}")
+            rtrl_grad = RTRL_partial(model_student, param_state_filter='actor.state_', num_parameters=70000,
+                        chunk_size=128, slice_indexes=slice_indexes.tolist())        
 
     history_keys = ['obs', 'actions', 'values', 'logprobs', 'rewards', 'returns', 'returns_targets', 
                     'advantages', 'birth_time', 'death_index']
@@ -194,7 +219,7 @@ def isaac_training(cf, rank, size):
                     if rank in rank_agents and isinstance(model, ActorCriticPerceiver):
                             tmp_memories = memories
                             memories = torch.load(cf.path_memories+str(rank)+'.pt').detach()
-                            memories_student = memories.clone().detach()
+                            memories_student = memories.clone().detach().requires_grad_(True)
                             dist.barrier(group=group_agents)
                             torch.save(tmp_memories, cf.path_memories+str(rank)+'.pt')
                     if rank == rank_sim:
@@ -280,8 +305,10 @@ def isaac_training(cf, rank, size):
                             returns_targets = previous_history['returns_targets'][sim_step_rand].to(device)
                             advantages = previous_history['advantages'][sim_step_rand].to(device)
                             if cf.training_mode in ['Backward', 'RTRL'] and isinstance(model, ActorCriticPerceiver):
-                                memories_student = memories.clone().detach()
-                            new_logprobs, new_values, entropies, memories_student = model_student(states, memories_student, actions)             
+                                memories_student = memories.clone().detach().requires_grad_(True)
+                            new_logprobs, new_values, entropies, new_memories_student = model_student(states, memories_student, actions)     
+                            if cf.training_mode == 'TBPTT':
+                                memories_student = new_memories_student
 
                             # Loss
                             ratios = torch.exp(new_logprobs - logprobs)
@@ -291,17 +318,18 @@ def isaac_training(cf, rank, size):
                             loss_entropy = -cf.entropy * entropies.mean()
                             clipped_values = values + torch.clamp(new_values-values, -cf.value_clip, cf.value_clip)
                             loss_critic = cf.critic * F.mse_loss(clipped_values, returns_targets)
-                            loss +=  (loss_actor + loss_critic + loss_entropy) / cf.accumulation_steps
+                            new_loss = (loss_actor + loss_critic + loss_entropy) / cf.accumulation_steps
                             kl_divergence = ((ratios - 1) - (new_logprobs - logprobs)).mean()
+                            dist.all_reduce(kl_divergence, op=dist.ReduceOp.AVG, group=group_agents)
+                            if kl_divergence > 3*cf.kl_threshold:
+                                new_loss *= 0
+                            loss += new_loss
                         if cf.training_mode != 'Backward':
                             _, _, _, memories = model(states, memories) 
 
                     if perform_update :
 
                         # Adjust the learning rate
-                        dist.all_reduce(kl_divergence, op=dist.ReduceOp.AVG, group=group_agents)
-                        if kl_divergence > 3*cf.kl_threshold:
-                                loss *= 0
                         if cf.scheduler == 'kl_div':
                             lr = tr.lr_kl_scheduler(lr, kl_divergence, kl_threshold=cf.kl_threshold, min_lr=cf.range_lr[0], max_lr=cf.range_lr[1])
                         if cf.scheduler == 'warm-up':
@@ -315,7 +343,7 @@ def isaac_training(cf, rank, size):
                             loss = torch.tensor(0.0, device=device)
                         if cf.training_mode == 'RTRL':
                             loss = scaler.scale(loss)
-                            rtrl_grad.step_safe(model_student, states, memories_student, loss, old_actions=actions)
+                            rtrl_grad.step(model_student, states, memories_student, loss, old_actions=actions)
                             loss = torch.tensor(0.0, device=device)
                         backward_count += 1
                         if backward_count % cf.accumulation_steps == 0 and backward_count != 0:
@@ -323,7 +351,7 @@ def isaac_training(cf, rank, size):
                                 scaler.scale(loss).backward()
                                 loss = torch.tensor(0.0, device=device)
                                 if isinstance(model, ActorCriticPerceiver):
-                                    memories_student = memories.clone().detach()
+                                    memories_student = memories.clone().detach().requires_grad_(True)
                             if cf.training_mode == 'RTRL':
                                 average_gradients(model_student, size-1, group_agents, param_filter='actor.out_')
                             else:

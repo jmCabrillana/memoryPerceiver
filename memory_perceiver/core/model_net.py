@@ -238,6 +238,6 @@ class PerceiverIO(nn.Module):
         ## Update mem
         new_mem = x.mean(dim=1) # 'b n d -> b d'
         new_mem = rearrange(new_mem, 'b d0 -> b () d0')
-        new_layers_mem = torch.cat([layers_mem[:, :-1], new_mem], dim=1)
+        new_layers_mem = torch.cat([layers_mem[:, 1:], new_mem], dim=1)
         
         return output, new_layers_mem
