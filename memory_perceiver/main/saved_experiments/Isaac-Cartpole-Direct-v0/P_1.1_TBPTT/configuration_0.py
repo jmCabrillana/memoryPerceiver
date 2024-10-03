@@ -2,14 +2,14 @@
 
 class Config:
 
-    experiment_name = "P_1.3_shared_d2"
+    experiment_name = "P_1.1_TBPTT"
 
     # Task
     task = "Isaac-Cartpole-Direct-v0" # Humanoid Cartpole 
-    agent_type = "Perceiver" # Perceiver Simple
+    agent_type = "Perceiver" # Simple Perceiver
     dim_observations = 4 # 87 4
     dim_actions = 1 # 21 1
-    num_envs = 128 # 54 216 864
+    num_envs = 4096 # 54 216 864
     sim_duration = 32 # 1028 516 260
     seed = 68
     render = False
@@ -18,10 +18,11 @@ class Config:
     frames = 1
     frames_future = 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
-    learning_rate = 1e-5 # 3e-4 1e-4 1e-5
-    kl_threshold = 0.008
-    kl_scheduler = True
-    range_lr = [1e-5, 1e-2]
+    training_mode = 'TBPTT' # Backward TBPTT RTRL
+    learning_rate = 1e-3 # 3e-4 1e-4 1e-5
+    kl_threshold = 0.008 # 0.008 1e10
+    scheduler = 'warm-up' # kl_div warm-up
+    range_lr = [1e-5, 1e-3]
     entropy = 0.00 # 0.01 to 0.05
     critic = 2   # 0.5 to 2 4
     accumulation_steps = 6 # 2 4
@@ -39,11 +40,12 @@ class Config:
     depth = 1
     critic_depth = 2
     depth_f_state = 0
-    query_dim = 24 # video > 136 , 832
+    query_dim = 32 # 32 512 832 # video > 136 , 
     hidden_dim = 32 # for simple net
-    latent_dim_head = 10  # 64
-    nb_latents_mem = 1
-    nb_latents = 4
+    latent_heads = 8 # 2 8
+    latent_dim_head =  16 #16  64
+    nb_latents_mem = 2
+    nb_latents = 8
     shared=True
     batch_size = num_envs
     body_parts =  {'observation_' + str(i): 1 for i in range(dim_observations)}
