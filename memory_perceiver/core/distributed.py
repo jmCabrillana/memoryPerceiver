@@ -24,29 +24,35 @@ def average_gradients(model, size, group, param_filter=''):
                 print(f"{dist.get_rank()} -> {param.device}")
                 # sys.exit()
 
-def scatter_dummy_src(tensor, rank, size):
+def scatter_dummy_src(tensor, rank, size, swap_axis=False):
     #  split batch at rank 0 to ranks  1, ..., size-1
+    if swap_axis:
+        tensor = rearrange(tensor, 't b ... -> b t ...').contiguous()
     if rank == 0:
         tensor_list = list(torch.split(tensor, len(tensor)//size))
         tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
-        dst = torch.zeros_like(tensor_list[0], device=0)
+        tensor = torch.zeros_like(tensor_list[0], device=0)
     if rank != 0:
         tensor_list = None
-        dst = tensor
     dist.barrier()
-    dist.scatter(dst, tensor_list, src=0)
+    dist.scatter(tensor, tensor_list, src=0)
+    if swap_axis:
+        tensor = rearrange(tensor, 'b t ... -> t b ...')
 
-def gather_dummy_src(tensor, rank, size):
+def gather_dummy_src(tensor, rank, size, swap_axis=False):
     #  gather and batch ranks 1, ..., size-1 to 0
+    if swap_axis:
+        tensor = rearrange(tensor, 't b ... -> b t ...').contiguous()
     if rank != 0 :
-        src = tensor
         tensor_list = None
     if rank == 0:
         tensor_list = list(torch.split(tensor, len(tensor)//size))
         tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
-        src = torch.zeros_like(tensor_list[0], device=0)
+        tensor = torch.zeros_like(tensor_list[0], device=0)
     dist.barrier()
-    dist.gather(src, tensor_list, dst=0)
+    dist.gather(tensor, tensor_list, dst=0)
     if rank == 0:
         tensor_list.pop(0)
         tensor = torch.stack(tensor_list)
+    if swap_axis:
+        tensor = rearrange(tensor, 'b t ... -> t b ...')

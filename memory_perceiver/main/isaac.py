@@ -166,10 +166,9 @@ def isaac_training(cf, rank, size):
                         buffer[key]=[]
                 else:
                     previous_history = deepcopy(history)
-                    history['values'] = rearrange(history['values'], 't b -> b t').contiguous()
-                    gather_dummy_src(history['values'], rank, size-1)
-                    history['values'] = rearrange(history['values'], 'b t -> t b')
-                    # gather_dummy_src(next_values, rank, size-1)
+                    gather_dummy_src(history['values'], rank, size-1, swap_axis=True)
+                    print(f"{rank}, {next_values.shape} {next_values.dtype} {next_values}")
+                    gather_dummy_src(next_values, rank, size-1)
                     if rank == rank_sim:
                         next_values = value_scaler(next_values, inverse=True) 
                         unscaled_values = value_scaler(history['values'], inverse=True) 
@@ -181,9 +180,7 @@ def isaac_training(cf, rank, size):
                         previous_history['returns_targets'] = value_scaler(tmp_advantages + unscaled_values, train=True)
                         previous_history['advantages'] = (tmp_advantages - tmp_advantages.mean()) / (tmp_advantages.std() + 1e-8)  #dim=1 keepdim=True
                     for key in ['obs', 'rewards', 'death_index', 'returns', 'values', 'returns_targets', 'advantages']:
-                        swap_batch_time_tmp = rearrange(previous_history[key], 't b ... -> b t ...').contiguous()
-                        scatter_dummy_src(swap_batch_time_tmp, rank, size-1)
-                        previous_history[key] = rearrange(swap_batch_time_tmp, 'b t ... -> t b ...')
+                        scatter_dummy_src(previous_history[key], rank, size-1, swap_axis=True)
                     
                     if rank == 1:
                         plotter.add('returns', previous_history['returns'][0, :].mean().item(), sim_count)
@@ -352,9 +349,7 @@ def isaac_training(cf, rank, size):
 
             # Gather action and step env
             if is_inference:
-                actions_star = rearrange(actions_star, 't b d -> b t d').contiguous()
-                gather_dummy_src(actions_star, rank, size-1)
-                actions_star = rearrange(actions_star, 'b t d -> t b d')
+                gather_dummy_src(actions_star, rank, size-1, swap_axis=True)
                 buffer['actions_star'] += list(torch.unbind( actions_star ))
                 if rank == 1:
                     plotter.add('action/mean', (actions_star[0, :, 0]).mean().item(), sim_count*cf.sim_duration+sim_step)
@@ -398,6 +393,7 @@ def isaac_training(cf, rank, size):
                         states=get_states(obs_stack, sim_step, cf, next_birth_time, device)
                         with autocast(device_type='cuda', dtype=torch.bfloat16):
                             _, next_values, _, _ = model_student(states, memories) 
+                        next_values = next_values.to(torch.float32)
                         
                 if sim_count % 10 == 0 and sim_step % cf.sim_duration == 256 and rank == 0 and cf.render :
                     torchvision.io.write_video('/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/test_'  + str(sim_count) + '_vid_.mp4', 

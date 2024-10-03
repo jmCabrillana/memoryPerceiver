@@ -3,39 +3,51 @@ import torch
 import torch.nn as nn
 import torch.distributed as dist
 from torch.multiprocessing import Process
+from einops import rearrange
 
 def setup(rank, size):
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] = '12355'
     dist.init_process_group("nccl", rank=rank, world_size=size)
 
-def scatter_dummy_src(tensor, rank, size):
+def swap_unswap_arguments(f, *args, **kwargs):
+    args = list(args)
+    args[0] = rearrange(args[0], 't b ... -> b t ...').contiguous()
+    f(*args, **kwargs)
+    args[0] = rearrange(args[0], 'b t ... -> t b ...')
+
+def scatter_dummy_src(tensor, rank, size, swap_axis=False):
     #  split batch at rank 0 to ranks  1, ..., size-1
+    if swap_axis:
+        tensor = rearrange(tensor, 't b ... -> b t ...').contiguous()
     if rank == 0:
         tensor_list = list(torch.split(tensor, len(tensor)//size))
         tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
-        print(tensor_list)
-        dst = torch.zeros_like(tensor_list[0], device=0)
+        tensor = torch.zeros_like(tensor_list[0], device=0)
     if rank != 0:
         tensor_list = None
-        dst = tensor
     dist.barrier()
-    dist.scatter(dst, tensor_list, src=0)
+    dist.scatter(tensor, tensor_list, src=0)
+    if swap_axis:
+        tensor = rearrange(tensor, 'b t ... -> t b ...')
 
-def gather_dummy_src(tensor, rank, size):
+def gather_dummy_src(tensor, rank, size, swap_axis=False):
     #  gather and batch ranks 1, ..., size-1 to 0
+    if swap_axis:
+        tensor = rearrange(tensor, 't b ... -> b t ...').contiguous()
     if rank != 0 :
-        src = tensor
         tensor_list = None
     if rank == 0:
         tensor_list = list(torch.split(tensor, len(tensor)//size))
         tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
-        src = torch.zeros_like(tensor_list[0], device=0)
+        tensor = torch.zeros_like(tensor_list[0], device=0)
     dist.barrier()
-    dist.gather(src, tensor_list, dst=0)
+    dist.gather(tensor, tensor_list, dst=0)
     if rank == 0:
         tensor_list.pop(0)
         tensor = torch.stack(tensor_list)
+    if swap_axis:
+        tensor = rearrange(tensor, 'b t ... -> t b ...')
 
 # Function to be run by each process
 def train(rank, size):
@@ -58,26 +70,26 @@ def train(rank, size):
     """
     
     
-    # if rank == 0:
-    #     tensor_batch = torch.tensor([[1,1,2],
-    #                                  [4,7,8],
-    #                                  [2,2,3],
-    #                                  [4,7,8],
-    #                                  [3,3,4],
-    #                                  [4,7,8],], device=rank, dtype=float)
-    # if rank > 0:
-    #     tensor_batch = torch.zeros(6,3, device=rank, dtype=float)
-    # scatter_dummy_src(tensor_batch, rank, size-1)
-    # print(f"rank : {rank}, , {tensor_batch}")
-    
-    
-    if rank > 0:
-        tensor = torch.tensor([[[1]],[[4]]], device=rank, dtype=float)
-        tensor *= rank
     if rank == 0:
-        tensor = torch.zeros(2, 1, 1, device=rank, dtype=float)
-    gather_dummy_src(tensor, rank, size-1)
-    print("rank : ", rank, "  ", tensor)
+        tensor_batch = torch.tensor([[1,1,2],
+                                     [4,7,8],
+                                     [2,2,3],
+                                     [4,7,8],
+                                     [3,3,4],
+                                     [4,7,8],], device=rank, dtype=float)
+    if rank > 0:
+        tensor_batch = torch.zeros(6,3, device=rank, dtype=float)
+    scatter_dummy_src(tensor_batch, rank, size-1, swap_axis=True)
+    print(f"rank : {rank}, , {tensor_batch}")
+    
+    
+    # if rank > 0:
+    #     tensor = torch.tensor([[1, 2],[4, 5], [7,8]], device=rank, dtype=float)
+    #     tensor *= rank
+    # if rank == 0:
+    #     tensor = torch.zeros(3, 2, device=rank, dtype=float)
+    # gather_dummy_src(tensor, rank, size-1, swap_axis=True)
+    # print("rank : ", rank, "  ", tensor)
 
     # group_agents=dist.new_group(list(range(1,4)))
     # print(list(range(1,size)))
