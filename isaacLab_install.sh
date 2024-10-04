@@ -4,7 +4,7 @@ git config --global user.name "jmCabrillana"
 
 # directories and system
 mkdir memory_perceiver/main/weights
-mkdir memory_perceiver/main/monitoring
+mkdir memory_perceiver/main/monitor
 mkdir memory_perceiver/main/experiments
 sudo apt install cmake build-essential -y
 apt-get install curl tar screen -y

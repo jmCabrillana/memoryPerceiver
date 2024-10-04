@@ -60,7 +60,7 @@ def isaac_training(cf, rank, size):
     if rank == rank_sim:
         # !!! Load isaac modules after the variables
         # env = VecEnvRLGames(headless=cfg.headless, sim_device=rank_sim, enable_viewport=cfg.enable_viewport)
-        app_launcher = AppLauncher(headless=True)
+        app_launcher = AppLauncher(headless=True, enable_cameras=False)
         simulation_app = app_launcher.app
         import gymnasium as gym
         from omni.isaac.core.utils.torch.maths import set_seed
@@ -129,6 +129,7 @@ def isaac_training(cf, rank, size):
     history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, cf.dim_observations, device)
     previous_history = deepcopy(history)
     buffer = {'video':[], 'audio':[], 'obs':[], 'rewards':[], 'actions_star':[]}
+    video = torch.zeros(cf.num_envs, cf.frames, cf.height, cf.width, 3, device=device)
     next_values = torch.zeros(cf.num_envs, device=rank)
     actions_star = torch.zeros(cf.frames_future, cf.num_envs, cf.dim_actions, device=rank)     
     sim_count, sim_step = -1, 0
@@ -246,7 +247,8 @@ def isaac_training(cf, rank, size):
                     if cf.render:
                         video = all_obs['camera'].clone()  # (num_envs, 256, 456, 3)
                         #ts.save(video[0], '/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/live.jpg')
-                        full_video.append(video.cpu())
+                        full_video.append(video[0].cpu())
+                        video = torch.zeros(cf.num_envs, cf.frames, cf.height, cf.width, 3, device=device)
                     
                     #dones
                     dones = env.unwrapped.last_dones.int().clone()
@@ -406,6 +408,8 @@ def isaac_training(cf, rank, size):
                         next_obs = all_obs['policy'].clone()    # (num_envs, d)
                         if cf.render:
                             video = all_obs['camera'].clone()  # (num_envs, 256, 456, 3)
+                            video = torch.zeros(cf.num_envs, cf.frames, cf.height, cf.width, 3, device=device)
+                            
                         dones = env.unwrapped.last_dones.int().clone()
                         next_birth_time = history['birth_time'][sim_step-1]
                         history['birth_time'][sim_step, dones==1] = sim_step
@@ -423,9 +427,9 @@ def isaac_training(cf, rank, size):
                             _, next_values, _, _ = model_student(states, memories) 
                         next_values = next_values.to(torch.float32)
                         
-                if sim_count % 10 == 0 and sim_step % cf.sim_duration == 256 and rank == 0 and cf.render :
+                if sim_count % 10 == 0 and sim_step % cf.sim_duration == 30 and rank == 0 and cf.render :
                     torchvision.io.write_video('/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/test_'  + str(sim_count) + '_vid_.mp4', 
-                                                torch.stack(full_video)[:,1], 8*cf.frames)
+                                                torch.stack(full_video), 8*cf.frames)
             sim_step += 1
 
         else:

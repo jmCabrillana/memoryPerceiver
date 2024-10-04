@@ -4,3 +4,6 @@
 [submodule "IsaacLab"]
 	path = IsaacLab
 	url = git@github.com:jmCabrillana/IsaacLab.git
+[submodule "infinigen"]
+	path = infinigen
+	url = git@github.com:jmCabrillana/infinigen.git

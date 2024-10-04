@@ -2,27 +2,27 @@
 
 class Config:
 
-    experiment_name = "P_1.3_TBPTT_mem"
+    experiment_name = "P_1.0_TBPTT"
 
     # Task
-    task = "Isaac-Cartpole-Direct-Mem-v0" # Humanoid Cartpole 
+    task = "Isaac-Cartpole-Direct-Cam-v0" # Humanoid Cartpole 
     agent_type = "Perceiver" # Simple Perceiver
-    dim_observations = 5 # 87 4 5
+    dim_observations = 4 # 87 4 5
     dim_actions = 1 # 21 1
-    num_envs = 2048 # 1 54 216 864 2048
+    num_envs = 16 # 1 54 216 864 2048
     sim_duration = 32 # 1028 516 260
     seed = 68
-    render = False
+    render = True
 
     # PPO
     frames = 1
     frames_future = 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
-    training_mode = 'TBPTT' # Backward TBPTT RTRL
-    learning_rate = 1e-3 # 3e-4 1e-4 1e-5
+    training_mode = 'Backward' # Backward TBPTT RTRL
+    learning_rate = 1e-4 # 3e-4 1e-4 1e-5
     kl_threshold = 0.008 # 0.008 1e10
     scheduler = 'warm-up' # kl_div warm-up
-    range_lr = [1e-5, 1e-3]
+    range_lr = [1e-5, 5e-4]
     entropy = 0.00 # 0.01 to 0.05
     critic = 2   # 0.5 to 2 4
     accumulation_steps = 6 # 2 4
