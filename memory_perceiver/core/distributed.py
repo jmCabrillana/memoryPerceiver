@@ -27,32 +27,36 @@ def average_gradients(model, size, group, param_filter=''):
 def scatter_dummy_src(tensor, rank, size, swap_axis=False):
     #  split batch at rank 0 to ranks  1, ..., size-1
     if swap_axis:
-        tensor = rearrange(tensor, 't b ... -> b t ...').contiguous()
+        tensor.swapaxes_(0, 1)
     if rank == 0:
-        tensor_list = list(torch.split(tensor, len(tensor)//size))
+        tensor_list = list(torch.split(tensor.contiguous(), len(tensor)//size))
         tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
-        tensor = torch.zeros_like(tensor_list[0], device=0)
+        dst = torch.zeros_like(tensor_list[0], device=0)
     if rank != 0:
         tensor_list = None
+        dst = torch.zeros_like(tensor.contiguous())
     dist.barrier()
-    dist.scatter(tensor, tensor_list, src=0)
+    dist.scatter(dst, tensor_list, src=0)
+    if rank != 0:
+        tensor.copy_(dst)
     if swap_axis:
-        tensor = rearrange(tensor, 'b t ... -> t b ...')
+        tensor.swapaxes_(0, 1)
 
 def gather_dummy_src(tensor, rank, size, swap_axis=False):
     #  gather and batch ranks 1, ..., size-1 to 0
     if swap_axis:
-        tensor = rearrange(tensor, 't b ... -> b t ...').contiguous()
+        tensor.swapaxes_(0, 1)
     if rank != 0 :
         tensor_list = None
+        src = tensor.contiguous()
     if rank == 0:
-        tensor_list = list(torch.split(tensor, len(tensor)//size))
+        tensor_list = list(torch.split(tensor.contiguous(), len(tensor)//size))
         tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
-        tensor = torch.zeros_like(tensor_list[0], device=0)
+        src = torch.zeros_like(tensor_list[0], device=0)
     dist.barrier()
-    dist.gather(tensor, tensor_list, dst=0)
+    dist.gather(src, tensor_list, dst=0)
     if rank == 0:
         tensor_list.pop(0)
-        tensor = torch.stack(tensor_list)
+        tensor.copy_(torch.cat(tensor_list, dim=0))
     if swap_axis:
-        tensor = rearrange(tensor, 'b t ... -> t b ...')
+        tensor.swapaxes_(0, 1)
