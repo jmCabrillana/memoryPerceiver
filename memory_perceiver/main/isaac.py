@@ -60,7 +60,7 @@ def isaac_training(cf, rank, size):
     if rank == rank_sim:
         # !!! Load isaac modules after the variables
         # env = VecEnvRLGames(headless=cfg.headless, sim_device=rank_sim, enable_viewport=cfg.enable_viewport)
-        app_launcher = AppLauncher(headless=True, enable_cameras=False)
+        app_launcher = AppLauncher(headless=True, enable_cameras=True)
         simulation_app = app_launcher.app
         import gymnasium as gym
         from omni.isaac.core.utils.torch.maths import set_seed
@@ -70,9 +70,10 @@ def isaac_training(cf, rank, size):
         from omni.isaac.lab_tasks.utils import parse_env_cfg
         enable_extension("omni.isaac.sensor")
         env_cfg = parse_env_cfg(
-            cf.task, device=str(device), num_envs=cf.num_envs, use_fabric=False
+            cf.task, device=str(device), num_envs=cf.num_envs, use_fabric=False, 
         )
-        env = gym.make(cf.task, cfg=env_cfg)
+        env = gym.make(cf.task, cfg=env_cfg, render_mode="rgb_array")
+        print(env.render_mode)
         print(f"[INFO]: Gym observation space: {env.observation_space}")
         print(f"[INFO]: Gym action space: {env.action_space}")
         seed_isaac = set_seed(cf.seed, torch_deterministic=False)
@@ -246,8 +247,9 @@ def isaac_training(cf, rank, size):
                     history['obs'][sim_step] = all_obs['policy'].clone()    # (num_envs, d)
                     if cf.render:
                         video = all_obs['camera'].clone()  # (num_envs, 256, 456, 3)
-                        #ts.save(video[0], '/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/live.jpg')
-                        full_video.append(video[0].cpu())
+                        # print(video[0, ::10, ::10, 0])
+                        # ts.save(video[0], '/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/live.jpg')
+                        full_video.append(video[8].cpu())
                         video = torch.zeros(cf.num_envs, cf.frames, cf.height, cf.width, 3, device=device)
                     
                     #dones
@@ -322,7 +324,6 @@ def isaac_training(cf, rank, size):
                             loss_critic = cf.critic * F.mse_loss(clipped_values, returns_targets)
                             new_loss = (loss_actor + loss_critic + loss_entropy) / cf.accumulation_steps
                             kl_divergence = ((ratios - 1) - (new_logprobs - logprobs)).mean()
-                            dist.all_reduce(kl_divergence, op=dist.ReduceOp.AVG, group=group_agents)
                             if kl_divergence > 3*cf.kl_threshold:
                                 new_loss *= 0
                             loss += new_loss
@@ -332,6 +333,7 @@ def isaac_training(cf, rank, size):
                     if perform_update :
 
                         # Adjust the learning rate
+                        dist.all_reduce(kl_divergence, op=dist.ReduceOp.SUM, group=group_agents)
                         if cf.scheduler == 'kl_div':
                             lr = tr.lr_kl_scheduler(lr, kl_divergence, kl_threshold=cf.kl_threshold, min_lr=cf.range_lr[0], max_lr=cf.range_lr[1])
                         if cf.scheduler == 'warm-up':
@@ -427,14 +429,14 @@ def isaac_training(cf, rank, size):
                             _, next_values, _, _ = model_student(states, memories) 
                         next_values = next_values.to(torch.float32)
                         
-                if sim_count % 10 == 0 and sim_step % cf.sim_duration == 30 and rank == 0 and cf.render :
+                if sim_count % 10 == 0 and sim_step == cf.sim_duration-1 and rank == 0 and cf.render :
                     torchvision.io.write_video('/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/test_'  + str(sim_count) + '_vid_.mp4', 
                                                 torch.stack(full_video), 8*cf.frames)
             sim_step += 1
 
         else:
             if rank == rank_sim:
-                env.step() #render=cf.render)
+                env.step()
 
     if rank == rank_sim:
         env.close()

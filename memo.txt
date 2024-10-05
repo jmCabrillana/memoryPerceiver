@@ -18,6 +18,8 @@ python -m pip install skrl
 
 # Isaac-sim
 https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=add_reference_to_stage#omni.isaac.core.utils.stage.add_reference_to_stage
+
+# Infinigen
  python -m infinigen_examples.generate_indoors --seed 0 --task coarse --output_folder outputs/indoors/coarse -g singleroom.gin -p compose_indoors.terrain_enabled=False  restrict_solving.solve_max_rooms=1 
 
 #Common errors

@@ -10,7 +10,7 @@ class Config:
     dim_observations = 4 # 87 4 5
     dim_actions = 1 # 21 1
     num_envs = 16 # 1 54 216 864 2048
-    sim_duration = 32 # 1028 516 260
+    sim_duration = 256 # 1028 516 260
     seed = 68
     render = True
 
@@ -59,16 +59,16 @@ class Config:
     input_video = False
     output_audio = False
     sample_audio_frame = 1920
-    width = 456
-    height = 264
+    width = 448
+    height = 256
     patch_audio = 16
-    patch_width = 12
-    patch_height = 12
+    patch_width = 16
+    patch_height = 16
     bands_fourier = 128
     bands_video = 32
     bands_video_t = 4
     channels = 3
-    len_video_frame = 836 # 836 = 456*264/(12*12) # 1824 456*256/(8*8) # 448 448*256/(16*16)
+    len_video_frame = 448 # 836 = 456*264/(12*12) # 1824 456*256/(8*8) # 448 448*256/(16*16)
     len_audio_frame = 120   # 1920/16
     sample_rate = frames * sample_audio_frame
     len_video = frames*len_video_frame

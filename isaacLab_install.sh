@@ -27,6 +27,12 @@ cd /isaac-sim/memoryPerceiver/IsaacLab/source/extensions/omni.isaac.lab_assets
 cd /isaac-sim/memoryPerceiver/IsaacLab/source/extensions/omni.isaac.lab_tasks
 /isaac-sim/python.sh -m pip install -e .
 
+# Infinigen
+sudo apt-get install wget cmake g++ libgles2-mesa-dev libglew-dev libglfw3-dev libglm-dev zlib1g-dev -y
+sudo apt install libxkbcommon-x11-0
+cd /isaac-sim/memoryPerceiver/infinigen
+/isaac-sim/python.sh -m pip install -e ".[terrain,vis]"
+
 # Set variables
 export ACCEPT_EULA=Y
 export ISAAC_JUPYTER_KERNEL=1
