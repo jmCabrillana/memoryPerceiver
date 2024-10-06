@@ -10,7 +10,7 @@ class Config:
     dim_observations = 4 # 87 4 5
     dim_actions = 1 # 21 1
     num_envs = 16 # 1 54 216 864 2048
-    sim_duration = 256 # 1028 516 260
+    sim_duration = 32 # 1028 516 260
     seed = 68
     render = True
 

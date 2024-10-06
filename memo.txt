@@ -20,7 +20,9 @@ python -m pip install skrl
 https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=add_reference_to_stage#omni.isaac.core.utils.stage.add_reference_to_stage
 
 # Infinigen
- python -m infinigen_examples.generate_indoors --seed 0 --task coarse --output_folder outputs/indoors/coarse -g singleroom.gin -p compose_indoors.terrain_enabled=False  restrict_solving.solve_max_rooms=1 
+python -m infinigen_examples.generate_indoors --seed 0 --task coarse --output_folder outputs/indoors/coarse -g singleroom.gin -p compose_indoors.terrain_enabled=False  restrict_solving.solve_max_rooms=1 
+python -m infinigen.tools.export --input_folder outputs/indoors/coarse --output_folder outputs/my_export -f usdc -r 1024 --omniverse
+python infinigen/tools/isaac_sim.py --scene-path  outputs/my_export/export_scene.blend/export_scene.usdc --json-path outputs/indoors/coarse/solve_state.json 
 
 #Common errors
 - Duplicate driver files:

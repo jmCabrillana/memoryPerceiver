@@ -12,7 +12,7 @@ from einops import rearrange
 
 import torch
 from torch import autocast
-from torch.cuda.amp import GradScaler
+from torch.amp import GradScaler
 import torch.nn.functional as F
 import torch.distributed as dist
 import torch.multiprocessing as mp
@@ -429,7 +429,7 @@ def isaac_training(cf, rank, size):
                             _, next_values, _, _ = model_student(states, memories) 
                         next_values = next_values.to(torch.float32)
                         
-                if sim_count % 10 == 0 and sim_step == cf.sim_duration-1 and rank == 0 and cf.render :
+                if sim_count % 50 == 0 and sim_step == cf.sim_duration-1 and rank == 0 and cf.render :
                     torchvision.io.write_video('/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/test_'  + str(sim_count) + '_vid_.mp4', 
                                                 torch.stack(full_video), 8*cf.frames)
             sim_step += 1
