@@ -80,7 +80,7 @@ def isaac_training(cf, rank, size):
         env.reset()
         value_scaler = RunningStandardScaler(size=1, device=device)  
         if os.path.exists(cf.path_scaler):
-            value_scaler.load_state_dict(torch.load(cf.path_scaler))          
+            value_scaler.load_state_dict(torch.load(cf.path_scaler, weights_only=True))          
 
     if rank in rank_agents:
         model = create_agent(cf, rank)
@@ -173,9 +173,9 @@ def isaac_training(cf, rank, size):
                 if is_inference:
                     if rank in rank_agents:
                         if isinstance(model, ActorCriticPerceiver):
-                            memories = torch.load(cf.path_memories+str(rank)+'.pt')
+                            memories = torch.load(cf.path_memories+str(rank)+'.pt', weights_only=True)
                         if sim_count == 0 and os.path.exists(cf.path_model):
-                            state_dict = torch.load(cf.path_model)
+                            state_dict = torch.load(cf.path_model, weights_only=True)
                             model.load_state_dict(state_dict['model'])
                             optimizer.load_state_dict(state_dict['optimizer'])
                         else:
@@ -220,7 +220,7 @@ def isaac_training(cf, rank, size):
                                 print(f"{key}: {value[:,0, 0]}")
                     if rank in rank_agents and isinstance(model, ActorCriticPerceiver):
                             tmp_memories = memories
-                            memories = torch.load(cf.path_memories+str(rank)+'.pt').detach()
+                            memories = torch.load(cf.path_memories+str(rank)+'.pt', weights_only=True).detach()
                             memories_student = memories.clone().detach().requires_grad_(True)
                             dist.barrier(group=group_agents)
                             torch.save(tmp_memories, cf.path_memories+str(rank)+'.pt')
@@ -247,7 +247,6 @@ def isaac_training(cf, rank, size):
                     history['obs'][sim_step] = all_obs['policy'].clone()    # (num_envs, d)
                     if cf.render:
                         video = all_obs['camera'].clone()  # (num_envs, 256, 456, 3)
-                        # print(video[0, ::10, ::10, 0])
                         # ts.save(video[0], '/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/live.jpg')
                         full_video.append(video[8].cpu())
                         video = torch.zeros(cf.num_envs, cf.frames, cf.height, cf.width, 3, device=device)

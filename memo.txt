@@ -22,7 +22,9 @@ https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/
 # Infinigen
 python -m infinigen_examples.generate_indoors --seed 0 --task coarse --output_folder outputs/indoors/coarse -g singleroom.gin -p compose_indoors.terrain_enabled=False  restrict_solving.solve_max_rooms=1 
 python -m infinigen.tools.export --input_folder outputs/indoors/coarse --output_folder outputs/my_export -f usdc -r 1024 --omniverse
-python infinigen/tools/isaac_sim.py --scene-path  outputs/my_export/export_scene.blend/export_scene.usdc --json-path outputs/indoors/coarse/solve_state.json 
+python infinigen/tools/isaac_sim.py --scene-path  outputs/my_export/export_scene.blend/export_scene.usda --json-path outputs/my_export/solve_state.json
+python -m infinigen.tools.export --input_folder outputs/hello_world/coarse --output_folder outputs/hello_world/coarse/my_export -f usdc -r 1024 --omniverse
+python -m infinigen.tools.export --input_folder outputs/hello_world/fine --output_folder outputs/hello_world/fine/my_export -f usdc -r 1024 --omniverse
 
 #Common errors
 - Duplicate driver files:
