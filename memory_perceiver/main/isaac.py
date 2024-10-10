@@ -72,8 +72,7 @@ def isaac_training(cf, rank, size):
         env_cfg = parse_env_cfg(
             cf.task, device=str(device), num_envs=cf.num_envs, use_fabric=False, 
         )
-        env = gym.make(cf.task, cfg=env_cfg, render_mode="rgb_array")
-        print(env.render_mode)
+        env = gym.make(cf.task, cfg=env_cfg)
         print(f"[INFO]: Gym observation space: {env.observation_space}")
         print(f"[INFO]: Gym action space: {env.action_space}")
         seed_isaac = set_seed(cf.seed, torch_deterministic=False)

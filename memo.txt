@@ -2,7 +2,6 @@
 cd /isaac-sim
 ./jupyter_notebook.sh --allow-root => start kernel, then copy url and connect to existing
 
-
 # tmux
 tmux detach -a => detach all other processes thus adjust window size
 tmux set-option history-limit 10000 \; new-window => more history, default 2000
@@ -12,6 +11,11 @@ tmux set-option history-limit 10000 \; new-window => more history, default 2000
 ^b n => switch window
 ^b d => detach
 
+# GCP
+./google-cloud-sdk/bin/gcloud --quiet config set project turnkey-setup-356207
+./google-cloud-sdk/bin/gcloud storage cp --recursive  gs://memory_perceiver/infinigen/test .
+gcloud storage cp --recursive gs://memory_perceiver/infinigen/test .
+
 # IsaacLab
 alias python=/isaac-sim/python.sh
 python -m pip install skrl
@@ -20,11 +24,10 @@ python -m pip install skrl
 https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=add_reference_to_stage#omni.isaac.core.utils.stage.add_reference_to_stage
 
 # Infinigen
-python -m infinigen_examples.generate_indoors --seed 0 --task coarse --output_folder outputs/indoors/coarse -g singleroom.gin -p compose_indoors.terrain_enabled=False  restrict_solving.solve_max_rooms=1 
-python -m infinigen.tools.export --input_folder outputs/indoors/coarse --output_folder outputs/my_export -f usdc -r 1024 --omniverse
-python infinigen/tools/isaac_sim.py --scene-path  outputs/my_export/export_scene.blend/export_scene.usda --json-path outputs/my_export/solve_state.json
-python -m infinigen.tools.export --input_folder outputs/hello_world/coarse --output_folder outputs/hello_world/coarse/my_export -f usdc -r 1024 --omniverse
+python -m infinigen_examples.generate_nature --seed 0 --task coarse -g desert.gin simple.gin --output_folder outputs/hello_world/coarse
+python -m infinigen_examples.generate_nature --seed 0 --task populate fine_terrain -g desert.gin simple.gin --input_folder outputs/hello_world/coarse --output_folder outputs/hello_world/fine
 python -m infinigen.tools.export --input_folder outputs/hello_world/fine --output_folder outputs/hello_world/fine/my_export -f usdc -r 1024 --omniverse
+python infinigen/tools/isaac_sim.py --scene-path  outputs/my_export/export_scene.blend/export_scene.usda --json-path outputs/my_export/solve_state.json
 
 #Common errors
 - Duplicate driver files:

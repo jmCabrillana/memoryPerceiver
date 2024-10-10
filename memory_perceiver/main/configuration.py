@@ -2,13 +2,13 @@
 
 class Config:
 
-    experiment_name = "P_1.0_TBPTT"
+    experiment_name = "P_1.1_video"
 
     # Task
-    task = "Isaac-Cartpole-Direct-Cam-v0" # Humanoid Cartpole 
+    task =  "Isaac-Humanoid-Direct-v0" # Isaac-Cartpole-Direct-Cam-v0
     agent_type = "Perceiver" # Simple Perceiver
-    dim_observations = 4 # 87 4 5
-    dim_actions = 1 # 21 1
+    dim_observations = 75 # 75 4 5
+    dim_actions = 21 # 21 1
     num_envs = 16 # 1 54 216 864 2048
     sim_duration = 32 # 1028 516 260
     seed = 68
@@ -56,7 +56,7 @@ class Config:
 
     # Model inputs and outputs
     input_audio = False
-    input_video = False
+    input_video = True
     output_audio = False
     sample_audio_frame = 1920
     width = 448
