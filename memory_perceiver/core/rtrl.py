@@ -1,12 +1,15 @@
-import torch
-from torch.autograd import grad, Variable
 import numpy as np
 import pandas as pd
 import random
 import time
-from torch.func import jacrev, functional_call
+from pathlib import Path
+
 from google.cloud import bigquery
 from google.oauth2 import service_account
+
+import torch
+from torch.autograd import grad, Variable
+from torch.func import jacrev, functional_call
 
 def cat_CSR_rows(csr_list):
     device = csr_list[0].device
@@ -180,7 +183,8 @@ class RTRL_partial():
             device = self.d_state_d_theta.device
 
             # Set up bigquery
-            credentials = service_account.Credentials.from_service_account_file('/isaac-sim/memoryPerceiver/service_account.json')
+            memoryPerceiver_dir = Path(__file__).parent.parent.parent
+            credentials = service_account.Credentials.from_service_account_file(memoryPerceiver_dir / 'service_account.json')
             client = bigquery.Client(credentials=credentials)
             table_name = f"{credentials.project_id}.influence.{self.table_save}"
             schema =[

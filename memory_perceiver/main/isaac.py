@@ -21,7 +21,7 @@ sys.path.append(join(dirname(dirname(os.getcwd()))))
 sys.path.append(os.getcwd())
 
 from omni.isaac.lab.app import AppLauncher
-from memoryPerceiver.memory_perceiver.main.configuration import cf
+from memoryPerceiver.memory_perceiver.main.configuration import IsaacCfg as cf
 from memoryPerceiver.memory_perceiver.core.model_wrapper import create_memories, reset_memories, freeze_parameters
 from memoryPerceiver.memory_perceiver.core.distributed import setup_distributed, average_gradients, scatter_dummy_src, gather_dummy_src
 from memoryPerceiver.memory_perceiver.core.miscellaneous import custom_random, print_cuda_tensors
@@ -86,8 +86,9 @@ def isaac_training(cf, rank, size):
         model_student = create_agent(cf, rank)
         if isinstance(model, ActorCriticPerceiver):
             memories = create_memories(model.actor, cf.num_envs, device=device)
-            if not os.path.exists(cf.path_memories) and cf.training_mode != 'RTRL':
-                torch.save(memories, cf.path_memories+str(rank)+'.pt')
+            path_mem = str(cf.path_memories)+str(rank)+'.pt'
+            if not os.path.exists(path_mem) and cf.training_mode != 'RTRL':
+                torch.save(memories, path_mem)
         else :
             memories = None
             memories_student = None
@@ -111,8 +112,8 @@ def isaac_training(cf, rank, size):
             model.flattened_mem = mem_dim
             model_student.flattened_mem = mem_dim
             memories = rearrange(memories, 'b l h -> (b l h)')
-            if not os.path.exists(cf.path_memories):
-                torch.save(memories, cf.path_memories+str(rank)+'.pt')
+            if not os.path.exists(path_mem):
+                torch.save(memories, path_mem)
             len_slice_indexes = torch.tensor(0, device=device)
         dist.broadcast(len_slice_indexes, src=rank_sim)  
         if rank in rank_agents:
@@ -172,7 +173,7 @@ def isaac_training(cf, rank, size):
                 if is_inference:
                     if rank in rank_agents:
                         if isinstance(model, ActorCriticPerceiver):
-                            memories = torch.load(cf.path_memories+str(rank)+'.pt', weights_only=True)
+                            memories = torch.load(path_mem, weights_only=True)
                         if sim_count == 0 and os.path.exists(cf.path_model):
                             state_dict = torch.load(cf.path_model, weights_only=True)
                             model.load_state_dict(state_dict['model'])
@@ -219,10 +220,10 @@ def isaac_training(cf, rank, size):
                                 print(f"{key}: {value[:,0, 0]}")
                     if rank in rank_agents and isinstance(model, ActorCriticPerceiver):
                             tmp_memories = memories
-                            memories = torch.load(cf.path_memories+str(rank)+'.pt', weights_only=True).detach()
+                            memories = torch.load(path_mem, weights_only=True).detach()
                             memories_student = memories.clone().detach().requires_grad_(True)
                             dist.barrier(group=group_agents)
-                            torch.save(tmp_memories, cf.path_memories+str(rank)+'.pt')
+                            torch.save(tmp_memories, path_mem)
                     if rank == rank_sim:
                         print('returns mean', previous_history['returns'].mean())
                         print('values mean', unscaled_values.mean())
@@ -428,7 +429,7 @@ def isaac_training(cf, rank, size):
                         next_values = next_values.to(torch.float32)
                         
                 if sim_count % 50 == 0 and sim_step == cf.sim_duration-1 and rank == 0 and cf.render :
-                    torchvision.io.write_video('/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/test_'  + str(sim_count) + '_vid_.mp4', 
+                    torchvision.io.write_video( cf.path_monitor / 'test_'  + (str(sim_count) + '_vid_.mp4'), 
                                                 torch.stack(full_video), 8*cf.frames)
             sim_step += 1
 
@@ -445,7 +446,7 @@ def isaac_training(cf, rank, size):
 
 if __name__ == "__main__":
 
-    cf.path_experiment = tr.setup_run(cf.path_main+'configuration.py', cf.path_experiment)
+    cf.path_experiment = tr.setup_run(cf.path_main / 'configuration.py', cf.path_experiment)
     
     # logging.basicConfig(filename=cf.path_logs, level=logging.INFO)
     # log_handler = logging.FileHandler(cf.path_logs, mode='a')

@@ -105,7 +105,7 @@ def setup_run(path_config, path_experiment):
     experiment_number = 0
     if not os.path.exists(path_experiment):
         os.makedirs(path_experiment)
-        shutil.copy(path_config, path_experiment+'configuration_0.py')
+        shutil.copy(path_config, path_experiment / 'configuration_0.py')
     else:
         pattern = re.compile(r'configuration_(\d+)\.py')
         max_file = None
@@ -120,14 +120,14 @@ def setup_run(path_config, path_experiment):
                     max_file = filename
 
         if max_file is None:
-            shutil.copy(path_config, path_experiment+'configuration_0.py')
+            shutil.copy(path_config, path_experiment / 'configuration_0.py')
         else:
-            path_last_experiment = path_experiment+max_file
+            path_last_experiment = path_experiment / max_file
             with open(path_config, 'rb') as f1, open(path_last_experiment, 'rb') as f2:
                 if f1.read() != f2.read():
                     experiment_number += 1
-                    shutil.copy(path_config, path_experiment+'configuration_'+str(experiment_number)+'.py')
+                    shutil.copy(path_config, path_experiment / ('configuration_'+str(experiment_number)+'.py') )
 
     time_experiment = datetime.now().strftime("%m-%d_%H:%M:%S")
-    path_run = path_experiment + 'run_' + str(experiment_number) +'_'+time_experiment+'/'
+    path_run = path_experiment / ('run_' + str(experiment_number) + '_' + time_experiment ) 
     return path_run

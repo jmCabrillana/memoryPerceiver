@@ -1,4 +1,4 @@
-# class Config:
+# class IsaacCfg:
 
 #     # Sampling configuration
 

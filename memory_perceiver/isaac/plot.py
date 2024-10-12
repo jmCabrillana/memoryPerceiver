@@ -11,7 +11,7 @@ def two_levels_plot(data, ax, fig, horizon, path):
     fig.savefig(path)
 
 class Plotter:
-    def __init__(self, plot_type, path_plots='/isaac-sim/memoryPerceiver/memory_perceiver/main/', titles=[]):
+    def __init__(self, plot_type, path_plots, titles=[]):
         self.plot_type = plot_type
         self.path_plots = path_plots
         if plot_type == 'matplotlib':
@@ -41,12 +41,12 @@ class Plotter:
                     title = element
                     if len(self.data[title]) > 0:
                         self.axes[i].plot(self.data[title])
-                        self.figs[i].savefig(self.path_plots + 'plt_' + self.titles[i]+ '.png')
+                        self.figs[i].savefig(self.path_plots / 'plt_' / (self.titles[i]+ '.png') )
 
                 if isinstance(element, tuple) and len(element)==2:
                     title, horizon = element
                     if len(self.data[title]) > 0:
                         two_levels_plot(self.data[title], self.axes[i], self.figs[i], horizon=horizon, 
-                                        path=self.path_plots + 'plt_' + self.titles[i]+ '.png')
+                                        path=self.path_plots / 'plt_' / (self.titles[i]+ '.png') )
 
 

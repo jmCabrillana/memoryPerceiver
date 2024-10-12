@@ -17,7 +17,6 @@ tmux set-option history-limit 10000 \; new-window => more history, default 2000
 gcloud storage cp --recursive gs://memory_perceiver/infinigen/test .
 
 # IsaacLab
-alias python=/isaac-sim/python.sh
 python -m pip install skrl
 
 # Isaac-sim
@@ -39,3 +38,5 @@ python infinigen/tools/isaac_sim.py --scene-path  outputs/my_export/export_scene
 # Container 
  --shm-size=1g --ulimit memlock=-1 # may solve memory errors
  
+# to do
+/isaac-sim/extsPhysics/omni.physx.demos/omni/physxdemos/scenes/ContactReportDemo.py
