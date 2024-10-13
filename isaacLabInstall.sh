@@ -22,29 +22,30 @@ CLOUDSDK_CORE_DISABLE_PROMPTS=1 ./google-cloud-sdk/install.sh
 # python and requirements
 # alias python='/isaac-sim/python.sh'
 if [ "$SCRIPT_DIR" = "/isaac-sim/memoryPerceiver" ]; then
-    export PATH="/isaac-sim/kit/python/bin:$PATH"
-    python -m pip install torch==2.4.0 --index-url https://download.pytorch.org/whl/cu121 torchvision torchaudio
+    python_exe="/isaac-sim/kit/python/bin/python3"
+    $python_exe -m pip install torch==2.4.0 --index-url https://download.pytorch.org/whl/cu121 torchvision torchaudio
 else
     # install isaac-sim with pip 
     python3.10 -m venv isaaclab
     source isaaclab/bin/activate
-    pip install torch==2.4.0 --index-url https://download.pytorch.org/whl/cu121 torchvision torchaudio
-    pip install isaacsim==4.2.0.2 --extra-index-url https://pypi.nvidia.com
+    $python_exe="python"
+    $python_exe -m pip install torch==2.4.0 --index-url https://download.pytorch.org/whl/cu121 torchvision torchaudio
+    $python_exe -m pip install isaacsim==4.2.0.2 --extra-index-url https://pypi.nvidia.com
 fi
-source ~/.bashrc
-python -m pip install -r requirements.txt
+$python_exe -m pip install --upgrade pip
+$python_exe -m pip install -r requirements.txt
 cd $SCRIPT_DIR/IsaacLab/source/extensions/omni.isaac.lab
-python -m pip install -e .
+$python_exe -m pip install -e .
 cd $SCRIPT_DIR/IsaacLab/source/extensions/omni.isaac.lab_assets
-python -m pip install -e .
+$python_exe -m pip install -e .
 cd $SCRIPT_DIR/IsaacLab/source/extensions/omni.isaac.lab_tasks
-python -m pip install -e .
+$python_exe -m pip install -e .
 
 # Infinigen
 sudo apt-get install wget cmake g++ libgles2-mesa-dev libglew-dev libglfw3-dev libglm-dev zlib1g-dev -y
 sudo apt install libxkbcommon-x11-0 -y
 cd $SCRIPT_DIR/infinigen
-python -m pip install -e ".[terrain,vis]"
+$python_exe -m pip install -e ".[terrain,vis]"
 
 # Set variables
 export ACCEPT_EULA=Y

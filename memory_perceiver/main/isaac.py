@@ -429,7 +429,7 @@ def isaac_training(cf, rank, size):
                         next_values = next_values.to(torch.float32)
                         
                 if sim_count % 50 == 0 and sim_step == cf.sim_duration-1 and rank == 0 and cf.render :
-                    torchvision.io.write_video( cf.path_monitor / 'test_'  + (str(sim_count) + '_vid_.mp4'), 
+                    torchvision.io.write_video( cf.path_monitor / ('test_'  + str(sim_count) + '_vid_.mp4'), 
                                                 torch.stack(full_video), 8*cf.frames)
             sim_step += 1
 

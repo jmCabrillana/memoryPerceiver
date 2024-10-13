@@ -85,3 +85,4 @@ class IsaacCfg:
     path_memories = path_main / 'weights' / ('task'+'_'+experiment_name+'_mem_')
     path_scaler = path_main / 'weights' / (task+'_'+experiment_name+'_scaler.pt')
     path_logs = path_experiment / 'isaac.log'
+    path_monitor = path_main / 'monitor'
