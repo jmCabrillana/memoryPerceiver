@@ -60,7 +60,7 @@ def isaac_training(cf, rank, size):
     if rank == rank_sim:
         # !!! Load isaac modules after the variables
         # env = VecEnvRLGames(headless=cfg.headless, sim_device=rank_sim, enable_viewport=cfg.enable_viewport)
-        app_launcher = AppLauncher(headless=True, enable_cameras=True)
+        app_launcher = AppLauncher(headless=False, enable_cameras=True)
         simulation_app = app_launcher.app
         import gymnasium as gym
         from omni.isaac.core.utils.torch.maths import set_seed

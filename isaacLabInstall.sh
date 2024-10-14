@@ -27,13 +27,13 @@ if [ "$SCRIPT_DIR" = "/isaac-sim/memoryPerceiver" ]; then
 else
     # install isaac-sim with pip 
     python3.10 -m venv isaaclab
-    source isaaclab/bin/activate
-    $python_exe="python"
+    source ../isaaclab/bin/activate
+    python_exe="python"
     $python_exe -m pip install torch==2.4.0 --index-url https://download.pytorch.org/whl/cu121 torchvision torchaudio
     $python_exe -m pip install isaacsim==4.2.0.2 --extra-index-url https://pypi.nvidia.com
 fi
 $python_exe -m pip install --upgrade pip
-$python_exe -m pip install -r requirements.txt
+$python_exe -m pip install -r $SCRIPT_DIR/requirements.txt
 cd $SCRIPT_DIR/IsaacLab/source/extensions/omni.isaac.lab
 $python_exe -m pip install -e .
 cd $SCRIPT_DIR/IsaacLab/source/extensions/omni.isaac.lab_assets
