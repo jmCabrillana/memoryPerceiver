@@ -6,9 +6,9 @@ git config --global user.email "jean_manuel.cabrillana@yahoo.fr"
 git config --global user.name "jmCabrillana"
 
 # directories and system
-mkdir memory_perceiver/main/weights
-mkdir memory_perceiver/main/monitor
-mkdir memory_perceiver/main/experiments
+mkdir $SCRIPT_DIR/memory_perceiver/main/weights
+mkdir $SCRIPT_DIR/memory_perceiver/main/monitor
+mkdir $SCRIPT_DIR/memory_perceiver/main/experiments
 sudo apt install cmake build-essential -y
 apt-get install curl tar screen -y
 
@@ -23,14 +23,16 @@ CLOUDSDK_CORE_DISABLE_PROMPTS=1 ./google-cloud-sdk/install.sh
 # alias python='/isaac-sim/python.sh'
 if [ "$SCRIPT_DIR" = "/isaac-sim/memoryPerceiver" ]; then
     python_exe="/isaac-sim/kit/python/bin/python3"
-    $python_exe -m pip install torch==2.4.0 --index-url https://download.pytorch.org/whl/cu121 torchvision torchaudio
+    $python_exe -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 else
     # install isaac-sim with pip 
     python3.10 -m venv isaaclab
-    source ../isaaclab/bin/activate
+    # source $SCRIPT_DIR/../isaaclab/bin/activate
     python_exe="python"
-    $python_exe -m pip install torch==2.4.0 --index-url https://download.pytorch.org/whl/cu121 torchvision torchaudio
+    conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia
+    # $python_exe -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124 
     $python_exe -m pip install isaacsim==4.2.0.2 --extra-index-url https://pypi.nvidia.com
+    $python_exe -m pip install isaacsim-extscache-physics isaacsim-extscache-kit-sdk isaacsim-extscache-kit isaacsim-app --extra-index-url https://pypi.nvidia.com
 fi
 $python_exe -m pip install --upgrade pip
 $python_exe -m pip install -r $SCRIPT_DIR/requirements.txt
