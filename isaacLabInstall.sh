@@ -13,11 +13,11 @@ sudo apt install cmake build-essential -y
 apt-get install curl tar screen -y
 
 # GCP
-# curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-417.0.1-linux-x86_64.tar.gz
-# tar -xf google-cloud-cli-417.0.1-linux-x86_64.tar.gz 
-# rm google-cloud-cli-417.0.1-linux-x86_64.tar.gz 
-# CLOUDSDK_CORE_DISABLE_PROMPTS=1 ./google-cloud-sdk/install.sh
-# ./google-cloud-sdk/bin/gcloud --quiet auth activate-service-account --key-file=memoryPerceiver/service_account.json
+curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-417.0.1-linux-x86_64.tar.gz
+tar -xf google-cloud-cli-417.0.1-linux-x86_64.tar.gz 
+rm google-cloud-cli-417.0.1-linux-x86_64.tar.gz 
+CLOUDSDK_CORE_DISABLE_PROMPTS=1 ./google-cloud-sdk/install.sh
+./google-cloud-sdk/bin/gcloud --quiet auth activate-service-account --key-file=memoryPerceiver/service_account.json
 
 # python and requirements
 # alias python='/isaac-sim/python.sh'
@@ -37,9 +37,9 @@ else
     # conda install pytorch==2.4.0 torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia -y
     # export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
     # export LD_LIBRARY_PATH=/home/user/miniconda3/envs/isaacLab/lib/python3.10/site-packages/torch/lib:${LD_LIBRARY_PATH}
-    # $python_exe -m pip install torch==2.4.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu$cuda_version
-    # $python_exe -m pip install isaacsim==4.2.0.2 --extra-index-url https://pypi.nvidia.com
-    # $python_exe -m pip install isaacsim-extscache-physics isaacsim-extscache-kit-sdk isaacsim-extscache-kit isaacsim-app --extra-index-url https://pypi.nvidia.com
+    $python_exe -m pip install torch==2.4.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu$cuda_version
+    $python_exe -m pip install isaacsim==4.2.0.2 --extra-index-url https://pypi.nvidia.com
+    $python_exe -m pip install isaacsim-extscache-physics isaacsim-extscache-kit-sdk isaacsim-extscache-kit isaacsim-app --extra-index-url https://pypi.nvidia.com
 fi
 $python_exe -m pip install --upgrade pip
 $python_exe -m pip install -r $SCRIPT_DIR/requirements.txt
