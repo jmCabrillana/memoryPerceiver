@@ -447,6 +447,7 @@ def isaac_training(cf, rank, size):
 if __name__ == "__main__":
 
     cf.path_experiment = tr.setup_run(cf.path_main / 'configuration.py', cf.path_experiment)
+    os.makedirs(cf.path_experiment)
     
     # logging.basicConfig(filename=cf.path_logs, level=logging.INFO)
     # log_handler = logging.FileHandler(cf.path_logs, mode='a')

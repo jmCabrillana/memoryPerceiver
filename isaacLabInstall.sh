@@ -28,7 +28,7 @@ then
 else
     python3.10 -m venv isaaclab
     source $SCRIPT_DIR/../isaaclab/bin/activate
-    export LD_LIBRARY_PATH=$VIRTUAL_ENV/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=$VIRTUAL_ENV/lib/python3.10/site-packages/torch/lib:$LD_LIBRARY_PATH
     cuda_version="$(nvcc --version | grep -oP '\d+\.\d+' | tr -d '.' | uniq)"
     echo $LD_LIBRARY_PATH
     echo $cuda_version

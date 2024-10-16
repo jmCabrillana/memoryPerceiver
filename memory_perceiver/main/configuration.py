@@ -2,14 +2,14 @@ from pathlib import Path
 
 class IsaacCfg:
 
-    experiment_name = "P_1.1_video"
+    experiment_name = "P_1.2_simple"
 
     # Task
     task =  "Isaac-Humanoid-Direct-v0" # Isaac-Cartpole-Direct-Cam-v0
-    agent_type = "Perceiver" # Simple Perceiver
+    agent_type = "Simple" # Simple Perceiver
     dim_observations = 75 # 75 4 5
     dim_actions = 21 # 21 1
-    num_envs = 16 # 1 54 216 864 2048
+    num_envs = 64 # 1 54 216 864 2048
     sim_duration = 32 # 1028 516 260
     seed = 68
     render = True
@@ -21,8 +21,8 @@ class IsaacCfg:
     training_mode = 'Backward' # Backward TBPTT RTRL
     learning_rate = 1e-4 # 3e-4 1e-4 1e-5
     kl_threshold = 0.008 # 0.008 1e10
-    scheduler = 'warm-up' # kl_div warm-up
-    range_lr = [1e-5, 5e-4]
+    scheduler = 'kl_div' # kl_div warm-up
+    range_lr = [1e-5, 1e-2] # [1e-5, 5e-4]
     entropy = 0.00 # 0.01 to 0.05
     critic = 2   # 0.5 to 2 4
     accumulation_steps = 6 # 2 4
@@ -41,7 +41,7 @@ class IsaacCfg:
     critic_depth = 2
     depth_f_state = 0
     query_dim = 32 # 32 512 832 # video > 136 , 
-    hidden_dim = 32 # for simple net
+    hidden_dim = 128 # for simple net
     latent_heads = 8 # 2 8
     latent_dim_head =  16 #16  64
     nb_latents_mem = 2
@@ -82,7 +82,7 @@ class IsaacCfg:
     path_main = Path(__file__).parent
     path_experiment = path_main / 'experiments' / task / experiment_name
     path_model = path_main / 'weights' / (task+'_'+experiment_name+'.pt')
-    path_memories = path_main / 'weights' / ('task'+'_'+experiment_name+'_mem_')
+    path_memories = path_main / 'weights' / (task+'_'+experiment_name+'_mem_')
     path_scaler = path_main / 'weights' / (task+'_'+experiment_name+'_scaler.pt')
     path_logs = path_experiment / 'isaac.log'
     path_monitor = path_main / 'monitor'
