@@ -5,14 +5,14 @@ class IsaacCfg:
     experiment_name = "P_1.2_simple"
 
     # Task
-    task =  "Isaac-Humanoid-Direct-v0" # Isaac-Cartpole-Direct-Cam-v0
+    task =  "Isaac-Humanoid-Direct-v0" # Isaac-Cartpole-Cam-Direct-v0
     agent_type = "Simple" # Simple Perceiver
     dim_observations = 75 # 75 4 5
     dim_actions = 21 # 21 1
-    num_envs = 64 # 1 54 216 864 2048
+    num_envs = 2048 # 1 54 216 864 2048
     sim_duration = 32 # 1028 516 260
     seed = 68
-    render = True
+    render = False
 
     # PPO
     frames = 1
@@ -37,8 +37,8 @@ class IsaacCfg:
     update_probability = 0.5 #0.33
 
     # Model parameters
-    depth = 1
-    critic_depth = 2
+    depth = 3
+    critic_depth = 3
     depth_f_state = 0
     query_dim = 32 # 32 512 832 # video > 136 , 
     hidden_dim = 128 # for simple net
@@ -56,7 +56,7 @@ class IsaacCfg:
 
     # Model inputs and outputs
     input_audio = False
-    input_video = True
+    input_video = False
     output_audio = False
     sample_audio_frame = 1920
     width = 448
@@ -86,3 +86,5 @@ class IsaacCfg:
     path_scaler = path_main / 'weights' / (task+'_'+experiment_name+'_scaler.pt')
     path_logs = path_experiment / 'isaac.log'
     path_monitor = path_main / 'monitor'
+
+isaac_cfg = IsaacCfg()

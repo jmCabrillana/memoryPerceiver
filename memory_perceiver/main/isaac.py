@@ -21,7 +21,7 @@ sys.path.append(join(dirname(dirname(os.getcwd()))))
 sys.path.append(os.getcwd())
 
 from omni.isaac.lab.app import AppLauncher
-from memoryPerceiver.memory_perceiver.main.configuration import IsaacCfg as cf
+from memoryPerceiver.memory_perceiver.main.configuration import isaac_cfg
 from memoryPerceiver.memory_perceiver.core.model_wrapper import create_memories, reset_memories, freeze_parameters
 from memoryPerceiver.memory_perceiver.core.distributed import setup_distributed, average_gradients, scatter_dummy_src, gather_dummy_src
 from memoryPerceiver.memory_perceiver.core.miscellaneous import custom_random, print_cuda_tensors
@@ -79,7 +79,7 @@ def isaac_training(cf, rank, size):
         env.reset()
         value_scaler = RunningStandardScaler(size=1, device=device)  
         if os.path.exists(cf.path_scaler):
-            value_scaler.load_state_dict(torch.load(cf.path_scaler, weights_only=True))          
+            value_scaler.load_state_dict(torch.load(cf.path_scaler, weights_only=True))   
 
     if rank in rank_agents:
         model = create_agent(cf, rank)
@@ -161,8 +161,6 @@ def isaac_training(cf, rank, size):
                 is_inference =  sim_count % (cf.num_replay+1) == 0 # not is_inference
                 dist.destroy_process_group(group_agents)
                 group_agents = dist.new_group(rank_agents) # It is necessary to reset this group here to avoid duplicate gpu errors
-                # if rank == rank_sim:
-                #     env.unwrapped.sim.reset(soft=True) #False
                 
                 if rank == rank_sim:
                     if len(history['rewards'])>0:
@@ -177,10 +175,12 @@ def isaac_training(cf, rank, size):
                         if sim_count == 0 and os.path.exists(cf.path_model):
                             state_dict = torch.load(cf.path_model, weights_only=True)
                             model.load_state_dict(state_dict['model'])
+                            model_student.load_state_dict(state_dict['model'])
                             optimizer.load_state_dict(state_dict['optimizer'])
                         else:
                             if sim_count % ( (cf.num_replay+1)*cf.student_update_step ) == 0 :
                                 model.load_state_dict(model_student.state_dict())
+                                pass
                         dist.barrier(group=group_agents)
                         if rank == 1:
                             torch.save({'model': model_student.state_dict(), 'optimizer': optimizer.state_dict()}, cf.path_model)
@@ -446,8 +446,8 @@ def isaac_training(cf, rank, size):
 
 if __name__ == "__main__":
 
-    cf.path_experiment = tr.setup_run(cf.path_main / 'configuration.py', cf.path_experiment)
-    os.makedirs(cf.path_experiment)
+    isaac_cfg.path_experiment = tr.setup_run(isaac_cfg.path_main / 'configuration.py', isaac_cfg.path_experiment)
+    os.makedirs(isaac_cfg.path_experiment)
     
     # logging.basicConfig(filename=cf.path_logs, level=logging.INFO)
     # log_handler = logging.FileHandler(cf.path_logs, mode='a')
@@ -473,7 +473,7 @@ if __name__ == "__main__":
     processes = []
     mp.set_start_method("spawn")
     for rank in range(size):
-        p = mp.Process(target=isaac_training, args=(cf, rank, size))
+        p = mp.Process(target=isaac_training, args=(isaac_cfg, rank, size))
         p.start()
         processes.append(p)
 
