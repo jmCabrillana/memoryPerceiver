@@ -27,8 +27,8 @@ class ActorCriticSimple(ActorCritic):
         self.dim_actions_ppo = cf.dim_actions_ppo
         self.dim_t = cf.frames_future
         self.hidden_dim = cf.hidden_dim
-        self.actor = nn.Sequential( *( [layer_init(nn.Linear(self.state_dim, self.hidden_dim)), nn.ReLU()] +
-                                        [layer_init(nn.Linear(self.hidden_dim, self.hidden_dim)), nn.ReLU()]*(cf.depth-1) )
+        self.actor = nn.Sequential( *( [layer_init(nn.Linear(self.state_dim, self.hidden_dim)), nn.ELU()] +
+                                        [layer_init(nn.Linear(self.hidden_dim, self.hidden_dim)), nn.ELU()]*(cf.depth-1) )
                                     ).to(device)
         self.actor.reset_memories = lambda *args, **kwargs: None
         self.actor_mean = layer_init(nn.Linear(self.hidden_dim, self.dim_actions_ppo, device=device), std=0.01)
@@ -36,8 +36,8 @@ class ActorCriticSimple(ActorCritic):
         if self.shared:
             self.actor_critic = layer_init(nn.Linear(self.hidden_dim, 1, device=device), std=1)
         else:
-            self.critic = nn.Sequential( *( [layer_init(nn.Linear(self.state_dim, self.hidden_dim)), nn.ReLU()] +
-                                            [layer_init(nn.Linear(self.hidden_dim, self.hidden_dim)), nn.ReLU()]*(cf.critic_depth-1) +
+            self.critic = nn.Sequential( *( [layer_init(nn.Linear(self.state_dim, self.hidden_dim)), nn.ELU()] +
+                                            [layer_init(nn.Linear(self.hidden_dim, self.hidden_dim)), nn.ELU()]*(cf.critic_depth-1) +
                                             [layer_init(nn.Linear(self.hidden_dim, 1), std=1)]  ) ).to(device)
         # self.to_tt = nn.Linear(1, self.hidden_dim, device=device)
         # self.tt1=nn.TransformerEncoderLayer(d_model=self.hidden_dim, nhead=4,  device=device)
@@ -65,17 +65,18 @@ class ActorCriticSimple(ActorCritic):
 
         actions_mean  = torch.tanh(self.actor_mean(hidden))
         log_std = self.actor_std(hidden).clip(-20, 2) # ((1+actions_tmp[:, self.dim_actions_ppo:2*self.dim_actions_ppo])/4+1e-5)**2
-        covariance = torch.diag_embed(log_std.exp() * log_std.exp())
-        dist = MultivariateNormal(actions_mean, covariance) # scale_tril=covariance) # torch.diag(...)
+        # covariance = torch.diag_embed(log_std.exp() * log_std.exp())
+        # dist = MultivariateNormal(actions_mean, covariance) # scale_tril=covariance) # torch.diag(...)
+        dist = Normal(actions_mean, log_std.exp())
         
         # Act
         if old_actions is None:  
             actions = dist.sample()
-            logprobs = dist.log_prob(actions)
+            logprobs = dist.log_prob(actions).mean(dim=-1)
             return actions.detach(), values.detach(), logprobs.detach(), None
         # Evaluate
         else:  
-            logprobs = dist.log_prob(old_actions)
+            logprobs = dist.log_prob(old_actions).mean(dim=-1)
             entropies = dist.entropy() 
             return logprobs, values, entropies, None
     

@@ -31,10 +31,10 @@ from memoryPerceiver.memory_perceiver.isaac.plot import Plotter
 from memoryPerceiver.memory_perceiver.isaac.agent import ActorCritic, ActorCriticSimple, ActorCriticPerceiver, create_agent
 from memoryPerceiver.memory_perceiver.core.rtrl import  RTRL_partial, shuffle_split_indexes
 
-def get_states(obs_stack, sim_step, cf, birth_time, device):
+def get_states(buffer, sim_step, cf, birth_time, device):
     states={}
     mask = tr.create_mask(birth_time, sim_step, frames=cf.frames)
-    states['observations'] = tr.buffer_padding(obs_stack, [cf.dim_observations],
+    states['observations'] = tr.buffer_padding(buffer['obs'], [cf.dim_observations],
                                                 num_envs=cf.num_envs, frames=cf.frames)
     states['observations'][mask] *= 0
     if cf.input_video:
@@ -189,12 +189,12 @@ def isaac_training(cf, rank, size):
                     if rank == rank_sim:
                         torch.save(value_scaler.state_dict(), cf.path_scaler)
                     full_video = []
+                    kl_list = []
                     for key in buffer.keys():
                         buffer[key]=[]
                 else:
                     previous_history = deepcopy(history)
                     gather_dummy_src(history['values'], rank, size-1, swap_axis=True)
-                    print(f"{rank}, {next_values.shape} {next_values.dtype} {next_values}")
                     gather_dummy_src(next_values, rank, size-1)
                     if rank == rank_sim:
                         next_values = value_scaler(next_values, inverse=True) 
@@ -230,7 +230,7 @@ def isaac_training(cf, rank, size):
                         print('target mean', (tmp_advantages + unscaled_values).mean())
                         print('scaler mean', value_scaler.running_mean)
                         print('scaler var', value_scaler.running_variance)
-                        value_scaler.running_variance = torch.clip(value_scaler.running_variance, 0, 200)
+                        # value_scaler.running_variance = torch.clip(value_scaler.running_variance, 0, 200)
 
                     loss=torch.tensor(0.0, device=device)
                     backward_count= 0
@@ -275,9 +275,8 @@ def isaac_training(cf, rank, size):
                     if isinstance(model, ActorCriticPerceiver):
                         dones_list = torch.nonzero(history['death_index'][sim_step].int()).flatten().tolist()
                         reset_memories(memories, indexes=dones_list)
-                    obs_stack = torch.stack(buffer['obs'])
-                    states=get_states(obs_stack, sim_step, cf, history['birth_time'][sim_step], device)
-                    with autocast(device_type='cuda', dtype=torch.bfloat16):
+                    states=get_states(tr.stack_buffer(buffer), sim_step, cf, history['birth_time'][sim_step], device)
+                    with autocast(device_type='cuda', dtype=torch.float16):
                         actions, values, logprobs, new_memories = model(states, memories)  # !!!! no update mem 
                         if cf.training_mode != 'Backward':
                             memories = new_memories
@@ -299,11 +298,13 @@ def isaac_training(cf, rank, size):
                         dones_list = torch.nonzero(death_index.int()).flatten().tolist()
                         reset_memories(memories, indexes=dones_list) 
                     obs_stack = previous_history['obs'][sim_step_rand-cf.frames+1:sim_step_rand+1]
-                    states=get_states(obs_stack, sim_step_rand, cf, birth_time, device)
+                    buffer_stack = {'obs': obs_stack}
+                    states=get_states(buffer_stack, sim_step_rand, cf, birth_time, device)
 
                     perform_update = ( custom_random(sim_count, sim_step_rand) < cf.update_probability and \
                                         sim_step_rand <= cf.sim_duration-1 ) or cf.training_mode == 'TBPTT'
-                    with autocast(device_type='cuda', dtype=torch.bfloat16):
+                    perform_update = perform_update and sim_count > 20
+                    with autocast(device_type='cuda', dtype=torch.float16):
                         if perform_update:
                             returns_targets = previous_history['returns_targets'][sim_step_rand].to(device)
                             advantages = previous_history['advantages'][sim_step_rand].to(device)
@@ -323,6 +324,7 @@ def isaac_training(cf, rank, size):
                             loss_critic = cf.critic * F.mse_loss(clipped_values, returns_targets)
                             new_loss = (loss_actor + loss_critic + loss_entropy) / cf.accumulation_steps
                             kl_divergence = ((ratios - 1) - (new_logprobs - logprobs)).mean()
+                            kl_list.append(kl_divergence.item())
                             if kl_divergence > 3*cf.kl_threshold:
                                 new_loss *= 0
                             loss += new_loss
@@ -330,15 +332,6 @@ def isaac_training(cf, rank, size):
                             _, _, _, memories = model(states, memories) 
 
                     if perform_update :
-
-                        # Adjust the learning rate
-                        dist.all_reduce(kl_divergence, op=dist.ReduceOp.SUM, group=group_agents)
-                        if cf.scheduler == 'kl_div':
-                            lr = tr.lr_kl_scheduler(lr, kl_divergence, kl_threshold=cf.kl_threshold, min_lr=cf.range_lr[0], max_lr=cf.range_lr[1])
-                        if cf.scheduler == 'warm-up':
-                            lr = tr.lr_warm_up(2*sim_count, min_lr=cf.range_lr[0], max_lr=cf.range_lr[1])
-                        for param_group in optimizer.param_groups:
-                            param_group['lr'] = lr
 
                         # Step optimizer
                         if cf.training_mode == 'Backward':
@@ -424,13 +417,23 @@ def isaac_training(cf, rank, size):
                     if rank in rank_agents:
                         obs_stack = torch.stack(buffer['obs'])
                         states=get_states(obs_stack, sim_step, cf, next_birth_time, device)
-                        with autocast(device_type='cuda', dtype=torch.bfloat16):
+                        with autocast(device_type='cuda', dtype=torch.float16):
                             _, next_values, _, _ = model_student(states, memories) 
                         next_values = next_values.to(torch.float32)
-                        
                 if sim_count % 50 == 0 and sim_step == cf.sim_duration-1 and rank == 0 and cf.render :
                     torchvision.io.write_video( cf.path_monitor / ('test_'  + str(sim_count) + '_vid_.mp4'), 
                                                 torch.stack(full_video), 8*cf.frames)
+            else:
+                if sim_step == cf.sim_duration-1 and rank in rank_agents:
+                    # Adjust the learning rate
+                    kl = torch.tensor(kl_list, device=device).mean()
+                    dist.all_reduce(kl, op=dist.ReduceOp.SUM, group=group_agents)
+                    if cf.scheduler == 'kl_div':
+                        lr = tr.lr_kl_scheduler(lr, kl, kl_threshold=cf.kl_threshold, min_lr=cf.range_lr[0], max_lr=cf.range_lr[1])
+                    if cf.scheduler == 'warm-up':
+                        lr = tr.lr_warm_up(2*sim_count, min_lr=cf.range_lr[0], max_lr=cf.range_lr[1])
+                    for param_group in optimizer.param_groups:
+                        param_group['lr'] = lr
             sim_step += 1
 
         else:

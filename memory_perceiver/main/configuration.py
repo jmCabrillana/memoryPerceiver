@@ -5,14 +5,14 @@ class IsaacCfg:
     experiment_name = "P_1.2_simple"
 
     # Task
-    task =  "Isaac-Humanoid-Direct-v0" # Isaac-Cartpole-Cam-Direct-v0
+    task =  "Isaac-Humanoid-Cam-Direct-v0" # Isaac-Cartpole-Cam-Direct-v0
     agent_type = "Simple" # Simple Perceiver
     dim_observations = 75 # 75 4 5
     dim_actions = 21 # 21 1
-    num_envs = 2048 # 1 54 216 864 2048
-    sim_duration = 32 # 1028 516 260
+    num_envs = 128 # 1 54 216 864 2048
+    sim_duration = 64 # 1028 516 260
     seed = 68
-    render = False
+    render = True
 
     # PPO
     frames = 1
@@ -22,19 +22,19 @@ class IsaacCfg:
     learning_rate = 1e-4 # 3e-4 1e-4 1e-5
     kl_threshold = 0.008 # 0.008 1e10
     scheduler = 'kl_div' # kl_div warm-up
-    range_lr = [1e-5, 1e-2] # [1e-5, 5e-4]
+    range_lr = [1e-5, 1e-3] # [1e-5, 5e-4]
     entropy = 0.00 # 0.01 to 0.05
     critic = 2   # 0.5 to 2 4
     accumulation_steps = 6 # 2 4
     student_update_step = 1
     eps = 1e-9
-    gamma = 0.9
+    gamma = 0.99
     c_lambda = 0.95
     grad_norm = 1.0  # 0.1 to 1.0
     eps_clip = 0.2
     value_clip = 0.2 #float('inf')
     num_replay = 1
-    update_probability = 0.5 #0.33
+    update_probability = 0.25 #0.33 0.5
 
     # Model parameters
     depth = 3

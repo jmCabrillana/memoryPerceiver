@@ -36,6 +36,11 @@ def update_buffer(buff, key, element, frames=32):
 def update_buffers(buff, dict, frames=32):
     for key, element in dict.items():
         update_buffer(buff, key, element, frames)
+    
+def stack_buffer(buff):
+    out_dict = {}
+    for key, element in dict.items():
+        out_dict[key] = torch.stack(element)
 
 
 def calculate_returns(mem_rewards, death_index, gamma=0.99):
@@ -63,12 +68,12 @@ def calculate_gae(mem_rewards, mem_values, next_values, death_index, gamma=0.99,
     
     for t in reversed(range(sim_duration)):
         # If the agent is reset, set GAE to 0
-        gae *= 1-death_index[t, :]
+        not_dones = 1-death_index[t, :]
 
         # Calculate the TD error and gae
         tmp_values = next_values if (t == sim_duration-1) else mem_values[t+1, :]
-        delta_t = mem_rewards[t, :] + gamma * tmp_values - mem_values[t, :]
-        gae = delta_t + gamma * gae_lambda * gae
+        delta_t = mem_rewards[t, :] + not_dones * gamma * tmp_values - mem_values[t, :]
+        gae = delta_t + not_dones * gamma * gae_lambda * gae
         gae_estimates[t, :] = gae
         
     return gae_estimates
