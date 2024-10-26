@@ -33,10 +33,6 @@ else
     echo $LD_LIBRARY_PATH
     echo $cuda_version
     python_exe="python"
-    # conda create/activate
-    # conda install pytorch==2.4.0 torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia -y
-    # export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
-    # export LD_LIBRARY_PATH=/home/user/miniconda3/envs/isaacLab/lib/python3.10/site-packages/torch/lib:${LD_LIBRARY_PATH}
     $python_exe -m pip install torch==2.4.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu$cuda_version
     $python_exe -m pip install isaacsim==4.2.0.2 --extra-index-url https://pypi.nvidia.com
     $python_exe -m pip install isaacsim-extscache-physics isaacsim-extscache-kit-sdk isaacsim-extscache-kit isaacsim-app --extra-index-url https://pypi.nvidia.com

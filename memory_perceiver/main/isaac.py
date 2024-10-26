@@ -248,8 +248,8 @@ def isaac_training(cf, rank, size):
                     if cf.render:
                         video = all_obs['camera'].clone()  # (num_envs, 256, 456, 3)
                         # ts.save(video[0], '/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/live.jpg')
-                        full_video.append(video[8].cpu())
-                        video = torch.zeros(cf.num_envs, cf.frames, cf.height, cf.width, 3, device=device)
+                        full_video.append(video[2].cpu())
+                        # video = torch.zeros(cf.num_envs, cf.frames, cf.height, cf.width, 3, device=device)
                     
                     #dones
                     dones = env.unwrapped.last_dones.int().clone()
@@ -275,7 +275,7 @@ def isaac_training(cf, rank, size):
                     if isinstance(model, ActorCriticPerceiver):
                         dones_list = torch.nonzero(history['death_index'][sim_step].int()).flatten().tolist()
                         reset_memories(memories, indexes=dones_list)
-                    states=get_states(tr.stack_buffer(buffer), sim_step, cf, history['birth_time'][sim_step], device)
+                    states=get_states(tr.stack_buffer(buffer, ['obs']), sim_step, cf, history['birth_time'][sim_step], device)
                     with autocast(device_type='cuda', dtype=torch.float16):
                         actions, values, logprobs, new_memories = model(states, memories)  # !!!! no update mem 
                         if cf.training_mode != 'Backward':
@@ -303,7 +303,7 @@ def isaac_training(cf, rank, size):
 
                     perform_update = ( custom_random(sim_count, sim_step_rand) < cf.update_probability and \
                                         sim_step_rand <= cf.sim_duration-1 ) or cf.training_mode == 'TBPTT'
-                    perform_update = perform_update and sim_count > 20
+                    perform_update = perform_update and seed >= cf.start_step
                     with autocast(device_type='cuda', dtype=torch.float16):
                         if perform_update:
                             returns_targets = previous_history['returns_targets'][sim_step_rand].to(device)
@@ -390,7 +390,7 @@ def isaac_training(cf, rank, size):
                 
                 if rank == rank_sim:
                     env.step(action.to(rank_sim))
-                    history['rewards'][sim_step] = env.unwrapped._get_rewards()    # (num_envs, 1)
+                    history['rewards'][sim_step] = 0.01*env.unwrapped._get_rewards()    # (num_envs, 1)
 
                 # Get next values at the last iteration
                 
@@ -415,16 +415,15 @@ def isaac_training(cf, rank, size):
                         scatter_dummy_src(video, rank, size-1)
                         tr.update_buffers(buffer, {'video': video}, frames=cf.frames)
                     if rank in rank_agents:
-                        obs_stack = torch.stack(buffer['obs'])
-                        states=get_states(obs_stack, sim_step, cf, next_birth_time, device)
+                        states=get_states(tr.stack_buffer(buffer, ['obs']), sim_step, cf, next_birth_time, device)
                         with autocast(device_type='cuda', dtype=torch.float16):
                             _, next_values, _, _ = model_student(states, memories) 
                         next_values = next_values.to(torch.float32)
-                if sim_count % 50 == 0 and sim_step == cf.sim_duration-1 and rank == 0 and cf.render :
+                if sim_count % 100 == 0 and sim_step == cf.sim_duration-1 and rank == 0 and cf.render :
                     torchvision.io.write_video( cf.path_monitor / ('test_'  + str(sim_count) + '_vid_.mp4'), 
                                                 torch.stack(full_video), 8*cf.frames)
             else:
-                if sim_step == cf.sim_duration-1 and rank in rank_agents:
+                if sim_step == cf.sim_duration-1 and rank in rank_agents and seed >= cf.start_step:
                     # Adjust the learning rate
                     kl = torch.tensor(kl_list, device=device).mean()
                     dist.all_reduce(kl, op=dist.ReduceOp.SUM, group=group_agents)

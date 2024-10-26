@@ -37,10 +37,11 @@ def update_buffers(buff, dict, frames=32):
     for key, element in dict.items():
         update_buffer(buff, key, element, frames)
     
-def stack_buffer(buff):
+def stack_buffer(buffer, keys):
     out_dict = {}
-    for key, element in dict.items():
-        out_dict[key] = torch.stack(element)
+    for key in keys:
+        out_dict[key] = torch.stack(buffer[key])
+    return out_dict
 
 
 def calculate_returns(mem_rewards, death_index, gamma=0.99):
