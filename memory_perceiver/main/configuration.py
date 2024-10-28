@@ -5,11 +5,11 @@ class IsaacCfg:
     experiment_name = "S_1.0"
 
     # Task
-    task =  "Isaac-Humanoid-Cam-Direct-v0" # Isaac-Cartpole-Cam-Direct-v0
+    task =  "Isaac-Humanoid-Direct-v0" # Isaac-Cartpole-Cam-Direct-v0
     agent_type = "Simple" # Simple Perceiver
     dim_observations = 75 # 75 4 5
     dim_actions = 21 # 21 1
-    num_envs = 128 # 1 54 128 864 2048
+    num_envs = 2048 # 1 54 128 864 2048
     sim_duration = 32 # 1028 516 260
     seed = 68
     render = False
@@ -19,14 +19,14 @@ class IsaacCfg:
     frames_future = 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
     training_mode = 'Backward' # Backward TBPTT RTRL
-    learning_rate = 1e-4 # 3e-4 1e-4 1e-5
-    kl_threshold = 0.008 # 0.008 1e10
+    learning_rate = 5e-4 # 3e-4 1e-4 1e-5
+    kl_threshold = 0.001 # 0.008 1e10
     scheduler = 'kl_div' # kl_div warm-up
-    range_lr = [1e-5, 1e-3] # [1e-5, 5e-4]
+    range_lr = [1e-5, 1e-2] # [1e-5, 5e-4]
     start_step = 10
     entropy = 0.00 # 0.01 to 0.05
     critic = 2   # 0.5 to 2 4
-    accumulation_steps = 8 # 2 4 6 8
+    accumulation_steps = 12 # 2 4 6 8
     student_update_step = 1
     eps = 1e-9
     gamma = 0.99
@@ -34,7 +34,7 @@ class IsaacCfg:
     grad_norm = 1.0  # 0.1 to 1.0
     eps_clip = 0.2
     value_clip = 0.2 #float('inf')
-    num_replay = 1
+    num_replay = 5
     update_probability = 0.9 #0.33 0.5
 
     # Model parameters
