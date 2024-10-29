@@ -34,7 +34,7 @@ class IsaacCfg:
     grad_norm = 1.0  # 0.1 to 1.0
     eps_clip = 0.2
     value_clip = 0.2 #float('inf')
-    num_replay = 3
+    num_replay = 4
     update_probability = 1.0 #0.33 0.5
 
     # Model parameters

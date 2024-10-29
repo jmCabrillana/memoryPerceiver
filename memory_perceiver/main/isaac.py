@@ -224,6 +224,9 @@ def isaac_training(cf, rank, size):
 
                     if rank == 1:
                         plotter.add('returns', history['returns'][0, :].mean().item(), sim_count)
+                        plotter.add('action/mean', history['actions'][:, :, 0].mean().item(), sim_count)
+                        plotter.add('action/std', history['actions'][:, :, 0].std().item(), sim_count)
+                        plotter.add('loss/lr', lr, sim_count)
                         for key, value in history.items():
                             if key not in ['actions', 'logprobs', 'generator', 'obs', 'rewards']:
                                 print(f"{key}: {value[:,0]}")
@@ -232,9 +235,9 @@ def isaac_training(cf, rank, size):
                             if key == 'obs':
                                 print(f"{key}: {value[:,0, 0]}")
 
-                    
-                    loss=torch.tensor(0.0, device=device)
-                    backward_count= 0
+                    loss_cumul=torch.tensor(0.0, device=device)
+                    backward_count=0
+                    actor_losses, critic_losses, entropy_losses = [], [], []
                 sim_step = 0
 
             if is_inference:
@@ -291,7 +294,7 @@ def isaac_training(cf, rank, size):
                 else:
 
                     ## Process inputs
-                    sim_step_rand = torch.randint(0, int(1*cf.sim_duration), (1,)).item()   
+                    sim_step_rand = torch.randint(0, int(1*cf.sim_duration), (1,)).item()  
                     # sim_step_rand=sim_step 
                     actions, logprobs, values, birth_time, death_index = [history[key][sim_step_rand].to(device) \
                                                 for key in ['actions', 'logprobs', 'values', 'birth_time', 'death_index']]
@@ -323,13 +326,13 @@ def isaac_training(cf, rank, size):
                             loss_entropy = -cf.entropy * entropies.mean()
                             clipped_values = values + torch.clamp(new_values-values, -cf.value_clip, cf.value_clip)
                             loss_critic = cf.critic * F.mse_loss(clipped_values, returns_targets)
-                            new_loss = (loss_actor + loss_critic + loss_entropy) / cf.accumulation_steps
+                            loss = (loss_actor + loss_critic + loss_entropy) / cf.accumulation_steps
+                            # loss_cumul += loss
                             with torch.no_grad():
                                 kl_divergence = ((ratios - 1) - (new_logprobs - logprobs)).mean()
                                 kl_list.append(kl_divergence.item())
                             # if kl_divergence > 3*cf.kl_threshold:
                             #     new_loss *= 0
-                            loss += new_loss
                         if cf.training_mode != 'Backward':
                             _, _, _, memories = model(states, memories) 
 
@@ -338,16 +341,14 @@ def isaac_training(cf, rank, size):
                         # Step optimizer
                         if cf.training_mode == 'Backward':
                             scaler.scale(loss).backward()
-                            loss = torch.tensor(0.0, device=device)
                         if cf.training_mode == 'RTRL':
                             loss = scaler.scale(loss)
                             rtrl_grad.step(model_student, states, memories_student, loss, old_actions=actions)
-                            loss = torch.tensor(0.0, device=device)
                         backward_count += 1
                         if backward_count % cf.accumulation_steps == 0 and backward_count != 0:
                             if cf.training_mode == 'TBPTT':
-                                scaler.scale(loss).backward()
-                                loss = torch.tensor(0.0, device=device)
+                                scaler.scale(loss_cumul).backward()
+                                # loss_cumul = torch.tensor(0.0, device=device)
                                 if isinstance(model, ActorCriticPerceiver):
                                     memories_student = memories.clone().detach().requires_grad_(True)
                             if cf.training_mode == 'RTRL':
@@ -364,19 +365,14 @@ def isaac_training(cf, rank, size):
                             backward_count = 0
 
                     if rank == 1 and perform_update :
-                        plotter.add('loss/loss_actor', loss_actor.item(), sim_count*cf.sim_duration+sim_step)
-                        plotter.add('loss/loss_critic', loss_critic.item(), sim_count*cf.sim_duration+sim_step)
-                        plotter.add('loss/loss_entropy', loss_entropy.item(), sim_count*cf.sim_duration+sim_step)
-                        plotter.add('loss/kl_divergence', kl_divergence.item(), sim_count*cf.sim_duration+sim_step)
-                        plotter.add('loss/lr', lr, sim_count*cf.sim_duration+sim_step)
+                        actor_losses.append(loss_actor.item())
+                        critic_losses.append(loss_critic.item())
+                        entropy_losses.append(loss_entropy.item())
 
             # Gather action and step env
             if is_inference:
                 gather_dummy_src(actions_star, rank, size-1, swap_axis=True)
                 buffer['actions_star'] += list(torch.unbind( actions_star ))
-                if rank == 1:
-                    plotter.add('action/mean', (actions_star[0, :, 0]).mean().item(), sim_count*cf.sim_duration+sim_step)
-                    plotter.add('action/std', (actions_star[0, :, 0]).std().item(), sim_count*cf.sim_duration+sim_step)
         
                 # Act(num_envs, 1)
                 if(len(buffer['actions_star'])>0):
@@ -433,12 +429,22 @@ def isaac_training(cf, rank, size):
                     kl = torch.tensor(kl_list, device=device).mean()
                     dist.all_reduce(kl, op=dist.ReduceOp.SUM, group=group_agents)
                     kl /= (size-1)
+                    if rank == 1:
+                        plotter.add('loss/kl_divergence', kl.item(), sim_count)
                     if cf.scheduler == 'kl_div':
                         lr = tr.lr_kl_scheduler(lr, kl, kl_threshold=cf.kl_threshold, min_lr=cf.range_lr[0], max_lr=cf.range_lr[1])
                     if cf.scheduler == 'warm-up':
                         lr = tr.lr_warm_up(2*sim_count, min_lr=cf.range_lr[0], max_lr=cf.range_lr[1])
                     for param_group in optimizer.param_groups:
                         param_group['lr'] = lr
+
+                # Plot losses
+
+                if rank == 1 and sim_step == cf.sim_duration-1:
+                    plotter.add('loss/lr', lr, sim_count)
+                    plotter.add('loss/loss_actor', np.mean(actor_losses), sim_count)
+                    plotter.add('loss/loss_critic', np.mean(critic_losses), sim_count)
+                    plotter.add('loss/loss_entropy', np.mean(entropy_losses), sim_count)
             sim_step += 1
 
         else:
