@@ -8,17 +8,8 @@ from memoryPerceiver.memory_perceiver.core.model_wrapper import create_multimoda
 from memoryPerceiver.memory_perceiver.core.miscellaneous import layer_init
 from memoryPerceiver.memory_perceiver.processing.vectorize import patchify
 
-class ActorCritic(nn.Module):
-    def __init__(self):
-        super().__init__()
 
-    def forward(self, states, memories, old_actions=None):
-        pass
-
-    def instanciate_actions(self, actions, **kwargs):
-        pass     
-
-class ActorCriticSimple(ActorCritic):
+class ActorCriticSimple(nn.Module):
     def __init__(self, cf, device):
         super().__init__()
         self.shared=cf.shared
@@ -33,27 +24,18 @@ class ActorCriticSimple(ActorCritic):
         self.actor.reset_memories = lambda *args, **kwargs: None
         self.actor_mean = layer_init(nn.Linear(self.hidden_dim, self.dim_actions_ppo, device=device), std=0.01)
         # self.actor_std = layer_init(nn.Linear(self.hidden_dim, self.dim_actions_ppo, device=device), std=0.01)
-        self.actor_std = nn.Parameter(0 * torch.ones(self.dim_actions_ppo)).to(device)
+        self.actor_std = nn.Parameter(torch.zeros(self.dim_actions_ppo, device=device))
         if self.shared:
             self.actor_critic = layer_init(nn.Linear(self.hidden_dim, 1, device=device), std=1)
         else:
             self.critic = nn.Sequential( *( [layer_init(nn.Linear(self.state_dim, self.hidden_dim)), nn.ELU()] +
                                             [layer_init(nn.Linear(self.hidden_dim, self.hidden_dim)), nn.ELU()]*(cf.critic_depth-1) +
                                             [layer_init(nn.Linear(self.hidden_dim, 1), std=1)]  ) ).to(device)
-        # self.to_tt = nn.Linear(1, self.hidden_dim, device=device)
-        # self.tt1=nn.TransformerEncoderLayer(d_model=self.hidden_dim, nhead=4,  device=device)
-        # self.tt2=nn.TransformerEncoderLayer(d_model=self.hidden_dim, nhead=4,  device=device)
-        # self.tt3=nn.TransformerEncoderLayer(d_model=self.hidden_dim, nhead=4,  device=device)
         
     def forward(self, states, memories, old_actions=None):
         state = states['observations'][:,-1] # last time
         hidden = self.actor(state)
-        # h0 = self.to_tt(state.unsqueeze(-1))
-        # hidden1 = self.tt1(h0).mean(dim=1)
-        # hidden2 = self.tt2(h0).mean(dim=1)
-        # hidden3 = self.tt3(h0).mean(dim=1)
 
-        
         # Critic
 
         if self.shared:
@@ -65,14 +47,14 @@ class ActorCriticSimple(ActorCritic):
         # Actor
 
         actions_mean  = torch.tanh(self.actor_mean(hidden))
-        log_std = self.actor_std.clip(-20, 2) # .(hidden) # ((1+actions_tmp[:, self.dim_actions_ppo:2*self.dim_actions_ppo])/4+1e-5)**2
-        # covariance = torch.diag_embed(log_std.exp() * log_std.exp())
-        # dist = MultivariateNormal(actions_mean, covariance) # scale_tril=covariance) # torch.diag(...)
+        # log_std = self.actor_std.clip(-20, 2) # .(hidden) # ((1+actions_tmp[:, self.dim_actions_ppo:2*self.dim_actions_ppo])/4+1e-5)**2
+        log_std = torch.clamp(self.actor_std, -20, 2)
         dist = Normal(actions_mean, log_std.exp())
+        # dist = Normal(actions_mean, 0.5*torch.ones_like(actions_mean))
         
         # Act
         if old_actions is None:  
-            actions = dist.sample()
+            actions = dist.rsample()
             logprobs = dist.log_prob(actions).sum(dim=-1)
             return actions.detach(), values.detach(), logprobs.detach(), None
         # Evaluate
@@ -100,7 +82,7 @@ class ActorCriticSimple(ActorCritic):
         return actions_star
             
     
-class ActorCriticPerceiver(ActorCritic):
+class ActorCriticPerceiver(nn.Module):
     def __init__(self, cf, device):
         super().__init__()
         self.frames_future = cf.frames_future

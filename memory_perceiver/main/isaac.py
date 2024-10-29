@@ -28,7 +28,7 @@ from memoryPerceiver.memory_perceiver.core.miscellaneous import custom_random, p
 import memoryPerceiver.memory_perceiver.isaac.trainer as tr
 from memoryPerceiver.memory_perceiver.isaac.scaler import RunningStandardScaler
 from memoryPerceiver.memory_perceiver.isaac.plot import Plotter
-from memoryPerceiver.memory_perceiver.isaac.agent import ActorCritic, ActorCriticSimple, ActorCriticPerceiver, create_agent
+from memoryPerceiver.memory_perceiver.isaac.agent import ActorCriticSimple, ActorCriticPerceiver, create_agent
 from memoryPerceiver.memory_perceiver.core.rtrl import  RTRL_partial, shuffle_split_indexes
 
 def get_states(buffer, sim_step, cf, birth_time, device):
@@ -214,6 +214,8 @@ def isaac_training(cf, rank, size):
                             print('target mean', (tmp_advantages + unscaled_values).mean())
                             print('scaler mean', value_scaler.running_mean)
                             print('scaler var', value_scaler.running_variance)
+                        if rank == 1:
+                            print(model_student.actor_std)
                         if rank in rank_agents and isinstance(model, ActorCriticPerceiver):
                             torch.save(memories, path_mem)
 
