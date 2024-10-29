@@ -302,7 +302,7 @@ def isaac_training(cf, rank, size):
                     buffer_stack = {'obs': obs_stack}
                     states=get_states(buffer_stack, sim_step_rand, cf, birth_time, device)
 
-                    perform_update = ( custom_random(sim_count, sim_step_rand) < cf.update_probability and \
+                    perform_update = ( custom_random(sim_count, sim_step_rand) <= cf.update_probability and \
                                         sim_step_rand <= cf.sim_duration-1 ) or cf.training_mode == 'TBPTT'
                     perform_update = perform_update and seed >= cf.start_step
                     with autocast(device_type='cuda', dtype=torch.float16):
@@ -324,8 +324,9 @@ def isaac_training(cf, rank, size):
                             clipped_values = values + torch.clamp(new_values-values, -cf.value_clip, cf.value_clip)
                             loss_critic = cf.critic * F.mse_loss(clipped_values, returns_targets)
                             new_loss = (loss_actor + loss_critic + loss_entropy) / cf.accumulation_steps
-                            kl_divergence = ((ratios - 1) - (new_logprobs - logprobs)).mean()
-                            kl_list.append(kl_divergence.item())
+                            with torch.no_grad():
+                                kl_divergence = ((ratios - 1) - (new_logprobs - logprobs)).mean()
+                                kl_list.append(kl_divergence.item())
                             # if kl_divergence > 3*cf.kl_threshold:
                             #     new_loss *= 0
                             loss += new_loss
