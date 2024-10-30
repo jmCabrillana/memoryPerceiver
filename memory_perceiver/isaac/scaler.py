@@ -43,7 +43,7 @@ class RunningStandardScaler(nn.Module):
             self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         else:
             self.device = torch.device(device)
-
+        self.size = size
         self.register_buffer("running_mean", torch.zeros(size, dtype=torch.float64, device=self.device))
         self.register_buffer("running_variance", torch.ones(size, dtype=torch.float64, device=self.device))
         self.register_buffer("current_count", torch.ones((), dtype=torch.float64, device=self.device))
@@ -98,8 +98,12 @@ class RunningStandardScaler(nn.Module):
         :return: Standardized tensor
         :rtype: torch.Tensor
         """
+        dims = list(range(len(x.shape)))
         if train:
-            self._parallel_variance(torch.mean(x), torch.var(x), torch.numel(x))
+            if self.size == 1:
+                self._parallel_variance(torch.mean(x), torch.var(x), torch.numel(x))
+            else:
+                self._parallel_variance(torch.mean(x, dim=dims[:-1]), torch.var(x, dim=dims[:-1]), torch.numel(x)/x.shape[-1])
 
         # scale back the data to the original representation
         if inverse:

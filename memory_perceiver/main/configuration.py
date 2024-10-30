@@ -2,14 +2,14 @@ from pathlib import Path
 
 class IsaacCfg:
 
-    experiment_name = "S_1.0"
+    experiment_name = "P_1.1"
 
     # Task
     task =  "Isaac-Humanoid-Direct-v0" # Isaac-Cartpole-Cam-Direct-v0
-    agent_type = "Simple" # Simple Perceiver
+    agent_type = "Perceiver" # Simple Perceiver
     dim_observations = 75 # 75 4 5
     dim_actions = 21 # 21 1
-    num_envs = 2048 # 1 54 128 864 2048
+    num_envs = 128 # 1 54 128 864 2048
     sim_duration = 32 # 1028 516 260
     seed = 68
     render = False
@@ -19,14 +19,14 @@ class IsaacCfg:
     frames_future = 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
     training_mode = 'Backward' # Backward TBPTT RTRL
-    learning_rate = 5e-4 # 3e-4 1e-4 1e-5
+    learning_rate = 1e-5 # 3e-4 1e-4 1e-5
     kl_threshold = 0.008 # 0.008 1e10
-    scheduler = 'kl_div' # kl_div warm-up
-    range_lr = [1e-5, 1e-2] # [1e-5, 5e-4]
+    scheduler = 'warm-up_100' # '' kl_div warm-up_100
+    range_lr = [1e-5, 5e-4] # [1e-5, 1e-2] [1e-5, 5e-4]
     start_step = 0
     entropy = 0.00 # 0.01 to 0.05
     critic = 2   # 0.5 to 2 4
-    accumulation_steps = 8 # 2 4 6 8
+    accumulation_steps = 16 # 2 4 6 8
     student_update_step = 1
     eps = 1e-9
     gamma = 0.99
@@ -34,7 +34,7 @@ class IsaacCfg:
     grad_norm = 1.0  # 0.1 to 1.0
     eps_clip = 0.2
     value_clip = 0.2 #float('inf')
-    num_replay = 4
+    num_replay = 5
     update_probability = 1.0 #0.33 0.5
 
     # Model parameters
@@ -51,8 +51,8 @@ class IsaacCfg:
     batch_size = num_envs
     body_parts =  {'observation_' + str(i): 1 for i in range(dim_observations)}
     body_outputs = {'action_' + str(i): 1 for i in range(dim_actions)}
-    actions_variance = {'action_variance_' + str(i): 1 for i in range(dim_actions)}
-    body_outputs.update(actions_variance)
+    # actions_variance = {'action_variance_' + str(i): 1 for i in range(dim_actions)}
+    # body_outputs.update(actions_variance)
     body_outputs.update({'critic':1})
 
     # Model inputs and outputs

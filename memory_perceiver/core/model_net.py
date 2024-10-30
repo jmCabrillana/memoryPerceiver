@@ -155,7 +155,7 @@ class PerceiverIO(nn.Module):
         self.out_attn_layers = nn.ModuleList([])
         self.out_ff_layers = nn.ModuleList([])
         for i in range(self.depth):
-            self.out_attn_layers.append(PreNormContext(latent_dim, Attention(latent_dim, query_dim, heads=latent_heads, dim_head=latent_dim_head), query_dim))
+            self.out_attn_layers.append(PreNormContext(latent_dim, Attention(latent_dim, query_dim, heads=latent_heads, dim_head=latent_dim_head)))
             self.out_ff_layers.append(PreNormContext(latent_dim, FeedForward(latent_dim)))
         self.out_decoder_cross_attn = PreNormContext(query_dim, Attention(query_dim, latent_dim, heads = latent_heads, dim_head = latent_dim_head), context_dim = query_dim)
         self.modality = {}

@@ -47,21 +47,14 @@ class ActorCriticSimple(nn.Module):
         # Actor
 
         actions_mean  = torch.tanh(self.actor_mean(hidden))
-        # log_std = self.actor_std.clip(-20, 2) # .(hidden) # ((1+actions_tmp[:, self.dim_actions_ppo:2*self.dim_actions_ppo])/4+1e-5)**2
         log_std = torch.clamp(self.actor_std, -20, 2)
         dist = Normal(actions_mean, log_std.exp())
-        # dist = Normal(actions_mean, 0.5*torch.ones_like(actions_mean))
+
+        actions = dist.rsample() if old_actions is None else old_actions
+        logprobs = dist.log_prob(actions).sum(dim=-1)
+        entropies = None if old_actions is None else dist.entropy().sum(dim=-1)
+        return actions, logprobs, values, entropies, None
         
-        # Act
-        if old_actions is None:  
-            actions = dist.rsample()
-            logprobs = dist.log_prob(actions).sum(dim=-1)
-            return actions.detach(), values.detach(), logprobs.detach(), None
-        # Evaluate
-        else:  
-            logprobs = dist.log_prob(old_actions).sum(dim=-1)
-            entropies = dist.entropy() 
-            return logprobs, values, entropies, None
     
     def instanciate_actions(self, actions, **kwargs):
 
@@ -98,14 +91,15 @@ class ActorCriticPerceiver(nn.Module):
         self.shared = cf.shared
         self.flattened_mem = None
         self.actor = create_multimodal_perceiver(cf, device)
+        self.actor_std = nn.Parameter(torch.zeros(self.dim_actions, device=device))
         if not self.shared:
-            self.critic = nn.Sequential( *( [layer_init(nn.Linear(self.dim_observations, self.hidden_dim)), nn.ReLU()] +
-                                            [layer_init(nn.Linear(self.hidden_dim, self.hidden_dim)), nn.ReLU()]*(cf.critic_depth-1) +
+            self.critic = nn.Sequential( *( [layer_init(nn.Linear(self.dim_observations, self.hidden_dim)), nn.ELU()] +
+                                            [layer_init(nn.Linear(self.hidden_dim, self.hidden_dim)), nn.ELU()]*(cf.critic_depth-1) +
                                             [layer_init(nn.Linear(self.hidden_dim, 1), std=1)]  ) ).to(device)
         for i in range(self.dim_actions):
-            layer_init(self.actor.out_projections['action_variance_'+str(i)], std=0.01)
+            # layer_init(self.actor.out_projections['action_variance_'+str(i)], std=0.01)
             layer_init(self.actor.out_projections['action_'+str(i)], std=0.01)   
-            layer_init(self.actor.out_projections['critic'], std=1)          
+        layer_init(self.actor.out_projections['critic'], std=1)          
         
     def forward(self, states, memories, old_actions=None):
         
@@ -125,26 +119,28 @@ class ActorCriticPerceiver(nn.Module):
         output = output_projection(self.actor, x, self.frames_future, self.audio_future)
 
         actions = []
-        actions_var = []
+        # actions_var = []
         for i in range(self.dim_actions):
             actions.append(output['action_'+str(i)])
-            actions_var.append(output['action_variance_'+str(i)])
+            # actions_var.append(output['action_variance_'+str(i)])
         actions = torch.tanh(rearrange(actions, 'd b t () -> b t d'))
-        actions_var = rearrange(actions_var, 'd b t () -> b t d')
+        # actions_var = rearrange(actions_var, 'd b t () -> b t d')
         dim_t = actions.size()[1]
 
         # Average on time or identity
         if dim_t >= 2:
             actions_tmp1, actions_tmp2 = torch.split(actions, dim_t//2, dim=1)
             actions_mean = torch.cat((actions_tmp1.mean(dim=1), actions_tmp2.mean(dim=1)), dim=-1)
-            actions_var_tmp1, actions_var_tmp2 = torch.split(actions_var, dim_t//2, dim=1)
-            actions_var_tmp = torch.cat((actions_var_tmp1.mean(dim=1), actions_var_tmp2.mean(dim=1)), dim=-1)
+            # actions_var_tmp1, actions_var_tmp2 = torch.split(actions_var, dim_t//2, dim=1)
+            # actions_var_tmp = torch.cat((actions_var_tmp1.mean(dim=1), actions_var_tmp2.mean(dim=1)), dim=-1)
         else : 
             actions_mean = rearrange(actions, 'b () d -> b d')
-            actions_var_tmp = rearrange(actions_var, 'b () d -> b d')
-        log_std = actions_var_tmp.clip(-20, 2) # actions_var = ((1+actions_var_tmp)/4+1e-5)**2
-        covariance = torch.diag_embed(log_std.exp() * log_std.exp())
-        dist = MultivariateNormal(actions_mean, covariance)
+            # actions_var_tmp = rearrange(actions_var, 'b () d -> b d')
+        # log_std = actions_var_tmp.clip(-20, 2) # actions_var = ((1+actions_var_tmp)/4+1e-5)**2
+        # covariance = torch.diag_embed(log_std.exp() * log_std.exp())
+        # dist = MultivariateNormal(actions_mean, covariance)
+        log_std = torch.clamp(self.actor_std, -20, 2)
+        dist = Normal(actions_mean, log_std.exp())
 
         ## result
 
@@ -159,15 +155,11 @@ class ActorCriticPerceiver(nn.Module):
         # Act
         if self.flattened_mem is not None:
             new_memories = rearrange(new_memories, 'b l h -> (b l h)')
-        if old_actions is None:  
-            actions = dist.sample()
-            logprobs = dist.log_prob(actions)
-            return actions.detach(), values.detach(), logprobs.detach(), new_memories
-        # Evaluate
-        else:  
-            logprobs = dist.log_prob(old_actions)
-            entropies = dist.entropy() 
-            return logprobs, values, entropies, new_memories
+
+        actions = dist.rsample() if old_actions is None else old_actions
+        logprobs = dist.log_prob(actions).sum(dim=-1)
+        entropies = None if old_actions is None else dist.entropy().sum(dim=-1)
+        return actions, logprobs, values, entropies, new_memories
     
     def instanciate_actions(self, actions, **kwargs):
 

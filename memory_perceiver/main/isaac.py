@@ -283,12 +283,12 @@ def isaac_training(cf, rank, size):
                         reset_memories(memories, indexes=dones_list)
                     states=get_states(tr.stack_buffer(buffer, ['obs']), sim_step, cf, history['birth_time'][sim_step], device)
                     with autocast(device_type='cuda', dtype=torch.float16):
-                        actions, values, logprobs, new_memories = model(states, memories)  # !!!! no update mem 
+                        actions, logprobs, values, _, new_memories = model(states, memories)  # !!!! no update mem 
                         if cf.training_mode != 'Backward':
                             memories = new_memories
-                    history['actions'][sim_step] = actions  
-                    history['logprobs'][sim_step] = logprobs 
-                    history['values'][sim_step:sim_step+cf.frames_future] = values  # for cumulative sum  
+                    history['actions'][sim_step] = actions.detach()
+                    history['logprobs'][sim_step] = logprobs.detach()
+                    history['values'][sim_step:sim_step+cf.frames_future] = values.detach()  # for cumulative sum  
 
                     # Instanciate action before dispatch
                     actions_star = model.instanciate_actions(actions, dt=cf.frames_future).to(torch.float32) # important for gather !!!!
@@ -316,7 +316,7 @@ def isaac_training(cf, rank, size):
                             advantages = history['advantages'][sim_step_rand].to(device)
                             if cf.training_mode in ['Backward', 'RTRL'] and isinstance(model, ActorCriticPerceiver):
                                 memories_student = memories.clone().detach().requires_grad_(True)
-                            new_logprobs, new_values, entropies, new_memories_student = model_student(states, memories_student, actions)     
+                            _, new_logprobs, new_values, entropies, new_memories_student = model_student(states, memories_student, actions)     
                             if cf.training_mode == 'TBPTT':
                                 memories_student = new_memories_student
 
@@ -336,7 +336,7 @@ def isaac_training(cf, rank, size):
                             # if kl_divergence > 3*cf.kl_threshold:
                             #     new_loss *= 0
                         if cf.training_mode != 'Backward':
-                            _, _, _, memories = model(states, memories) 
+                            _, _, _, _, memories = model(states, memories) 
 
                     if perform_update :
 
@@ -414,7 +414,7 @@ def isaac_training(cf, rank, size):
                     if rank in rank_agents:
                         states=get_states(tr.stack_buffer(buffer, ['obs']), next_sim_step, cf, next_birth_time, device)
                         with autocast(device_type='cuda', dtype=torch.float16):
-                            _, next_values, _, _ = model_student(states, memories) 
+                            _, _, next_values, _, _ = model_student(states, memories) 
                         next_values = next_values.to(torch.float32)
 
                 # video
@@ -435,8 +435,9 @@ def isaac_training(cf, rank, size):
                         plotter.add('loss/kl_divergence', kl.item(), sim_count)
                     if cf.scheduler == 'kl_div':
                         lr = tr.lr_kl_scheduler(lr, kl, kl_threshold=cf.kl_threshold, min_lr=cf.range_lr[0], max_lr=cf.range_lr[1])
-                    if cf.scheduler == 'warm-up':
-                        lr = tr.lr_warm_up(2*sim_count, min_lr=cf.range_lr[0], max_lr=cf.range_lr[1])
+                    if cf.scheduler.startswith('warm-up'):
+                        lr = tr.lr_warm_up(seed, min_lr=cf.range_lr[0], max_lr=cf.range_lr[1], 
+                                           steps_warm_up=int(cf.scheduler.split('_')[-1]))
                     for param_group in optimizer.param_groups:
                         param_group['lr'] = lr
 
