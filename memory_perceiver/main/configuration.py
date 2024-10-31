@@ -9,7 +9,7 @@ class IsaacCfg:
     agent_type = "Perceiver" # Simple Perceiver
     dim_observations = 75 # 75 4 5
     dim_actions = 21 # 21 1
-    num_envs = 128 # 1 54 128 864 2048
+    num_envs = 256 # 1 54 128 864 2048
     sim_duration = 32 # 1028 516 260
     seed = 68
     render = False
@@ -21,9 +21,9 @@ class IsaacCfg:
     training_mode = 'Backward' # Backward TBPTT RTRL
     learning_rate = 1e-5 # 3e-4 1e-4 1e-5
     kl_threshold = 0.008 # 0.008 1e10
-    scheduler = 'warm-up_100' # '' kl_div warm-up_100
-    range_lr = [1e-5, 5e-4] # [1e-5, 1e-2] [1e-5, 5e-4]
-    start_step = 0
+    scheduler = 'kl_div' # '' kl_div warm-up_100
+    range_lr = [1e-6, 5e-4] # [1e-5, 1e-2] [1e-5, 5e-4]
+    start_step = 25
     entropy = 0.00 # 0.01 to 0.05
     critic = 2   # 0.5 to 2 4
     accumulation_steps = 16 # 2 4 6 8

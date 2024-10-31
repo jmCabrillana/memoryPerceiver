@@ -33,14 +33,21 @@ def update_buffer(buff, key, element, frames=32):
     if(len(buff[key])>frames):
         buff[key].pop(0)
 
-def update_buffers(buff, dict, frames=32):
+def buffers_update(buff, dict, frames=32):
     for key, element in dict.items():
         update_buffer(buff, key, element, frames)
+
+def buffers_pop():
+    for key, element in dict.items():
+        if element != []:
+            element.pop()
+
     
-def stack_buffer(buffer, keys):
+def stack_buffer(buffer):
     out_dict = {}
-    for key in keys:
-        out_dict[key] = torch.stack(buffer[key])
+    for key, element in buffer.items():
+        if element != []:
+            out_dict[key] = torch.stack(element)
     return out_dict
 
 

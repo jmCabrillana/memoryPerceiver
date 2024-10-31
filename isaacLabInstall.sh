@@ -52,8 +52,10 @@ sudo apt install libxkbcommon-x11-0 -y
 cd $SCRIPT_DIR/infinigen
 $python_exe -m pip install -e ".[terrain,vis]"
 
-# Set variables
+# Set variables and update bashrc
 export ACCEPT_EULA=Y
 export ISAAC_JUPYTER_KERNEL=1
+echo "source isaaclab/bin/activate" >> /home/user/.bashrc
+echo "export LD_LIBRARY_PATH=$VIRTUAL_ENV/lib/python3.10/site-packages/torch/lib:$LD_LIBRARY_PATH" >> /home/user/.bashrc
 
 #git token: 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
