@@ -33,7 +33,7 @@ class ActorCriticSimple(nn.Module):
                                             [layer_init(nn.Linear(self.hidden_dim, 1), std=1)]  ) ).to(device)
         
     def forward(self, states, memories, old_actions=None):
-        state = states['observations'][:,-1] # last time
+        state = states['obs'][:,-1] # last time
         hidden = self.actor(state)
 
         # Critic
@@ -107,10 +107,13 @@ class ActorCriticPerceiver(nn.Module):
         
         ## Net inference
         
-        device = states['observations'].device
+        device = states['obs'].device
         states_chunk= {}
         for i in range(self.dim_observations):
-            states_chunk['observation_'+str(i)] = states['observations'][:, :, i:i+1]
+            states_chunk['obs_'+str(i)] = states['obs'][:, :, i:i+1]
+        for i in range(self.dim_actions):
+            if 'actions_star' in list(states.keys()):
+                states_chunk['action_star_'+str(i)] = states['actions_star'][:, :, i:i+1]
         input = patchify(states_chunk, height=self.patch_height, width=self.patch_width, patch_audio=self.patch_audio)
         if self.flattened_mem is not None:
             b, l, h = self.flattened_mem

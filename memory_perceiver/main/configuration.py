@@ -2,20 +2,20 @@ from pathlib import Path
 
 class IsaacCfg:
 
-    experiment_name = "P_1.1"
+    experiment_name = "P_1.4_frame32"
 
     # Task
     task =  "Isaac-Humanoid-Direct-v0" # Isaac-Cartpole-Cam-Direct-v0
     agent_type = "Perceiver" # Simple Perceiver
     dim_observations = 75 # 75 4 5
     dim_actions = 21 # 21 1
-    num_envs = 256 # 1 54 128 864 2048
+    num_envs = 64 # 1 54 128 864 2048
     sim_duration = 32 # 1028 516 260
     seed = 68
     render = False
 
     # PPO
-    frames = 1
+    frames = 32
     frames_future = 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
     training_mode = 'Backward' # Backward TBPTT RTRL
@@ -23,7 +23,8 @@ class IsaacCfg:
     kl_threshold = 0.008 # 0.008 1e10
     scheduler = 'kl_div' # '' kl_div warm-up_100
     range_lr = [1e-6, 5e-4] # [1e-5, 1e-2] [1e-5, 5e-4]
-    start_step = 25
+    reward_scale = 0.01
+    start_step = 0
     entropy = 0.00 # 0.01 to 0.05
     critic = 2   # 0.5 to 2 4
     accumulation_steps = 16 # 2 4 6 8
@@ -49,15 +50,15 @@ class IsaacCfg:
     nb_latents = 8
     shared=True
     batch_size = num_envs
-    body_parts =  {'observation_' + str(i): 1 for i in range(dim_observations)}
+    body_parts =  {'obs_' + str(i): 1 for i in range(dim_observations)}
+    body_parts.update({'action_star_' + str(i): 1 for i in range(dim_observations)})
     body_outputs = {'action_' + str(i): 1 for i in range(dim_actions)}
     # actions_variance = {'action_variance_' + str(i): 1 for i in range(dim_actions)}
     # body_outputs.update(actions_variance)
     body_outputs.update({'critic':1})
 
     # Model inputs and outputs
-    input_audio = False
-    input_video = False
+    inputs = ['obs', 'actions_star'] # obs audio video actions_star
     output_audio = False
     sample_audio_frame = 1920
     width = 448
@@ -82,9 +83,11 @@ class IsaacCfg:
 
     path_main = Path(__file__).parent
     path_experiment = path_main / 'experiments' / task / experiment_name
-    path_model = path_main / 'weights' / (task+'_'+experiment_name+'.pt')
-    path_memories = path_main / 'weights' / (task+'_'+experiment_name+'_mem_')
-    path_scaler = path_main / 'weights' / (task+'_'+experiment_name+'_scaler.pt')
+    path_weights = path_main / 'weights' / task / experiment_name 
+    path_model = path_main / 'weights' / task / experiment_name / 'model.pt'
+    path_memories = path_main / 'weights' / task / experiment_name / 'mem'
+    path_buffer = path_main / 'weights' / task / experiment_name / 'buffer'
+    path_scaler = path_main / 'weights' / task / experiment_name / 'scaler.pt'
     path_logs = path_experiment / 'isaac.log'
     path_monitor = path_main / 'monitor'
 

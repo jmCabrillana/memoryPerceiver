@@ -11,6 +11,7 @@ def init_history(history_keys, sim_duration, num_envs, action_dim, obs_dim, devi
     history = { key: torch.zeros(sim_duration, num_envs, device=device) for key in history_keys}
     history['obs'] = torch.zeros(sim_duration, num_envs, obs_dim, device=device)
     history['actions'] = torch.zeros(sim_duration, num_envs, action_dim, device=device)
+    history['actions_star'] = torch.zeros(sim_duration, num_envs, action_dim, device=device)
     history['generator'] = torch.zeros(sim_duration, torch.cuda.device_count(), 16, dtype=torch.uint8) # must be on cpu
     return history
 
@@ -28,14 +29,19 @@ def buffer_padding(buffer, dim, default_value=None, frames=32, num_envs=1):
     res = rearrange(res, 't b ... -> b t ...')
     return res
 
-def update_buffer(buff, key, element, frames=32):
-    buff[key].append(element)
-    if(len(buff[key])>frames):
-        buff[key].pop(0)
+def buffer_update(buff, key, element, frames=32):
+    if isinstance(element, list):
+        buff[key] += element
+        while(len(buff[key])>frames):
+            buff[key].pop(0)
+    else:
+        buff[key].append(element)
+        if(len(buff[key])>frames):
+            buff[key].pop(0)
 
 def buffers_update(buff, dict, frames=32):
     for key, element in dict.items():
-        update_buffer(buff, key, element, frames)
+        buffer_update(buff, key, element, frames)
 
 def buffers_pop():
     for key, element in dict.items():
@@ -47,7 +53,7 @@ def stack_buffer(buffer):
     out_dict = {}
     for key, element in buffer.items():
         if element != []:
-            out_dict[key] = torch.stack(element)
+            out_dict[key] = torch.stack(element).detach()
     return out_dict
 
 
@@ -92,6 +98,25 @@ def create_mask(birth_time, sim_step, frames=32):
     past_horizon=frames - (sim_step-birth_time+1)
     mask = repeat(torch.arange(frames, device=device), '... -> b ...', b=num_envs) < repeat(past_horizon, '... -> ... t', t=frames)
     return mask
+
+def mask_states(buffer, sim_step, cf, birth_time, device):
+    states={}
+    mask = create_mask(birth_time, sim_step, frames=cf.frames)
+    states['obs'] = buffer_padding(buffer['obs'], [cf.dim_observations], num_envs=cf.num_envs, frames=cf.frames)
+    states['obs'][mask] *= 0
+    if 'actions_star' in cf.inputs:
+        states['actions_star'] = buffer_padding(buffer['actions_star'], [cf.dim_actions], num_envs=cf.num_envs, frames=cf.frames)
+        states['actions_star'][mask] *= 0
+    if 'video' in cf.inputs:
+        states['video'] = torch.zeros(cf.num_envs, cf.frames, cf.height, cf.width, 3, device=device)
+        # states['video'] = tr.buffer_padding(torch.stack(buffer['video']), [cf.height, cf.width, 3], num_envs=cf.num_envs, frames=cf.frames)
+        states['video'][mask] *= 0
+        states['video'] = rearrange(states['video'], 'b t h w c -> b c t h w')
+    if 'audio' in cf.inputs:
+        states['audio'] = torch.zeros(cf.num_envs, cf.len_audio_raw, device=device)
+        # states['audio'] = tr.buffer_padding(torch.stack(buffer['video']), [cf.sample_audio_frame], num_envs=cf.num_envs, frames=cf.frames)
+        states['audio'][mask] *= 0
+    return states
 
 def lr_kl_scheduler(current_lr, kl_div, kl_threshold=0.008, min_lr=1e-5, max_lr=1e-4):
     lr = current_lr

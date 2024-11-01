@@ -25,10 +25,10 @@ def create_multimodal_perceiver(cf, device):
 
     special_compression = []
     i0=0
-    if cf.input_video:
+    if 'video' in cf.inputs:
         special_compression += [i for i in range(cf.video_future)]
         i0 += cf.len_video
-    if cf.input_audio:
+    if 'audio' in cf.inputs:
         special_compression += [i0 + i for i in range(cf.audio_future)]
         i0 += cf.len_audio
     for k in range(len(cf.body_parts)):

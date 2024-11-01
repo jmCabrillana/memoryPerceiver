@@ -7,24 +7,10 @@ from memoryPerceiver.memory_perceiver.core.model_net import PerceiverIO
 
 def create_multimodal_perceiver(cf, device):
 
-    # Projection to return modalities, enhancement
-
-    # input_parameters = {}
-    # if cf.input_audio:
-    #     input_parameters['audio'] = cf.query_dim - 2*cf.bands_fourier - cf.patch_audio
-    # if cf.input_video:
-    #     input_parameters['video'] =  cf.query_dim - 2*cf.bands_video_t - 2*2*cf.bands_video \
-    #                                 - cf.patch_height*cf.patch_width*cf.channels
-    # for part, params in cf.body_parts.items():
-    #     input_parameters[part] = cf.query_dim - 2*cf.bands_fourier - params
-    # for part, params in cf.body_outputs.items():
-    #     input_parameters[part] = cf.query_dim - 2*cf.bands_fourier - params
-
-
     input_parameters = {}
-    if cf.input_audio:
+    if 'audio' in cf.inputs:
         input_parameters['audio'] = cf.patch_audio
-    if cf.input_video:
+    if 'video' in cf.inputs:
         input_parameters['video'] =  cf.patch_height*cf.patch_width*cf.channels
     for part, params in cf.body_parts.items():
         input_parameters[part] = params
