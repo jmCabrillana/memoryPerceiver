@@ -7,12 +7,17 @@ import re
 import shutil
 from datetime import datetime
 
-def init_history(history_keys, sim_duration, num_envs, action_dim, obs_dim, device):
-    history = { key: torch.zeros(sim_duration, num_envs, device=device) for key in history_keys}
-    history['obs'] = torch.zeros(sim_duration, num_envs, obs_dim, device=device)
-    history['actions'] = torch.zeros(sim_duration, num_envs, action_dim, device=device)
-    history['actions_star'] = torch.zeros(sim_duration, num_envs, action_dim, device=device)
-    history['generator'] = torch.zeros(sim_duration, torch.cuda.device_count(), 16, dtype=torch.uint8) # must be on cpu
+def init_history(history_keys, sim_duration, num_envs, actions_dim, obs_dim, device):
+    history = {}
+    for key in history_keys:
+        if key == 'obs':
+            history[key] = torch.zeros(sim_duration, num_envs, obs_dim, device=device)
+        elif key.startswith('actions'):
+            history[key] = torch.zeros(sim_duration, num_envs, actions_dim, device=device)
+        elif key == 'generator':
+            history[key] = torch.zeros(sim_duration, torch.cuda.device_count(), 16, dtype=torch.uint8) # must be on cpu
+        else:
+            history[key] = torch.zeros(sim_duration, num_envs, device=device)
     return history
 
 def buffer_padding(buffer, dim, default_value=None, frames=32, num_envs=1):

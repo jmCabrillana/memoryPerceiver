@@ -2,11 +2,12 @@ from pathlib import Path
 
 class IsaacCfg:
 
-    experiment_name = "P_1.4_frame32"
+    experiment_name = "P_1.6_distillation"
 
     # Task
     task =  "Isaac-Humanoid-Direct-v0" # Isaac-Cartpole-Cam-Direct-v0
     agent_type = "Perceiver" # Simple Perceiver
+    tutor_type = "Simple"
     dim_observations = 75 # 75 4 5
     dim_actions = 21 # 21 1
     num_envs = 64 # 1 54 128 864 2048
@@ -19,10 +20,10 @@ class IsaacCfg:
     frames_future = 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
     training_mode = 'Backward' # Backward TBPTT RTRL
-    learning_rate = 1e-5 # 3e-4 1e-4 1e-5
+    learning_rate = 1e-3 # 3e-4 1e-4 1e-5
     kl_threshold = 0.008 # 0.008 1e10
-    scheduler = 'kl_div' # '' kl_div warm-up_100
-    range_lr = [1e-6, 5e-4] # [1e-5, 1e-2] [1e-5, 5e-4]
+    scheduler = '' # '' kl_div warm-up_100
+    range_lr = [1e-6, 1e-3] # [1e-5, 1e-2] [1e-5, 5e-4]
     reward_scale = 0.01
     start_step = 0
     entropy = 0.00 # 0.01 to 0.05
@@ -85,6 +86,7 @@ class IsaacCfg:
     path_experiment = path_main / 'experiments' / task / experiment_name
     path_weights = path_main / 'weights' / task / experiment_name 
     path_model = path_main / 'weights' / task / experiment_name / 'model.pt'
+    path_model_tutor = path_main / 'weights' / task / experiment_name / 'model_tutor.pt'
     path_memories = path_main / 'weights' / task / experiment_name / 'mem'
     path_buffer = path_main / 'weights' / task / experiment_name / 'buffer'
     path_scaler = path_main / 'weights' / task / experiment_name / 'scaler.pt'

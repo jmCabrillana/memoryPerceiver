@@ -97,18 +97,18 @@ def output_projection(model, x, frames_future, audio_future):
             start_modality += frames_future
     return output
 
-def reset_memories(memories, indexes=None):
+def reset_memories(memories, indexes=None, mem_dim=None):
 
-    # Reset memory for new lifelong learning
-
-    if len(memories.shape) == 1:
-        indexes = torch.tensor([0])
-    else:
-        batch_size = len(memories)
-        if indexes is None:
-            indexes=torch.arange(batch_size)
+    # Reset memory
     with torch.no_grad():
-        memories[indexes] *= 0
+        if indexes is None:
+            memories *= 0
+        else:
+            if mem_dim is not None:
+                b, l, h = mem_dim
+                indexes = sum((list(range(bi*l*h, (bi+1)*l*h)) for bi in indexes), [])
+            memories[indexes] *= 0
+
 
 def copy_memories(layers_mem):
     device = layers_mem.device

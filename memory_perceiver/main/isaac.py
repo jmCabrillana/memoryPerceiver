@@ -68,8 +68,8 @@ def isaac_training(cf, rank, size):
             value_scaler.load_state_dict(torch.load(cf.path_scaler, weights_only=True))   
 
     if rank in rank_agents:
-        model = create_agent(cf, rank)
-        model_student = create_agent(cf, rank)
+        model = create_agent(cf.agent_type, cf, rank)
+        model_student = create_agent(cf.agent_type, cf, rank)
         optimizer = torch.optim.Adam(model_student.parameters(), lr=cf.learning_rate, eps=1e-5)
         if os.path.exists(cf.path_model):
             state_dict = torch.load(cf.path_model, weights_only=True)
@@ -79,13 +79,13 @@ def isaac_training(cf, rank, size):
         if isinstance(model, ActorCriticPerceiver):
             memories = create_memories(model.actor, cf.num_envs, device=device)
             path_mem = str(cf.path_memories)+str(rank)+'.pt'
-            if os.path.exists(path_mem) and isinstance(model, ActorCriticPerceiver):
+            if os.path.exists(path_mem):
                 memories = torch.load(path_mem, weights_only=True)
             memories_student = memories.clone().detach().requires_grad_(True)
+            mem_dim = None
         else :
             memories = None
             memories_student = None
-            # last_memories = torch.zeros_like(memories['cross_cmem'], device=device)
         lr=cf.learning_rate
         scaler = GradScaler()
         if cf.training_mode == 'Backward':
@@ -104,8 +104,7 @@ def isaac_training(cf, rank, size):
             model.flattened_mem = mem_dim
             model_student.flattened_mem = mem_dim
             memories = rearrange(memories, 'b l h -> (b l h)')
-            if not os.path.exists(path_mem):
-                torch.save(memories, path_mem)
+            memories_student = memories.clone().detach().requires_grad_(True)
             len_slice_indexes = torch.tensor(0, device=device)
         dist.broadcast(len_slice_indexes, src=rank_sim)  
         if rank in rank_agents:
@@ -126,7 +125,6 @@ def isaac_training(cf, rank, size):
     path_buffer_new = str(cf.path_buffer)+'_new'+str(rank)+'.pt'
     if not os.path.exists(path_buffer_new):
         torch.save(buffer, path_buffer_new)
-    video = torch.zeros(cf.num_envs, cf.frames, cf.height, cf.width, 3, device=device)
     next_values = torch.zeros(cf.num_envs, device=rank)
     actions_star = torch.zeros(cf.frames_future, cf.num_envs, cf.dim_actions, device=rank)     
     sim_count, sim_step = -1, 0
@@ -170,7 +168,12 @@ def isaac_training(cf, rank, size):
                             model.load_state_dict(model_student.state_dict())
                             model.eval()
                         if rank in rank_agents and isinstance(model, ActorCriticPerceiver):
-                            torch.save(memories, path_mem)
+                            if cf.training_mode == 'RTRL':
+                                b, l, h = mem_dim
+                                memories_save = rearrange(memories, '(b l h) -> b l h', b=b, l=l, h=h)
+                                torch.save(memories_save, path_mem)
+                            else:
+                                torch.save(memories, path_mem)
                         dist.barrier(group=group_agents)
                         if rank == 1:
                             torch.save({'model': model_student.state_dict(), 'optimizer': optimizer.state_dict()}, cf.path_model)
@@ -212,6 +215,8 @@ def isaac_training(cf, rank, size):
                     dist.barrier()
                     if rank in rank_agents and isinstance(model, ActorCriticPerceiver):
                         memories = torch.load(path_mem, weights_only=True).detach()
+                        if cf.training_mode == 'RTRL':
+                            memories = rearrange(memories, 'b l h -> (b l h)')
                         memories_student = memories.clone().detach().requires_grad_(True)
 
                     if rank == 1:
@@ -280,7 +285,7 @@ def isaac_training(cf, rank, size):
                     
                     if isinstance(model, ActorCriticPerceiver):
                         dones_list = torch.nonzero(history['death_index'][sim_step].int()).flatten().tolist()
-                        reset_memories(memories, indexes=dones_list)
+                        reset_memories(memories, indexes=dones_list, mem_dim=mem_dim)
                     states=tr.mask_states(tr.stack_buffer(buffer), sim_count_total, cf, history['birth_time'][sim_step], device)
                     with autocast(device_type='cuda', dtype=torch.float16):
                         actions, logprobs, values, _, new_memories = model(states, memories)
@@ -291,7 +296,7 @@ def isaac_training(cf, rank, size):
                     history['values'][sim_step:sim_step+cf.frames_future] = values.detach()  # for cumulative sum  
 
                     # Instanciate action before dispatch
-                    actions_star = model.instanciate_actions(actions, dt=cf.frames_future).to(torch.float32) # important for gather
+                    actions_star = model.instanciate_actions(actions.detach(), dt=cf.frames_future).to(torch.float32) # important for gather
 
                 ## Train
                 else:
@@ -303,7 +308,7 @@ def isaac_training(cf, rank, size):
                                             for key in ['actions', 'logprobs', 'values', 'birth_time', 'death_index']]
                     if isinstance(model, ActorCriticPerceiver):
                         dones_list = torch.nonzero(death_index.int()).flatten().tolist()
-                        reset_memories(memories, indexes=dones_list)
+                        reset_memories(memories, indexes=dones_list, mem_dim=mem_dim)
                     for key in ['birth_time'] + cf.inputs:
                         last_state[key] = history[key][sim_step]
                     tr.buffers_update(buffer, last_state, frames=cf.frames)  
@@ -414,7 +419,7 @@ def isaac_training(cf, rank, size):
                     if rank in rank_agents:
                         states=tr.mask_states(tr.stack_buffer(buffer), sim_count*cf.sim_duration+next_sim_step, cf, next_state['birth_time'], device)
                         with autocast(device_type='cuda', dtype=torch.float16):
-                            _, _, next_values, _, _ = model_student(states, memories) 
+                            _, _, next_values, _, _ = model(states, memories) 
                         next_values = next_values.to(torch.float32)
 
                 # video

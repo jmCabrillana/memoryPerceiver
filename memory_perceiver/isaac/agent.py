@@ -32,24 +32,24 @@ class ActorCriticSimple(nn.Module):
                                             [layer_init(nn.Linear(self.hidden_dim, self.hidden_dim)), nn.ELU()]*(cf.critic_depth-1) +
                                             [layer_init(nn.Linear(self.hidden_dim, 1), std=1)]  ) ).to(device)
         
-    def forward(self, states, memories, old_actions=None):
+    def forward(self, states, memories, old_actions=None, output_mean_std=False):
         state = states['obs'][:,-1] # last time
         hidden = self.actor(state)
 
         # Critic
-
         if self.shared:
             values = self.actor_critic(hidden)
         else:
             values = self.critic(state)
         values = rearrange(values,  'b 1 -> b')
 
-        # Actor
-
+        # Act
         actions_mean  = torch.tanh(self.actor_mean(hidden))
         log_std = torch.clamp(self.actor_std, -20, 2)
+        if output_mean_std:
+            return actions_mean, log_std.exp(), values, None
+        
         dist = Normal(actions_mean, log_std.exp())
-
         actions = dist.rsample() if old_actions is None else old_actions
         logprobs = dist.log_prob(actions).sum(dim=-1)
         entropies = None if old_actions is None else dist.entropy().sum(dim=-1)
@@ -101,7 +101,7 @@ class ActorCriticPerceiver(nn.Module):
             layer_init(self.actor.out_projections['action_'+str(i)], std=0.01)   
         layer_init(self.actor.out_projections['critic'], std=1)          
         
-    def forward(self, states, memories, old_actions=None):
+    def forward(self, states, memories, old_actions=None, output_mean_std=False):
         
         # Actor
         
@@ -122,28 +122,18 @@ class ActorCriticPerceiver(nn.Module):
         output = output_projection(self.actor, x, self.frames_future, self.audio_future)
 
         actions = []
-        # actions_var = []
         for i in range(self.dim_actions):
             actions.append(output['action_'+str(i)])
-            # actions_var.append(output['action_variance_'+str(i)])
         actions = torch.tanh(rearrange(actions, 'd b t () -> b t d'))
-        # actions_var = rearrange(actions_var, 'd b t () -> b t d')
         dim_t = actions.size()[1]
 
         # Average on time or identity
         if dim_t >= 2:
             actions_tmp1, actions_tmp2 = torch.split(actions, dim_t//2, dim=1)
             actions_mean = torch.cat((actions_tmp1.mean(dim=1), actions_tmp2.mean(dim=1)), dim=-1)
-            # actions_var_tmp1, actions_var_tmp2 = torch.split(actions_var, dim_t//2, dim=1)
-            # actions_var_tmp = torch.cat((actions_var_tmp1.mean(dim=1), actions_var_tmp2.mean(dim=1)), dim=-1)
         else : 
             actions_mean = rearrange(actions, 'b () d -> b d')
-            # actions_var_tmp = rearrange(actions_var, 'b () d -> b d')
-        # log_std = actions_var_tmp.clip(-20, 2) # actions_var = ((1+actions_var_tmp)/4+1e-5)**2
-        # covariance = torch.diag_embed(log_std.exp() * log_std.exp())
-        # dist = MultivariateNormal(actions_mean, covariance)
         log_std = torch.clamp(self.actor_std, -20, 2)
-        dist = Normal(actions_mean, log_std.exp())
 
         ## result
 
@@ -154,11 +144,13 @@ class ActorCriticPerceiver(nn.Module):
         else : 
             values = self.critic(states['observations'][:,-1])
             values = rearrange(values,  'b 1 -> b')
-        
-        # Act
         if self.flattened_mem is not None:
             new_memories = rearrange(new_memories, 'b l h -> (b l h)')
+        if output_mean_std:
+            return actions_mean, log_std.exp(), values, new_memories
 
+        # Act
+        dist = Normal(actions_mean, log_std.exp())
         actions = dist.rsample() if old_actions is None else old_actions
         logprobs = dist.log_prob(actions).sum(dim=-1)
         entropies = None if old_actions is None else dist.entropy().sum(dim=-1)
@@ -182,10 +174,10 @@ class ActorCriticPerceiver(nn.Module):
         return actions_star
 
 
-def create_agent(cf, rank):
-    if cf.agent_type == "Simple":
+def create_agent(type, cf, rank):
+    if type == "Simple":
         return ActorCriticSimple(cf, rank)
-    elif cf.agent_type == "Perceiver":
+    elif type == "Perceiver":
         return ActorCriticPerceiver(cf, rank)
     else:
         raise ValueError("Unknown actor type")
