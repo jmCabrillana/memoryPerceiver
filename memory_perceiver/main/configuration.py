@@ -2,12 +2,12 @@ from pathlib import Path
 
 class IsaacCfg:
 
-    experiment_name = "P_1.6_distillation"
+    experiment_name = "P_1.8_mix_tutor"
 
     # Task
     task =  "Isaac-Humanoid-Direct-v0" # Isaac-Cartpole-Cam-Direct-v0
     agent_type = "Perceiver" # Simple Perceiver
-    tutor_type = "Simple"
+    tutor_type = "Simple" # None Simple
     dim_observations = 75 # 75 4 5
     dim_actions = 21 # 21 1
     num_envs = 64 # 1 54 128 864 2048
@@ -20,14 +20,15 @@ class IsaacCfg:
     frames_future = 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
     training_mode = 'Backward' # Backward TBPTT RTRL
-    learning_rate = 1e-3 # 3e-4 1e-4 1e-5
+    learning_rate = 1e-4 # 3e-4 1e-4 1e-5
     kl_threshold = 0.008 # 0.008 1e10
-    scheduler = '' # '' kl_div warm-up_100
+    scheduler = 'kl_div' # '' kl_div warm-up_100
     range_lr = [1e-6, 1e-3] # [1e-5, 1e-2] [1e-5, 5e-4]
     reward_scale = 0.01
-    start_step = 0
-    entropy = 0.00 # 0.01 to 0.05
-    critic = 2   # 0.5 to 2 4
+    start_step = 10
+    c_entropy = 0.00 # 0.01 to 0.05
+    c_critic = 2   # 0.5 to 2 4
+    c_kl_tutor = 0.5
     accumulation_steps = 16 # 2 4 6 8
     student_update_step = 1
     eps = 1e-9

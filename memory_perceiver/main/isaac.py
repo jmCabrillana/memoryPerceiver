@@ -86,6 +86,10 @@ def isaac_training(cf, rank, size):
         else :
             memories = None
             memories_student = None
+        if cf.tutor_type is not None:
+            model_tutor = create_agent(cf.tutor_type, cf, rank)
+            state_dict = torch.load(cf.path_model_tutor, weights_only=True)
+            model_tutor.load_state_dict(state_dict['model'])
         lr=cf.learning_rate
         scaler = GradScaler()
         if cf.training_mode == 'Backward':
@@ -116,7 +120,7 @@ def isaac_training(cf, rank, size):
             rtrl_grad = RTRL_partial(model_student, param_state_filter='actor.state_', num_parameters=70000,
                         chunk_size=128, slice_indexes=slice_indexes.tolist())        
 
-    history_keys = ['obs', 'actions', 'actions_star', 'values', 'logprobs', 'rewards', 'returns', 'returns_targets', 
+    history_keys = ['obs', 'actions', 'actions_mean', 'actions_std', 'actions_star', 'values', 'logprobs', 'rewards', 'returns', 'returns_targets', 
                     'advantages', 'birth_time', 'death_index']
     history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, cf.dim_observations, device)
     buffer = {'obs':[], 'video':[], 'audio':[], 'birth_time': [], 
@@ -237,7 +241,7 @@ def isaac_training(cf, rank, size):
                     buffer = torch.load(path_buffer_old, weights_only=True)
                     loss_cumul=torch.tensor(0.0, device=device)
                     backward_count=0
-                    actor_losses, critic_losses, entropy_losses = [], [], []
+                    actor_losses, critic_losses, entropy_losses, kl_tutor_losses = [], [], [], []
                 sim_step = 0
             
             sim_count_total = sim_count*cf.sim_duration+sim_step
@@ -288,9 +292,14 @@ def isaac_training(cf, rank, size):
                         reset_memories(memories, indexes=dones_list, mem_dim=mem_dim)
                     states=tr.mask_states(tr.stack_buffer(buffer), sim_count_total, cf, history['birth_time'][sim_step], device)
                     with autocast(device_type='cuda', dtype=torch.float16):
-                        actions, logprobs, values, _, new_memories = model(states, memories)
+                        model_outputs = model(states, memories)
+                        actions, logprobs, values, new_memories = [model_outputs[key] for key in ['actions', 'logprobs', 'values', 'memories']]
                         if cf.training_mode != 'Backward':
                             memories = new_memories
+                        if cf.tutor_type is not None:
+                            model_tutor_outputs = model_tutor(states, None)
+                            history['actions_mean'][sim_step] = model_tutor_outputs['actions_mean'].detach()
+                            history['actions_std'][sim_step] = model_tutor_outputs['actions_std'].detach()
                     history['actions'][sim_step] = actions.detach()
                     history['logprobs'][sim_step] = logprobs.detach()
                     history['values'][sim_step:sim_step+cf.frames_future] = values.detach()  # for cumulative sum  
@@ -304,8 +313,8 @@ def isaac_training(cf, rank, size):
                     # sim_step_rand = torch.randint(0, int(1*cf.sim_duration), (1,)).item()  
                     # sim_count_total = sim_count*cf.sim_duration + sim_step
                     sim_step_rand=sim_step 
-                    actions, logprobs, values, birth_time, death_index = [history[key][sim_step_rand].to(device) \
-                                            for key in ['actions', 'logprobs', 'values', 'birth_time', 'death_index']]
+                    actions, actions_mean, actions_std, logprobs, values, birth_time, death_index = [history[key][sim_step_rand].to(device) \
+                        for key in ['actions', 'actions_mean', 'actions_std', 'logprobs', 'values', 'birth_time', 'death_index']]
                     if isinstance(model, ActorCriticPerceiver):
                         dones_list = torch.nonzero(death_index.int()).flatten().tolist()
                         reset_memories(memories, indexes=dones_list, mem_dim=mem_dim)
@@ -323,7 +332,9 @@ def isaac_training(cf, rank, size):
                             advantages = history['advantages'][sim_step_rand].to(device)
                             if cf.training_mode in ['Backward', 'RTRL'] and isinstance(model, ActorCriticPerceiver):
                                 memories_student = memories.clone().detach().requires_grad_(True)
-                            _, new_logprobs, new_values, entropies, new_memories_student = model_student(states, memories_student, actions)     
+                            model_student_outputs = model_student(states, memories_student, actions)
+                            new_actions_mean, new_actions_std, new_logprobs, new_values, entropies, new_memories_student = \
+                                [model_student_outputs[key] for key in ['actions_mean', 'actions_std', 'logprobs', 'values', 'entropies', 'memories']]
                             if cf.training_mode == 'TBPTT':
                                 memories_student = new_memories_student
 
@@ -332,10 +343,14 @@ def isaac_training(cf, rank, size):
                             surr1 = ratios * advantages
                             surr2 = torch.clamp(ratios, 1-cf.eps_clip, 1+cf.eps_clip) * advantages
                             loss_actor = -(torch.min(surr1, surr2)).mean()
-                            loss_entropy = -cf.entropy * entropies.mean()
+                            loss_entropy = -cf.c_entropy * entropies.mean()
                             clipped_values = values + torch.clamp(new_values-values, -cf.value_clip, cf.value_clip)
-                            loss_critic = cf.critic * F.mse_loss(clipped_values, returns_targets)
-                            loss = (loss_actor + loss_critic + loss_entropy) / cf.accumulation_steps
+                            loss_critic = cf.c_critic * F.mse_loss(clipped_values, returns_targets)
+                            loss_kl_tutor = torch.tensor(0.0, device=device)
+                            if cf.tutor_type is not None:
+                                mu1, mu2, sig1, sig2 = new_actions_mean, actions_mean, new_actions_std, actions_std
+                                loss_kl_tutor = cf.c_kl_tutor*0.5*( ( (mu2-mu1)/sig2 )**2 + (sig1/sig2)**2 - 2*torch.log(sig1) + 2*torch.log(sig2) - 1 ).mean(dim=1).mean()
+                            loss = (loss_actor + loss_critic + loss_entropy + loss_kl_tutor) / cf.accumulation_steps
                             loss_cumul += loss
                             with torch.no_grad():
                                 kl_divergence = ((ratios - 1) - (new_logprobs - logprobs)).mean()
@@ -344,7 +359,7 @@ def isaac_training(cf, rank, size):
                                 loss *= 0
                                 loss_cumul *= 0
                         if cf.training_mode != 'Backward':
-                            _, _, _, _, memories = model(states, memories) 
+                            memories = model(states, memories)['memories']
 
                     if perform_update :
 
@@ -378,6 +393,7 @@ def isaac_training(cf, rank, size):
                         actor_losses.append(loss_actor.item())
                         critic_losses.append(loss_critic.item())
                         entropy_losses.append(loss_entropy.item())
+                        kl_tutor_losses.append(loss_kl_tutor.item())
 
             # Gather action and step env
             if is_inference:
@@ -419,7 +435,7 @@ def isaac_training(cf, rank, size):
                     if rank in rank_agents:
                         states=tr.mask_states(tr.stack_buffer(buffer), sim_count*cf.sim_duration+next_sim_step, cf, next_state['birth_time'], device)
                         with autocast(device_type='cuda', dtype=torch.float16):
-                            _, _, next_values, _, _ = model(states, memories) 
+                            next_values = model(states, memories)['values']
                         next_values = next_values.to(torch.float32)
 
                 # video
@@ -449,9 +465,10 @@ def isaac_training(cf, rank, size):
 
                 if rank == 1 and sim_step == cf.sim_duration-1:
                     plotter.add('loss/lr', lr, sim_count)
-                    plotter.add('loss/loss_actor', np.mean(actor_losses), sim_count)
-                    plotter.add('loss/loss_critic', np.mean(critic_losses), sim_count)
-                    plotter.add('loss/loss_entropy', np.mean(entropy_losses), sim_count)
+                    plotter.add('loss/actor', np.mean(actor_losses), sim_count)
+                    plotter.add('loss/critic', np.mean(critic_losses), sim_count)
+                    plotter.add('loss/entropy', np.mean(entropy_losses), sim_count)
+                    plotter.add('loss/kl_tutor', np.mean(kl_tutor_losses), sim_count)
             sim_step += 1
 
         else:

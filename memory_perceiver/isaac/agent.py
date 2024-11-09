@@ -32,7 +32,7 @@ class ActorCriticSimple(nn.Module):
                                             [layer_init(nn.Linear(self.hidden_dim, self.hidden_dim)), nn.ELU()]*(cf.critic_depth-1) +
                                             [layer_init(nn.Linear(self.hidden_dim, 1), std=1)]  ) ).to(device)
         
-    def forward(self, states, memories, old_actions=None, output_mean_std=False):
+    def forward(self, states, memories, old_actions=None):
         state = states['obs'][:,-1] # last time
         hidden = self.actor(state)
 
@@ -45,15 +45,13 @@ class ActorCriticSimple(nn.Module):
 
         # Act
         actions_mean  = torch.tanh(self.actor_mean(hidden))
-        log_std = torch.clamp(self.actor_std, -20, 2)
-        if output_mean_std:
-            return actions_mean, log_std.exp(), values, None
-        
-        dist = Normal(actions_mean, log_std.exp())
+        actions_std = torch.clamp(self.actor_std, -20, 2).exp()
+        dist = Normal(actions_mean, actions_std)
         actions = dist.rsample() if old_actions is None else old_actions
         logprobs = dist.log_prob(actions).sum(dim=-1)
         entropies = None if old_actions is None else dist.entropy().sum(dim=-1)
-        return actions, logprobs, values, entropies, None
+        return {'actions': actions,  'actions_mean': actions_mean, 'actions_std': actions_std,
+                'logprobs': logprobs, 'values': values, 'entropies': entropies, 'memories':None}
         
     
     def instanciate_actions(self, actions, **kwargs):
@@ -101,7 +99,7 @@ class ActorCriticPerceiver(nn.Module):
             layer_init(self.actor.out_projections['action_'+str(i)], std=0.01)   
         layer_init(self.actor.out_projections['critic'], std=1)          
         
-    def forward(self, states, memories, old_actions=None, output_mean_std=False):
+    def forward(self, states, memories, old_actions=None):
         
         # Actor
         
@@ -133,7 +131,6 @@ class ActorCriticPerceiver(nn.Module):
             actions_mean = torch.cat((actions_tmp1.mean(dim=1), actions_tmp2.mean(dim=1)), dim=-1)
         else : 
             actions_mean = rearrange(actions, 'b () d -> b d')
-        log_std = torch.clamp(self.actor_std, -20, 2)
 
         ## result
 
@@ -146,15 +143,15 @@ class ActorCriticPerceiver(nn.Module):
             values = rearrange(values,  'b 1 -> b')
         if self.flattened_mem is not None:
             new_memories = rearrange(new_memories, 'b l h -> (b l h)')
-        if output_mean_std:
-            return actions_mean, log_std.exp(), values, new_memories
 
         # Act
-        dist = Normal(actions_mean, log_std.exp())
+        actions_std = torch.clamp(self.actor_std, -20, 2).exp()
+        dist = Normal(actions_mean, actions_std)
         actions = dist.rsample() if old_actions is None else old_actions
         logprobs = dist.log_prob(actions).sum(dim=-1)
         entropies = None if old_actions is None else dist.entropy().sum(dim=-1)
-        return actions, logprobs, values, entropies, new_memories
+        return {'actions': actions,  'actions_mean': actions_mean, 'actions_std': actions_std,
+                'logprobs': logprobs, 'values': values, 'entropies': entropies, 'memories':None}
     
     def instanciate_actions(self, actions, **kwargs):
 

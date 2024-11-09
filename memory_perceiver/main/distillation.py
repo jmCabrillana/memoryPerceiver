@@ -169,7 +169,7 @@ def isaac_training(cf, rank, size):
                         if sim_count % ( (cf.num_replay+1)*cf.student_update_step ) == 0 :
                             # model.load_state_dict(model_student.state_dict())
                             model.eval()
-                        if rank in rank_agents and isinstance(model, ActorCriticPerceiver):
+                        if rank in rank_agents and isinstance(model_student, ActorCriticPerceiver):
                             if cf.training_mode == 'RTRL':
                                 b, l, h = mem_dim
                                 memories_save = rearrange(memories_student, '(b l h) -> b l h', b=b, l=l, h=h)
