@@ -15,6 +15,7 @@ tmux set-option history-limit 10000 \; new-window => more history, default 2000
 ./google-cloud-sdk/bin/gcloud --quiet config set project turnkey-setup-356207
 ./google-cloud-sdk/bin/gcloud storage cp --recursive  gs://memory_perceiver/infinigen/test .
 gcloud storage cp --recursive gs://memory_perceiver/infinigen/test .
+./google-cloud-sdk/bin/gcloud storage cp -r  memory_perceiver/main/weights/Isaac-Humanoid-Direct-v0/S_1.2_frame32 gs://memory_perceiver/weights/Isaac-Humanoid-Direct-v0/S_1.2_frame32/
 
 # IsaacLab
 python -m pip install skrl
@@ -25,17 +26,17 @@ https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/
 # Infinigen
 python -m infinigen_examples.generate_nature --seed 2 --task coarse -g desert.gin dev.gin --output_folder outputs/hello_world/coarse
 python -m infinigen_examples.generate_nature --seed 2 --task populate fine_terrain -g desert.gin dev.gin --input_folder outputs/hello_world/coarse --output_folder outputs/hello_world/fine
-python -m infinigen.tools.export --input_folder outputs/hello_world/fine --output_folder outputs/hello_world/fine/my_export -f usdc -r 1024 --omniverse
+python -m infinigen.tools.export --input_folder outputs/hello_world0/33/fine --output_folder outputs/hello_world0/33/fine/my_export -f usdc -r 1024 --omniverse
 python infinigen/tools/isaac_sim.py --scene-path  outputs/my_export/export_scene.blend/export_scene.usda --json-path outputs/my_export/solve_state.json
-python -m infinigen.datagen.manage_jobs --output_folder outputs/hello_world --num_scenes 1 --specific_seed 2 \
---configs desert.gin dev.gin --pipeline_configs local_16GB.gin monocular.gin \ 
---pipeline_overrides LocalScheduleHandler.use_gpu=False
+python -m infinigen.datagen.manage_jobs --output_folder outputs/hello_world --num_scenes 1 --specific_seed 2 --configs desert.gin dev.gin --pipeline_configs local_16GB.gin monocular.gin --pipeline_overrides LocalScheduleHandler.use_gpu=False
+python -m infinigen.datagen.manage_jobs --output_folder outputs/hello_world1 --num_scenes 1 --specific_seed 20168 --configs simple.gin dev.gin --pipeline_configs local_16GB.gin monocular.gin --pipeline_overrides LocalScheduleHandler.use_gpu=False --overrides compose_nature.generate_resolution=[720, 720] compose_nature.trees_chance=0.2 OpaqueSphericalMesher.pixels_per_cube=8 TransparentSphericalMesher.pixels_per_cube=8 target_face_size.global_multiplier=8 placement.populate_all.dist_cull=140 
+python -m infinigen.datagen.manage_jobs --output_folder outputs/hello_world1 --num_scenes 1 --specific_seed 20168 --configs simple.gin dev.gin --pipeline_configs local_64GB.gin monocular.gin --pipeline_overrides LocalScheduleHandler.use_gpu=False --overrides camera.camera_pose_proposal.altitude=["uniform", 20, 30] compose_nature.generate_resolution=[720, 720] compose_nature.trees_chance=0.2 OpaqueSphericalMesher.pixels_per_cube=8 TransparentSphericalMesher.pixels_per_cube=8 target_face_size.global_multiplier=8 placement.populate_all.dist_cull=140 
 
 #Common errors
 - Duplicate driver files:
     To verify the proper NVIDIA driver installation, only one of the following icd.d folders should contain nvidia_icd.json file:                
     /etc/vulkan/icd.d: Location of ICDs installed from non-Linux-distribution-provided packages                                                  
-    /usr/share/vulkan/icd.d : Location of ICDs installed from Linux-distribution-provided packages  
+    /usr/share/vulkan/icd.d : Location of ICDs installed from Linux-distribution-provided packages
     >> Clear config in /etc/vulkan/icd.d/nvidia_icd.json
 
 # Container 

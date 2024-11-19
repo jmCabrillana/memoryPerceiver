@@ -254,11 +254,12 @@ def isaac_training(cf, rank, size):
                     # obs
                     all_obs = env.unwrapped._get_observations()
                     history['obs'][sim_step] = all_obs['policy'].clone()    # (num_envs, d)
-                    if 'video' in cf.inputs or cf.render:
+                    if 'video' in cf.inputs:
                         video = all_obs['camera'].clone()  # (num_envs, 256, 456, 3)
                         # ts.save(video[0], '/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/live.jpg')
-                        full_video.append(video[2].cpu())
                         # video = torch.zeros(cf.num_envs, cf.frames, cf.height, cf.width, 3, device=device)
+                    if cf.render:
+                        full_video.append(env.render().cpu())
                     
                     # dones
                     dones = env.unwrapped.last_dones.int().clone()
@@ -348,6 +349,7 @@ def isaac_training(cf, rank, size):
                             loss_critic = cf.c_critic * F.mse_loss(clipped_values, returns_targets)
                             loss_kl_tutor = torch.tensor(0.0, device=device)
                             if cf.tutor_type is not None:
+                                # loss_kl_tutor = F.mse_loss(new_actions_mean, actions_mean)
                                 mu1, mu2, sig1, sig2 = new_actions_mean, actions_mean, new_actions_std, actions_std
                                 loss_kl_tutor = cf.c_kl_tutor*0.5*( ( (mu2-mu1)/sig2 )**2 + (sig1/sig2)**2 - 2*torch.log(sig1) + 2*torch.log(sig2) - 1 ).mean(dim=1).mean()
                             loss = (loss_actor + loss_critic + loss_entropy + loss_kl_tutor) / cf.accumulation_steps
@@ -400,7 +402,7 @@ def isaac_training(cf, rank, size):
 
                 # Step environment with action
                 gather_dummy_src(actions_star, rank, size-1, swap_axis=True)
-                tr.buffer_update(buffer, 'actions_star', list(torch.unbind( actions_star.detach() )))
+                tr.buffer_update(buffer, 'actions_star', list(torch.unbind( actions_star.detach() )), frames=cf.frames)
                 if rank == rank_sim:
                     env.step(buffer['actions_star'][-1].clone())
                     history['rewards'][sim_step] = cf.reward_scale*env.unwrapped._get_rewards()
@@ -422,7 +424,7 @@ def isaac_training(cf, rank, size):
                     if rank == rank_sim:
                         all_obs = env.unwrapped._get_observations()
                         next_state['obs'] = all_obs['policy'].clone()    # (num_envs, d)
-                        if 'video' in cf.inputs or cf.render:
+                        if 'video' in cf.inputs:
                             next_state['video'] = all_obs['camera'].clone()  # (num_envs, 256, 456, 3)
                         dones = env.unwrapped.last_dones.int().clone()
                         next_state['birth_time'] = buffer['birth_time'][-1].clone()
@@ -473,7 +475,7 @@ def isaac_training(cf, rank, size):
 
         else:
             if rank == rank_sim:
-                time.sleep(1)
+                time.sleep(0.01)
                 # env.step()
 
     if rank == rank_sim:

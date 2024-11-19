@@ -89,7 +89,7 @@ class ActorCriticPerceiver(nn.Module):
         self.shared = cf.shared
         self.flattened_mem = None
         self.actor = create_multimodal_perceiver(cf, device)
-        self.actor_std = nn.Parameter(torch.zeros(self.dim_actions, device=device))
+        self.actor.out_std = nn.Parameter(torch.zeros(self.dim_actions, device=device))
         if not self.shared:
             self.critic = nn.Sequential( *( [layer_init(nn.Linear(self.dim_observations, self.hidden_dim)), nn.ELU()] +
                                             [layer_init(nn.Linear(self.hidden_dim, self.hidden_dim)), nn.ELU()]*(cf.critic_depth-1) +
@@ -145,7 +145,7 @@ class ActorCriticPerceiver(nn.Module):
             new_memories = rearrange(new_memories, 'b l h -> (b l h)')
 
         # Act
-        actions_std = torch.clamp(self.actor_std, -20, 2).exp()
+        actions_std = torch.clamp(self.actor.out_std, -20, 2).exp()
         dist = Normal(actions_mean, actions_std)
         actions = dist.rsample() if old_actions is None else old_actions
         logprobs = dist.log_prob(actions).sum(dim=-1)

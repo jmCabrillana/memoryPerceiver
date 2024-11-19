@@ -13,11 +13,11 @@ sudo apt install cmake build-essential -y
 apt-get install curl tar screen -y
 
 # GCP
-curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-417.0.1-linux-x86_64.tar.gz
-tar -xf google-cloud-cli-417.0.1-linux-x86_64.tar.gz 
-rm google-cloud-cli-417.0.1-linux-x86_64.tar.gz 
-CLOUDSDK_CORE_DISABLE_PROMPTS=1 ./google-cloud-sdk/install.sh
-./google-cloud-sdk/bin/gcloud --quiet auth activate-service-account --key-file=memoryPerceiver/service_account.json
+# curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-417.0.1-linux-x86_64.tar.gz
+# tar -xf google-cloud-cli-417.0.1-linux-x86_64.tar.gz 
+# rm google-cloud-cli-417.0.1-linux-x86_64.tar.gz 
+# CLOUDSDK_CORE_DISABLE_PROMPTS=1 ./google-cloud-sdk/install.sh
+# ./google-cloud-sdk/bin/gcloud --quiet auth activate-service-account --key-file=memoryPerceiver/service_account.json
 
 # python and requirements
 # alias python='/isaac-sim/python.sh'
@@ -28,12 +28,12 @@ then
 else
     python3.10 -m venv isaaclab
     source $SCRIPT_DIR/../isaaclab/bin/activate
-    export LD_LIBRARY_PATH=$VIRTUAL_ENV/lib/python3.10/site-packages/torch/lib:$LD_LIBRARY_PATH
     cuda_version="$(nvcc --version | grep -oP '\d+\.\d+' | tr -d '.' | uniq)"
     echo $LD_LIBRARY_PATH
     echo $cuda_version
     python_exe="python"
     $python_exe -m pip install torch==2.4.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu$cuda_version
+    export LD_LIBRARY_PATH=$VIRTUAL_ENV/lib/python3.10/site-packages/torch/lib:$LD_LIBRARY_PATH
     $python_exe -m pip install isaacsim==4.2.0.2 --extra-index-url https://pypi.nvidia.com
     $python_exe -m pip install isaacsim-extscache-physics isaacsim-extscache-kit-sdk isaacsim-extscache-kit isaacsim-app --extra-index-url https://pypi.nvidia.com
 fi
@@ -49,8 +49,14 @@ $python_exe -m pip install -e .
 # Infinigen
 sudo apt-get install wget cmake g++ libgles2-mesa-dev libglew-dev libglfw3-dev libglm-dev zlib1g-dev -y
 sudo apt install libxkbcommon-x11-0 -y
+sudo apt install python3.11
+sudo apt install python3.11-venv
+sudo apt-get install python3.11-dev
+cd $SCRIPT_DIR/..
+python3.10 -m venv infinigen
+source $SCRIPT_DIR/../infinigen/bin/activate
 cd $SCRIPT_DIR/infinigen
-$python_exe -m pip install -e ".[terrain,vis]"
+python -m pip install -e ".[terrain,vis]"
 
 # Set variables and update bashrc
 export ACCEPT_EULA=Y
