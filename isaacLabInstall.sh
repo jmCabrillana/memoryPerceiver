@@ -49,9 +49,8 @@ $python_exe -m pip install -e .
 # Infinigen
 sudo apt-get install wget cmake g++ libgles2-mesa-dev libglew-dev libglfw3-dev libglm-dev zlib1g-dev -y
 sudo apt install libxkbcommon-x11-0 -y
-sudo apt install python3.11
-sudo apt install python3.11-venv
-sudo apt-get install python3.11-dev
+sudo apt install python3.11 -y
+sudo apt install python3.11-venv -y
 cd $SCRIPT_DIR/..
 python3.10 -m venv infinigen
 source $SCRIPT_DIR/../infinigen/bin/activate
