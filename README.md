@@ -54,4 +54,3 @@ https://giphy.com/gifs/mySDfU3cx4mPTEJ6ka
     primaryClass = {cs.CV}
 }
 ```
-
