@@ -1,8 +1,7 @@
 # Memory-Perceiver
 
-Memory-Perceiver is an attempt to model human behavior using multi-sensorial data. The goal of this auto-regressive model is to predict body position and speech for a human subject using video, sound and body position inputs.
+Memory-Perceiver is an attempt to solve embodied problems using multi-sensorial data. 
 
-Additionaly a compressed memory latent inspired from RNN allows to better predict very long sequences.
 
 ## Perceiver
 
@@ -29,23 +28,20 @@ model = PerceiverIO(
     weight_tie_layers = False    # whether to weight tie layers (optional, as indicated in the diagram)
 )
 ```
-## Dataset
 
-The dataset is extracted using videos of social or physical interactions. The body position is retrieved with a model predicting SMPL-X (https://smpl-x.is.tue.mpg.de) parameters from images. The body positions are then smoothed on the temporal dimension.
+Additionaly a compressed memory latent inspired from RNN allows to better predict very long sequences.
 
-## Training
 
-Distributed training is performed with pytorch on google cloud with 8 TPU cores.
+## Reinforcement Learning
 
-## Prelimenary result
+This model architecture is used with the popular simulator Isaac Lab and with the libary Infinigen to solve locomotion tasks in procedurally generated environments
 
-Using a sufficiently long input sequence, the model is able to imitate human behavior:
+## Behavior Cloning for pretraining
 
+The goal of this auto-regressive model is to predict body position and speech for a human subject using video, sound and body position inputs. The dataset is extracted using videos of social or physical interactions. The body position is retrieved with a model predicting SMPL-X (https://smpl-x.is.tue.mpg.de) body positions from images. The body estimations are then smoothed on the temporal dimension. Distributed training is performed with pytorch on google cloud with 8 TPU cores.
 
 ![](https://github.com/jmCabrillana/memoryPerceiver/blob/main/ezgif.com-video-to-gif.gif)
-
 https://giphy.com/gifs/mySDfU3cx4mPTEJ6ka
-
 
 ## Citations
 
