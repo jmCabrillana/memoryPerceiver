@@ -1,69 +1,97 @@
-# class Config:
+from pathlib import Path
 
-#     # Sampling configuration
+class IsaacCfg:
 
-#     fps = 32
-#     sepformer_rate = 8000
-#     sample_per_frame = 1920
-#     sample_rate = fps * sample_per_frame
-#     body_parts = {'smplx_root_pose':3, 'smplx_body_pose':63, 'smplx_lhand_pose':45, 'smplx_rhand_pose':45, 'smplx_jaw_pose':3, 
-#               'smplx_expr':10, 'cam_trans':3, 'bbox':4}
-#     body_parts_extended = {'smplx_root_pose':3, 'smplx_body_pose':63, 'smplx_lhand_pose':45, 'smplx_rhand_pose':45, 'smplx_jaw_pose':3, 
-#               'smplx_expr':10, 'cam_trans':3, 'bbox':4, 'smplx_shape':10}
-#     seq_byte_size = 19012
-#     reward_byte_size = 21
+    experiment_name = "P_1.9_end-to-end"
 
-#     # Model dim configuration
+    # Task
+    task =  "Isaac-Humanoid-Direct-v0" # Isaac-Cartpole-Cam-Direct-v0
+    agent_type = "Perceiver" # Simple Perceiver
+    tutor_type = None # None Simple
+    dim_observations = 75 # 75 4 5
+    dim_actions = 21 # 21 1
+    num_envs = 256 # 1 54 128 864 2048
+    sim_duration = 32 # 1028 516 260
+    seed = 68
+    render = False
 
-#     len_video_frame = 1824  # 456*256/(8*8)
-#     len_audio_frame = 120  # 1920/16
-#     query_dim = 832
-#     video_latent_dim = 256
-#     audio_latent_dim = 560
-
-    
-
-# cf = Config()
-
-" Isaac"
-
-class Config:
-
-    # Sampling and input/output configuration
-
+    # PPO
     frames = 4
-    sample_per_frame = 1920
-    frames_future = 2
-    len_video_frame = 1824  # 456*256/(8*8)
+    frames_future = 1
+    dim_actions_ppo = min(2, frames_future)*dim_actions
+    training_mode = 'Backward' # Backward TBPTT RTRL
+    learning_rate = 1e-5 # 3e-4 1e-4 1e-5
+    kl_threshold = 0.004 # 0.008 1e10
+    scheduler = 'warm-up_400' # '' kl_div warm-up_100
+    range_lr = [1e-6, 3e-4] # [1e-5, 1e-2] [1e-5, 5e-4]
+    reward_scale = 0.01
+    start_step = 20
+    c_entropy = 0.01 # 0.01 to 0.05
+    c_critic = 2   # 0.5 to 2 4
+    c_kl_tutor = 0.2
+    accumulation_steps = 16 # 2 4 6 8
+    student_update_step = 1
+    eps = 1e-9
+    gamma = 0.99
+    c_lambda = 0.95
+    grad_norm = 1.0  # 0.1 to 1.0
+    eps_clip = 0.2
+    value_clip = 0.2 #float('inf')
+    num_replay = 5
+    update_probability = 1.0 #0.33 0.5
+
+    # Model parameters
+    depth = 2
+    critic_depth = 2
+    depth_f_state = 0
+    query_dim = 512 # 32 128 512 832 # video > 136 , 
+    hidden_dim = 128 # for simple net
+    latent_heads = 8 # 2 8
+    latent_dim_head =  64 #16  64
+    nb_latents_mem = 2
+    nb_latents = 8
+    shared=True
+    batch_size = num_envs
+    body_parts =  {'obs_' + str(i): 1 for i in range(dim_observations)}
+    body_parts.update({'action_star_' + str(i): 1 for i in range(dim_observations)})
+    body_outputs = {'action_' + str(i): 1 for i in range(dim_actions)}
+    # actions_variance = {'action_variance_' + str(i): 1 for i in range(dim_actions)}
+    # body_outputs.update(actions_variance)
+    body_outputs.update({'critic':1})
+
+    # Model inputs and outputs
+    inputs = ['obs', 'actions_star'] # obs audio video actions_star
+    output_audio = False
+    sample_audio_frame = 1920
+    width = 448
+    height = 256
+    patch_audio = 16
+    patch_width = 16
+    patch_height = 16
+    bands_fourier = 128
+    bands_video = 32
+    bands_video_t = 4
+    channels = 3
+    len_video_frame = 448 # 836 = 456*264/(12*12) # 1824 456*256/(8*8) # 448 448*256/(16*16)
     len_audio_frame = 120   # 1920/16
-    sample_rate = frames * sample_per_frame
+    sample_rate = frames * sample_audio_frame
     len_video = frames*len_video_frame
     len_audio = frames*len_audio_frame
-    len_audio_raw = len_audio*sample_per_frame
+    len_audio_raw = frames*sample_audio_frame
     video_future = frames_future*len_video_frame
     audio_future = frames_future*len_audio_frame 
 
-    # PPO
-    dim_observations = 87
-    dim_actions = 21
-    dim_actions_ppo = 2*21 # *2
-    
-    # Critic dimension
-    critic_layers = 2
+    # Directories
 
-    # Model dimension configuration
+    path_main = Path(__file__).parent
+    path_experiment = path_main / 'experiments' / task / experiment_name
+    path_weights = path_main / 'weights' / task / experiment_name 
+    path_model = path_main / 'weights' / task / experiment_name / 'model.pt'
+    path_model_tutor = path_main / 'weights' / task / experiment_name / 'model_tutor.pt'
+    path_memories = path_main / 'weights' / task / experiment_name / 'mem'
+    path_buffer = path_main / 'weights' / task / experiment_name / 'buffer'
+    path_scaler = path_main / 'weights' / task / experiment_name / 'scaler.pt'
+    path_logs = path_experiment / 'isaac.log'
+    path_monitor = path_main / 'monitor'
 
-    query_dim = 832
-    video_latent_dim = 256
-    audio_latent_dim = 560
-    depth = 2
-    batch_size = 4
-    body_parts =  {'observation_' + str(i): 1 for i in range(dim_observations)}
-    body_outputs = {'action_' + str(i): 1 for i in range(dim_actions)}
-    actions_variance = {'action_variance_' + str(i): 1 for i in range(dim_actions)}
-    body_outputs.update(actions_variance)
-    has_video = True
-    has_audio = True
-
-
-cf = Config()
+isaac_cfg = IsaacCfg()

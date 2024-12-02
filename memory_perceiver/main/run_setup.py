@@ -180,7 +180,7 @@ def _mp_fn(index, flags):
     nb_frames = flags.duration*cf.fps
     frames_future = int(flags.duration_future*cf.fps)
     len_audio = nb_frames*len_audio_frame
-    len_audio_raw = len_audio*cf.sample_per_frame
+    len_audio_raw = len_audio*cf.sample_audio_frame
     audio_future = frames_future*len_audio_frame
     max_stream_nbs = (duration_total-duration)/duration_future
 
@@ -276,11 +276,11 @@ def _mp_fn(index, flags):
                 loss_flow = 1
             else:
                 loss_flow = 0
-            output['audio'] = rearrange(model.projections['audio'](x[:, :audio_future, :]) ,  "b t t1 -> b (t t1)")
+            output['audio'] = rearrange(model.out_projections['audio'](x[:, :audio_future, :]) ,  "b t t1 -> b (t t1)")
             start_modality = audio_future
             loss = loss + loss_flow*F.l1_loss(output['audio'], targets_audio)
             for part, params in cf.body_parts.items():
-                output[part] = model.projections[part](x[:, start_modality:start_modality+frames_future, :])
+                output[part] = model.out_projections[part](x[:, start_modality:start_modality+frames_future, :])
                 start_modality += frames_future
                 loss = loss + loss_flow*F.l1_loss(output[part], targets_body[part])
             loss.backward()

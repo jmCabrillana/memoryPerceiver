@@ -1,64 +1,127 @@
 import torch
 from einops import repeat, rearrange
 
-from memoryPerceiver.memory_perceiver.processing.vectorize import fourier_encode
+from memoryPerceiver.memory_perceiver.processing.vectorize import compute_fourier_encoding, fourier_encode
 from memoryPerceiver.memory_perceiver.core.model_net import PerceiverIO
+
 
 def create_multimodal_perceiver(cf, device):
 
-    # Projection to return modalities, enhancement
-
-    modality_parameters = {}
-    modality_parameters['audio'] = cf.audio_latent_dim
-    modality_parameters['video'] = cf.video_latent_dim
+    input_parameters = {}
+    if 'audio' in cf.inputs:
+        input_parameters['audio'] = cf.patch_audio
+    if 'video' in cf.inputs:
+        input_parameters['video'] =  cf.patch_height*cf.patch_width*cf.channels
     for part, params in cf.body_parts.items():
-        modality_parameters[part] = cf.query_dim - 2*128 - params
+        input_parameters[part] = params
+
+    output_parameters = dict(cf.body_outputs)
+    if cf.output_audio:
+        output_parameters.update({'audio': cf.patch_audio})
     for part, params in cf.body_outputs.items():
-        modality_parameters[part] = cf.query_dim - 2*128 - params
-
-    projection_parameters = dict(cf.body_outputs)
-    projection_parameters.update({'audio': 16})
-
-    # Input compression
-
-    special_compression = [i for i in range(cf.video_future)] + [i for i in range(cf.len_video, cf.len_video+cf.audio_future)]
-    for k in range(len(cf.body_parts)):
-        special_compression += [ cf.len_video + cf.len_audio + k*cf.frames + i for i in range(cf.frames_future) ]
+        output_parameters[part] = params
 
     # Instantiate model
         
     model = PerceiverIO(
             cf.depth,
-            cf.query_dim,
-            special_compression = special_compression,
             device=device,
-            projection_parameters = projection_parameters,
-            modality_parameters = modality_parameters,
-            max_batch_size = cf.batch_size
+            depth_f_state=cf.depth_f_state,
+            query_dim=cf.query_dim,
+            nb_latents = cf.nb_latents,
+            nb_latents_mem = cf.nb_latents_mem,
+            latent_heads = cf.latent_heads,
+            latent_dim_head = cf.latent_dim_head,
+            input_parameters = input_parameters,
+            output_parameters = output_parameters
         )
     model = model.to(device)
 
     # Queries
 
     queries = []
-    audio_query = repeat( torch.cat([model.modality['audio'], torch.zeros(16, device=device)]), '... -> n ...', n=cf.audio_future)
-    audio_pos = fourier_encode(torch.linspace(-1, 1, cf.audio_future), cf.audio_future/2, num_bands=128).to(device)
-    queries.append(torch.cat([audio_query, audio_pos], dim=-1).to(device))
+    if cf.output_audio:
+        audio_query = repeat( model.modality['audio'], '... -> n ...', n=cf.audio_future)
+        audio_pos = fourier_encode(torch.linspace(-1, 1, cf.audio_future), cf.audio_future//2, num_bands=cf.query_dim//2).to(device)
+        queries.append( (audio_query + audio_pos).to(device))
     for part, params in cf.body_outputs.items():
-        part_query = repeat( torch.cat([model.modality[part], torch.zeros(params, device=device)]), '... -> n ...', n=cf.frames_future)
-        part_pos = fourier_encode(torch.linspace(-1, 1, cf.frames_future), cf.frames_future/2, num_bands=128).to(device)
-        queries.append(torch.cat([part_query, part_pos], dim=-1).to(device))
+        part_query = repeat( model.modality[part], '... -> n ...', n=cf.frames_future)
+        part_pos = fourier_encode(torch.linspace(-1, 1, cf.frames_future), cf.frames_future//2, num_bands=cf.query_dim//2).to(device)
+        queries.append( (part_query + part_pos).to(device))
     model.queries=torch.cat(queries)
+
+    # Position embedding
+    model.pos_encoding = compute_fourier_encoding(cf.body_parts, device=device, query_dim=cf.query_dim, frames=cf.frames, 
+                                                  height=cf.height, width=cf.width, audio=cf.sample_audio_frame,
+                                                  patch_height=cf.patch_height,patch_width=cf.patch_width, patch_audio=cf.patch_audio)
 
     return model
 
-def output_projection(model, x, body_outputs, frames_future, audio_future):
+def input_embedding(data, embedding, query_dim, device='cpu', 
+                    height=8, width=8, patch_audio=16):
+    b = len(next(iter(data.values())))
+
+    fourier_encoding = compute_fourier_encoding(data, query_dim, device=device,
+                                                height=height, width=width, patch_audio=patch_audio)
+    multi_mod = torch.tensor([], device=device)
+    for key, value in data.items():
+        if key == 'video':
+            video = rearrange(value, "b c t (h h1) (w w1) -> b (t h w) (h1 w1 c)", h1=height, w1=width)
+            video_encodding = repeat(fourier_encoding['video'], '... -> b ...', b=b)
+            x = embedding['video'](video) + video_encodding
+            multi_mod = torch.cat([multi_mod, x], dim=1)
+        elif key == 'audio':
+            audio = rearrange(audio, "b (t t1) -> b t t1", t1=patch_audio)
+            audio_encoding = repeat(fourier_encoding['audio'], '... -> b ...', b=b)
+            x = embedding['audio'](audio) + audio_encoding
+            multi_mod = torch.cat([multi_mod, x], dim=1)
+        else:
+            value_encoding = repeat(fourier_encoding[key], '... -> b ...', b=b)
+            x = embedding[key](value) + value_encoding
+            multi_mod = torch.cat([multi_mod, x], dim=1)
+    return multi_mod
+
+
+
+def output_projection(model, x, frames_future, audio_future):
     output = {}
-    output['audio'] = rearrange(model.projections['audio'](
-        x[:, :audio_future, :]), "b t t1 -> b (t t1)" )
-    start_modality = audio_future
-    for part in body_outputs.keys():
-        output[part] = model.projections[part](
-            x[:, start_modality:start_modality+frames_future, :] )
-        start_modality += frames_future
+    start_modality = 0
+    for part in model.out_projections.keys():
+        if part == 'audio':
+            output['audio'] = rearrange(model.out_projections['audio'](
+                                            x[:, :audio_future, :]), "b t t1 -> b (t t1)" )
+            start_modality = audio_future
+        else:
+            output[part] = model.out_projections[part](
+                                x[:, start_modality:start_modality+frames_future, :] )
+            start_modality += frames_future
     return output
+
+def reset_memories(memories, indexes=None, mem_dim=None):
+
+    # Reset memory
+    with torch.no_grad():
+        if indexes is None:
+            memories *= 0
+        else:
+            if mem_dim is not None:
+                b, l, h = mem_dim
+                indexes = sum((list(range(bi*l*h, (bi+1)*l*h)) for bi in indexes), [])
+            memories[indexes] *= 0
+
+
+def copy_memories(layers_mem):
+    device = layers_mem.device
+    return layers_mem.clone().detach().to(device)
+
+def create_memories(model, batch_size, device=torch.device('cpu')):
+    layers_mem = torch.zeros(batch_size, model.nb_latents_mem, model.query_dim,
+                              device=device, requires_grad=True)
+    return layers_mem
+
+def freeze_parameters(model, filter):
+    for name, p in model.named_parameters():
+        if name.startswith(filter):
+            p.requires_grad = False
+        else:
+            p.requires_grad = True

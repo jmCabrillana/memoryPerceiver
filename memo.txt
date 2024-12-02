@@ -1,0 +1,50 @@
+# notebook
+cd /isaac-sim
+./jupyter_notebook.sh --allow-root => start kernel, then copy url and connect to existing
+
+# tmux
+tmux detach -a => detach all other processes thus adjust window size
+tmux set-option history-limit 10000 \; new-window => more history, default 2000
+^b [ => scroll mode
+^b : set-window-option mode-keys vi => vim mode, ^d -> down ^u -> up
+^b c => new window
+^b n => switch window
+^b d => detach
+
+# GCP
+./google-cloud-sdk/bin/gcloud --quiet config set project turnkey-setup-356207
+./google-cloud-sdk/bin/gcloud storage cp --recursive  gs://memory_perceiver/infinigen/test .
+gcloud storage cp --recursive gs://memory_perceiver/infinigen/test .
+./google-cloud-sdk/bin/gcloud storage cp -r  memory_perceiver/main/weights/Isaac-Humanoid-Direct-v0/S_1.2_frame32 gs://memory_perceiver/weights/Isaac-Humanoid-Direct-v0/S_1.2_frame32/
+
+# IsaacLab
+python -m pip install skrl
+
+# Isaac-sim
+https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=add_reference_to_stage#omni.isaac.core.utils.stage.add_reference_to_stage
+
+# Infinigen
+python -m infinigen_examples.generate_nature --seed 2 --task coarse -g desert.gin dev.gin --output_folder outputs/hello_world/coarse
+python -m infinigen_examples.generate_nature --seed 2 --task populate fine_terrain -g desert.gin dev.gin --input_folder outputs/hello_world/coarse --output_folder outputs/hello_world/fine
+python -m infinigen.tools.export --input_folder outputs/hello_world0/33/fine --output_folder outputs/hello_world0/33/fine/my_export -f usdc -r 1024 --omniverse
+python infinigen/tools/isaac_sim.py --scene-path  outputs/my_export/export_scene.blend/export_scene.usda --json-path outputs/my_export/solve_state.json
+python -m infinigen.datagen.manage_jobs --output_folder outputs/hello_world --num_scenes 1 --specific_seed 2 --configs desert.gin dev.gin --pipeline_configs local_16GB.gin monocular.gin --pipeline_overrides LocalScheduleHandler.use_gpu=False
+python -m infinigen.datagen.manage_jobs --output_folder outputs/hello_world1 --num_scenes 1 --specific_seed 20168 --configs simple.gin dev.gin --pipeline_configs local_16GB.gin monocular.gin --pipeline_overrides LocalScheduleHandler.use_gpu=False --overrides compose_nature.generate_resolution=[720, 720] compose_nature.trees_chance=0.2 OpaqueSphericalMesher.pixels_per_cube=8 TransparentSphericalMesher.pixels_per_cube=8 target_face_size.global_multiplier=8 placement.populate_all.dist_cull=140 
+python -m infinigen.datagen.manage_jobs --output_folder outputs/hello_world1 --num_scenes 1 --specific_seed 20168 --configs simple.gin dev.gin --pipeline_configs local_64GB.gin monocular.gin --pipeline_overrides LocalScheduleHandler.use_gpu=False --overrides camera.camera_pose_proposal.altitude=["uniform", 20, 30] compose_nature.generate_resolution=[720, 720] compose_nature.trees_chance=0.2 OpaqueSphericalMesher.pixels_per_cube=8 TransparentSphericalMesher.pixels_per_cube=8 target_face_size.global_multiplier=8 placement.populate_all.dist_cull=140 
+
+#Common errors
+- Duplicate driver files:
+    To verify the proper NVIDIA driver installation, only one of the following icd.d folders should contain nvidia_icd.json file:                
+    /etc/vulkan/icd.d: Location of ICDs installed from non-Linux-distribution-provided packages                                                  
+    /usr/share/vulkan/icd.d : Location of ICDs installed from Linux-distribution-provided packages
+    >> Clear config in /etc/vulkan/icd.d/nvidia_icd.json
+
+# Container 
+ --shm-size=1g --ulimit memlock=-1 # may solve memory errors
+ 
+# to do
+/isaac-sim/extsPhysics/omni.physx.demos/omni/physxdemos/scenes/ContactReportDemo.py
+
+Experiments simple vs Perceiver d3 q128 h16 heads8
+b:2048  200 -> 0       1500 -> 0.45    0.45/1300=3e-4
+b:64    150 -> -0.02   5000 -> 0.01    0.03/5150=6e-6  *32? no *50 (+ *2time/step)
