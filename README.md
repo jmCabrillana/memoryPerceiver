@@ -33,11 +33,11 @@ Additionaly a compressed memory latent inspired from RNN allows to better predic
 
 ## Reinforcement Learning
 
-This model architecture is used with the popular simulator Isaac Lab and with the libary Infinigen to solve locomotion tasks in procedurally generated environments
+This model architecture is used with the popular simulator Isaac Lab to solve locomotion tasks in procedurally generated environments (generated with Infinigen)
 
 ## Behavior Cloning for pre-training
 
-Pre-rtaining on real data can be useful to solve more complex problems and have human-like behavior. The model auto-regressively predict body position and speech for a human subject using video, sound and body position inputs. The dataset is extracted using videos of social or physical interactions. The body position is retrieved with a model predicting SMPL-X (https://smpl-x.is.tue.mpg.de) body positions from images. The body estimations are then smoothed on the temporal dimension. Distributed training is performed with pytorch on google cloud with 8 TPU cores.
+Pre-training on real data can be useful to solve more complex problems and mimic human behavior. The model auto-regressively predict body position and speech for a human subject using video, sound and body position inputs. The dataset is extracted using videos of social or physical interactions. The body position is retrieved with a model predicting SMPL-X (https://smpl-x.is.tue.mpg.de) body positions from images. The body estimations are then smoothed on the temporal dimension. Distributed training is performed with pytorch on google cloud with 8 TPU cores.
 
 ![](https://github.com/jmCabrillana/memoryPerceiver/blob/main/ezgif.com-video-to-gif.gif)
 https://giphy.com/gifs/mySDfU3cx4mPTEJ6ka
