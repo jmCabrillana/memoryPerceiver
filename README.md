@@ -37,13 +37,3 @@ https://giphy.com/gifs/mySDfU3cx4mPTEJ6ka
 }
 ```
 
-```bibtex
-@misc{jaegle2021perceiver,
-    title   = {Perceiver: General Perception with Iterative Attention},
-    author  = {Andrew Jaegle and Felix Gimeno and Andrew Brock and Andrew Zisserman and Oriol Vinyals and Joao Carreira},
-    year    = {2021},
-    eprint  = {2103.03206},
-    archivePrefix = {arXiv},
-    primaryClass = {cs.CV}
-}
-```
