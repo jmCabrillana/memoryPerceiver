@@ -8,32 +8,14 @@ The backbone model is  perceiverIO <a href="https://arxiv.org/abs/2107.14795">Pe
 
 <img src="./perceiver.png" width="600px"></img>
 
-
-```python
-import torch
-from perceiver_pytorch import PerceiverIO
-
-model = PerceiverIO(
-    dim = 32,                    # dimension of sequence to be encoded
-    queries_dim = 32,            # dimension of decoder queries
-    logits_dim = 100,            # dimension of final logits
-    depth = 6,                   # depth of net
-    num_latents = 256,           # number of latents, or induced set points, or centroids. different papers giving it different names
-    latent_dim = 512,            # latent dimension
-    cross_heads = 1,             # number of heads for cross attention. paper said 1
-    latent_heads = 8,            # number of heads for latent self attention, 8
-    cross_dim_head = 64,         # number of dimensions per cross attention head
-    latent_dim_head = 64,        # number of dimensions per latent self attention head
-    weight_tie_layers = False    # whether to weight tie layers (optional, as indicated in the diagram)
-)
-```
-
 Additionaly a compressed memory latent inspired from RNN allows to better predict very long sequences.
 
 
 ## Reinforcement Learning
 
-This model architecture is used with the popular simulator Isaac Lab to solve locomotion tasks in procedurally generated environments (generated with Infinigen)
+This model architecture is used with the popular simulator Isaac Lab to solve locomotion tasks in procedurally generated environments (generated with Infinigen). I have implemented a distributed version of Proximal Policy Optimisation (PPO). Due to the complexity of the transformer architecture, the training needs to be speed up by distilling a simple fully connected net first, similar to a student/tutor distillation. The distillation coefficient is gradually anhilated to finish training of the transformer by PPO only.
+
+Regarding memory, I have implemented a simple modified version of Real Time Recurrent Learning (RTRL) tested on a simple character counting problem. I plan to compare this method to Truncated Backpropagtaion Through Time (TBTT) in other environments than locomotion requiring memorization.
 
 ## Behavior Cloning for pre-training
 
@@ -43,6 +25,17 @@ Pre-training on real data can be useful to solve more complex problems and mimic
 https://giphy.com/gifs/mySDfU3cx4mPTEJ6ka
 
 ## Citations
+
+```bibtex
+@misc{jaegle2021perceiver,
+    title   = {Perceiver: General Perception with Iterative Attention},
+    author  = {Andrew Jaegle and Felix Gimeno and Andrew Brock and Andrew Zisserman and Oriol Vinyals and Joao Carreira},
+    year    = {2021},
+    eprint  = {2103.03206},
+    archivePrefix = {arXiv},
+    primaryClass = {cs.CV}
+}
+```
 
 ```bibtex
 @misc{jaegle2021perceiver,
