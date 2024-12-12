@@ -4,7 +4,7 @@ Memory-Perceiver is an attempt to solve embodied problems using multi-sensorial 
 
 ## Perceiver
 
-The backbone model is  perceiverIO <a href="https://arxiv.org/abs/2107.14795">Perceiver IO</a>, a transformer structure adapted to multi-modal inputs and outputs:
+The backbone model is <a href="https://arxiv.org/abs/2107.14795">Perceiver IO</a>, a transformer structure adapted to multi-modal inputs and outputs:
 
 <img src="./perceiver.png" width="600px"></img>
 
