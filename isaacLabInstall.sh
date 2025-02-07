@@ -34,8 +34,8 @@ else
     python_exe="python"
     $python_exe -m pip install torch==2.4.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu$cuda_version
     export LD_LIBRARY_PATH=$VIRTUAL_ENV/lib/python3.10/site-packages/torch/lib:$LD_LIBRARY_PATH
-    $python_exe -m pip install isaacsim==4.2.0.2 --extra-index-url https://pypi.nvidia.com
-    $python_exe -m pip install isaacsim-extscache-physics isaacsim-extscache-kit-sdk isaacsim-extscache-kit isaacsim-app --extra-index-url https://pypi.nvidia.com
+    $python_exe -m pip install isaacsim[all]==4.5.0 --extra-index-url https://pypi.nvidia.com
+    $python_exe -m pip install isaacsim[extscache]==4.5.0 --extra-index-url https://pypi.nvidia.com
 fi
 $python_exe -m pip install --upgrade pip
 $python_exe -m pip install -r $SCRIPT_DIR/requirements.txt
