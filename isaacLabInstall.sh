@@ -50,9 +50,10 @@ $python_exe -m pip install -e .
 sudo apt-get install wget cmake g++ libgles2-mesa-dev libglew-dev libglfw3-dev libglm-dev zlib1g-dev -y
 sudo apt install libxkbcommon-x11-0 -y
 sudo apt install python3.11 -y
+sudo apt install python3.11-dev -y
 sudo apt install python3.11-venv -y
 cd $SCRIPT_DIR/..
-python3.10 -m venv infinigen
+python3.11 -m venv infinigen
 source $SCRIPT_DIR/../infinigen/bin/activate
 cd $SCRIPT_DIR/infinigen
 python -m pip install -e ".[terrain,vis]"

@@ -10,7 +10,7 @@ class IsaacCfg:
     tutor_type = None # None Simple
     dim_observations = 75 # 75 4 5
     dim_actions = 21 # 21 1
-    num_envs = 256 # 1 54 128 864 2048
+    num_envs = 64 # 1 54 128 864 2048
     sim_duration = 32 # 1028 516 260
     seed = 68
     render = False
