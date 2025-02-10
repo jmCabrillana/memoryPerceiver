@@ -39,11 +39,13 @@ else
 fi
 $python_exe -m pip install --upgrade pip
 $python_exe -m pip install -r $SCRIPT_DIR/requirements.txt
-cd $SCRIPT_DIR/IsaacLab/source/extensions/omni.isaac.lab
+cd $SCRIPT_DIR/IsaacLab/source/isaaclab
 $python_exe -m pip install -e .
-cd $SCRIPT_DIR/IsaacLab/source/extensions/omni.isaac.lab_assets
+cd $SCRIPT_DIR/IsaacLab/source/isaaclab_assets
 $python_exe -m pip install -e .
-cd $SCRIPT_DIR/IsaacLab/source/extensions/omni.isaac.lab_tasks
+cd $SCRIPT_DIR/IsaacLab/source/isaaclab_rl
+$python_exe -m pip install -e .
+cd $SCRIPT_DIR/IsaacLab/source/isaaclab_tasks
 $python_exe -m pip install -e .
 
 # Infinigen
