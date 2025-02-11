@@ -66,4 +66,9 @@ export ISAAC_JUPYTER_KERNEL=1
 echo "source isaaclab/bin/activate" >> /home/user/.bashrc
 echo "export LD_LIBRARY_PATH=$VIRTUAL_ENV/lib/python3.10/site-packages/torch/lib:$LD_LIBRARY_PATH" >> /home/user/.bashrc
 
+# if nvidia icd config files are duplicated and not empty, truncate the first one (see memo.txt)
+if [[ -s /etc/vulkan/icd.d/nvidia_icd.json && -s /usr/share/vulkan/icd.d/nvidia_icd.json ]]
+    then > /etc/vulkan/icd.d/nvidia_icd.json
+fi
+
 #git token: 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
