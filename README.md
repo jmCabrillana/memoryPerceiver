@@ -17,6 +17,10 @@ This model architecture is used with the popular simulator Isaac Lab to solve lo
 
 Regarding memory, I have implemented a simple modified version of Real Time Recurrent Learning (RTRL) tested on a simple character counting problem. I plan to compare this method to Truncated Backpropagtaion Through Time (TBTT) in other environments than locomotion requiring memorization.
 
+<img src="./procedural_rl_0.png" width="600px"></img>
+<img src="./procedural_rl_1.png" width="600px"></img>
+<img src="./procedural_rl_2.png" width="600px"></img>
+
 ## Behavior Cloning for pre-training
 
 Pre-training on real data can be useful to solve more complex problems and mimic human behavior. The model auto-regressively predict body position and speech for a human subject using video, sound and body position inputs. The dataset is extracted using videos of social or physical interactions. The body position is retrieved with a model predicting SMPL-X (https://smpl-x.is.tue.mpg.de) body positions from images. The body estimations are then smoothed on the temporal dimension. Distributed training is performed with pytorch on google cloud with 8 TPU cores.
