@@ -40,7 +40,7 @@ python -m infinigen.datagen.manage_jobs --output_folder outputs/hello_world0 --n
     /usr/share/vulkan/icd.d : Location of ICDs installed from Linux-distribution-provided packages
     >> Clear config in /etc/vulkan/icd.d/nvidia_icd.json
     bash: 
-    if [[ -s /etc/vulkan/icd.d/nvidia_icd.json && -s /usr/share/vulkan/icd.d/nvidia_icd.json ]]; then > /etc/vulkan/icd.d/nvidia_icd.json & echo "nvidia icd truncated"; fi;
+    if [[ -s /etc/vulkan/icd.d/nvidia_icd.json && -s /usr/share/vulkan/icd.d/nvidia_icd.json ]]; then > /etc/vulkan/icd.d/nvidia_icd.json & echo "nvidia icd truncated"; fi
 # Container 
  --shm-size=1g --ulimit memlock=-1 # may solve memory errors
  

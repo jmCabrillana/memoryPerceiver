@@ -52,7 +52,7 @@ class InfinigenIsaacSceneCFG:
     # scene_path = str(infinigen_dir / 'outputs/hello_world/coarse/my_export/export_scene.blend/export_scene.usdc')
     # json_path = None
     # scene_path = str(infinigen_dir / 'outputs/hello_world/fine/my_export/export_scene.blend/export_scene.usdc')
-    scene_path = str(infinigen_dir / 'infinigen/outputs/hello_world1/201493/fine/my_export/export_scene.blend/export_scene.usdc')
+    scene_path = str(infinigen_dir / 'infinigen/outputs/hello_world/0/fine/my_export/export_scene.blend/export_scene.usdc')
     json_path = None
 
 class InfinigenIsaacScene(object):
@@ -71,7 +71,7 @@ class InfinigenIsaacScene(object):
 
     def _add_infinigen_scene(self):
         cfg = sim_utils.UsdFileCfg(usd_path=self.cfg.scene_path)
-        cfg.func("/World/Support", cfg, translation=(0.0, 0.0, -1.1))
+        cfg.func("/World/Support", cfg, translation=(0.0, 0.0, -1.4))
         # create_prim(
         #     prim_path="/World/Support",
         #     usd_path=self.cfg.scene_path,

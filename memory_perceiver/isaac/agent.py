@@ -145,7 +145,7 @@ class ActorCriticPerceiver(nn.Module):
             new_memories = rearrange(new_memories, 'b l h -> (b l h)')
 
         # Act
-        actions_std = torch.clamp(self.actor.out_std, -20, 2).exp()
+        actions_std = torch.clamp(self.actor.out_std, -20, 2).exp() # [-20, 2]
         dist = Normal(actions_mean, actions_std)
         actions = dist.rsample() if old_actions is None else old_actions
         logprobs = dist.log_prob(actions).sum(dim=-1)

@@ -161,6 +161,8 @@ def isaac_training(cf, rank, size):
                 group_agents = dist.new_group(rank_agents) # It is necessary to reset this group here to avoid duplicate gpu errors
                 
                 if rank == rank_sim:
+                    if sim_count % 200 == 0: # hard reset sometimes (to delete)
+                        env.unwrapped._reset_idx(env_ids=None, hard_reset=True)
                     if len(history['rewards'])>0:
                         print(f"$$$ r{rank} CUMUL REWARD: {history['rewards'].sum().item()} $$$")
                     print(f"SEED: {seed}")
