@@ -13,29 +13,30 @@ from pathlib import Path
 # CONFIG = {"renderer": "RayTracedLighting", "headless": False}
 # simulation_app = SimulationApp(launch_config=CONFIG)
 
-from omni.isaac.lab.app import AppLauncher
+from isaaclab.app import AppLauncher
 if __name__ == "__main__":
     app_launcher = AppLauncher(headless=True)
     simulation_app = app_launcher.app
 
-import omni
-from omni.isaac.core import World
-from omni.isaac.core.prims import XFormPrim
-from omni.isaac.core.utils.extensions import enable_extension
-from omni.isaac.core.utils.nucleus import get_assets_root_path
-from omni.isaac.core.utils.prims import create_prim
+# import omni
+from isaacsim.core.api import World
+from isaacsim.core.prims import XFormPrim
+from isaacsim.core.utils.extensions import enable_extension
+from isaacsim.core.utils.nucleus import get_assets_root_path
+from isaacsim.core.utils.prims import create_prim
 
 from omni.kit.commands import execute as omni_exec
+from omni import usd
 from pxr import Sdf, Usd, UsdGeom, UsdLux
 
 # ruff: noqa: E402
-enable_extension("omni.isaac.examples")
-from omni.isaac.core.controllers import BaseController
-from omni.isaac.core.utils.types import ArticulationAction
-from omni.isaac.wheeled_robots.robots import WheeledRobot
+# enable_extension("isaac.core.examples")
+from isaacsim.core.api.controllers import BaseController
+from isaacsim.core.utils.types import ArticulationAction
+# from isaacsim.wheeled_robots.robots import WheeledRobot
 from omni.physx.scripts import utils
 
-import omni.isaac.lab.sim as sim_utils
+import isaaclab.sim as sim_utils
 
 class RobotController(BaseController):
     def __init__(self):
@@ -50,7 +51,8 @@ class InfinigenIsaacSceneCFG:
     # json_path = str(infinigen_dir / 'outputs/my_export/solve_state.json')
     # scene_path = str(infinigen_dir / 'outputs/hello_world/coarse/my_export/export_scene.blend/export_scene.usdc')
     # json_path = None
-    scene_path = str(infinigen_dir / 'outputs/hello_world/fine/my_export/export_scene.blend/export_scene.usdc')
+    # scene_path = str(infinigen_dir / 'outputs/hello_world/fine/my_export/export_scene.blend/export_scene.usdc')
+    scene_path = str(infinigen_dir / 'infinigen/outputs/hello_world/0/fine/my_export/export_scene.blend/export_scene.usdc')
     json_path = None
 
 class InfinigenIsaacScene(object):
@@ -65,19 +67,19 @@ class InfinigenIsaacScene(object):
     def setup_scene(self):
         self._add_infinigen_scene()
         self._add_lighting()
-        self._add_robot()
+        # self._add_robot()
 
     def _add_infinigen_scene(self):
         cfg = sim_utils.UsdFileCfg(usd_path=self.cfg.scene_path)
-        cfg.func("/World/Support", cfg, translation=(0.0, 0.0, -1.1))
+        cfg.func("/World/Support", cfg, translation=(0.0, 0.0, -1.4))
         # create_prim(
         #     prim_path="/World/Support",
         #     usd_path=self.cfg.scene_path,
         #     semantic_label="scene",
         # )
-        self._support = XFormPrim(prim_path="/World/Support", name="Support")
+        self._support = XFormPrim("/World/Support", name="Support")
 
-        stage = omni.usd.get_context().get_stage()
+        stage = usd.get_context().get_stage()
 
         prims = [prim for prim in stage.Traverse() if prim.IsA(UsdGeom.Mesh)]
         if self.cfg.json_path is None:
@@ -152,7 +154,7 @@ class InfinigenIsaacScene(object):
         )
 
     # def _get_camera_loc(self):
-    #     stage = omni.usd.get_context().get_stage()
+    #     stage = usd.get_context().get_stage()
     #     prim = stage.GetPrimAtPath("/World/Support/CameraRigs_0_0")
     #     xform = UsdGeom.Xformable(prim)
     #     transform_matrix = xform.ComputeLocalToWorldTransform(Usd.TimeCode.Default())
@@ -160,23 +162,23 @@ class InfinigenIsaacScene(object):
     #     translation[2] = 0
     #     return translation, [1, 0, 0, 0]
 
-    def _add_robot(self):
-        robot_path = get_assets_root_path() + "/Isaac/Robots/Jetbot/jetbot.usd"
-        # init_pos, _ = self._get_camera_loc()
-        # init_pos[-1] += 0.3
-        self.robot = self.scene.add(
-            WheeledRobot(
-                prim_path="/World/Robot",
-                name="Robot",
-                wheel_dof_names=["left_wheel_joint", "right_wheel_joint"],
-                create_robot=True,
-                usd_path=robot_path,
-                # position=init_pos,
-            )
-        )
-        self.robot.set_local_scale(np.array([4, 4, 4]))
-        self.controller = RobotController()
-        self.world.reset()
+    # def _add_robot(self):
+    #     robot_path = get_assets_root_path() + "/Isaac/Robots/Jetbot/jetbot.usd"
+    #     # init_pos, _ = self._get_camera_loc()
+    #     # init_pos[-1] += 0.3
+    #     self.robot = self.scene.add(
+    #         WheeledRobot(
+    #             prim_path="/World/Robot",
+    #             name="Robot",
+    #             wheel_dof_names=["left_wheel_joint", "right_wheel_joint"],
+    #             create_robot=True,
+    #             usd_path=robot_path,
+    #             # position=init_pos,
+    #         )
+    #     )
+    #     self.robot.set_local_scale(np.array([4, 4, 4]))
+    #     self.controller = RobotController()
+    #     self.world.reset()
 
     def apply_action(self):
         self.robot.apply_action(self.controller.forward())

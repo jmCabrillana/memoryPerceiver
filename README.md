@@ -6,7 +6,7 @@ Memory-Perceiver is an attempt to solve embodied problems using multi-sensorial 
 
 The backbone model is <a href="https://arxiv.org/abs/2107.14795">Perceiver IO</a>, a transformer structure adapted to multi-modal inputs and outputs:
 
-<img src="./perceiver.png" width="600px"></img>
+<img src="./docs/perceiver.png" width="600px"></img>
 
 Additionaly a compressed memory latent inspired from RNN allows to better predict very long sequences.
 
@@ -16,6 +16,17 @@ Additionaly a compressed memory latent inspired from RNN allows to better predic
 This model architecture is used with the popular simulator Isaac Lab to solve locomotion tasks in procedurally generated environments (generated with Infinigen). I have implemented a distributed version of Proximal Policy Optimisation (PPO). Due to the complexity of the transformer architecture, the training needs to be speed up by distilling a simple fully connected net first, similar to a student/tutor distillation. The distillation coefficient is gradually anhilated to finish training of the transformer by PPO only.
 
 Regarding memory, I have implemented a simple modified version of Real Time Recurrent Learning (RTRL) tested on a simple character counting problem. I plan to compare this method to Truncated Backpropagtaion Through Time (TBTT) in other environments than locomotion requiring memorization.
+
+
+
+30k steps:
+<img src="./docs/procedural_rl_0.png" width="200px"></img>
+https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExcW16cDM4NHhwZDZua2c3Z3hzNWRiYmp5bnliNXd0bWdtNjBkcmJueiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/oX5xrycEOeJrxnh9W4/giphy.gif
+
+100k steps: 
+<img src="./docs/procedural_rl_1.png" width="200px"></img>
+https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExcjYwZTE0aDl2NmlnMGU3ZHJ2eGo4YjJrcjJyaDQxeDg0ZnQ2NGN3MCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/cdQf6kaR1QwBjURmjU/giphy.gif
+
 
 ## Behavior Cloning for pre-training
 

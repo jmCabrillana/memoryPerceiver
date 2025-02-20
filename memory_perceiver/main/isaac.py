@@ -21,7 +21,7 @@ import torch.multiprocessing as mp
 sys.path.append(join(dirname(dirname(os.getcwd()))))
 sys.path.append(os.getcwd())
 
-from omni.isaac.lab.app import AppLauncher
+from isaaclab.app import AppLauncher
 from memoryPerceiver.memory_perceiver.main.configuration import isaac_cfg
 from memoryPerceiver.memory_perceiver.core.model_wrapper import create_memories, reset_memories, freeze_parameters
 from memoryPerceiver.memory_perceiver.core.distributed import setup_distributed, average_gradients, scatter_dummy_src, gather_dummy_src
@@ -49,11 +49,11 @@ def isaac_training(cf, rank, size):
         app_launcher = AppLauncher(headless=False, enable_cameras=True)
         simulation_app = app_launcher.app
         import gymnasium as gym
-        from omni.isaac.core.utils.torch.maths import set_seed
-        import omni.usd
-        from omni.isaac.core.utils.extensions import enable_extension
-        from omni.isaac.core.utils.stage import open_stage, save_stage
-        from omni.isaac.lab_tasks.utils import parse_env_cfg
+        from isaacsim.core.utils.torch.maths import set_seed
+        # import omni.usd
+        from isaacsim.core.utils.extensions import enable_extension
+        # from isaac.core.utils.stage import open_stage, save_stage
+        from isaaclab_tasks.utils.parse_cfg import parse_env_cfg
         enable_extension("omni.isaac.sensor")
         env_cfg = parse_env_cfg(
             cf.task, device=str(device), num_envs=cf.num_envs, use_fabric=False, 
@@ -161,6 +161,8 @@ def isaac_training(cf, rank, size):
                 group_agents = dist.new_group(rank_agents) # It is necessary to reset this group here to avoid duplicate gpu errors
                 
                 if rank == rank_sim:
+                    if sim_count % 200 == 0: # hard reset sometimes (to delete)
+                        env.unwrapped._reset_idx(env_ids=None, hard_reset=True)
                     if len(history['rewards'])>0:
                         print(f"$$$ r{rank} CUMUL REWARD: {history['rewards'].sum().item()} $$$")
                     print(f"SEED: {seed}")
@@ -507,8 +509,8 @@ if __name__ == "__main__":
     # os.environ["CUDA_ERROR_DUMP"] = "1"
     #os.environ["NCCL_DEBUG_SUBSYS"]="COLL" # print collective calls 
     os.environ["TORCH_CPP_LOG_LEVEL"]="FATAL" # INFO WARNING FATAL
-    os.environ["NCCL_DEBUG"]="DEBUG" # WARN INFO DEBUG TRACE
-    os.environ["TORCH_DISTRIBUTED_DEBUG"]="INFO"
+    os.environ["NCCL_DEBUG"]="WARN" # WARN INFO DEBUG TRACE
+    os.environ["TORCH_DISTRIBUTED_DEBUG"]="OFF" # OFF INFO DETAIL
     os.environ["TORCH_NCCL_ENABLE_MONITORING"]="1"
     
     size = num_gpus
