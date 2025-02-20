@@ -20,11 +20,11 @@ Regarding memory, I have implemented a simple modified version of Real Time Recu
 
 
 30k steps:
-<img src="./docs/procedural_rl_0.png" width="100px"></img>
+<img src="./docs/procedural_rl_0.png" width="300px"></img>
 https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExcW16cDM4NHhwZDZua2c3Z3hzNWRiYmp5bnliNXd0bWdtNjBkcmJueiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/oX5xrycEOeJrxnh9W4/giphy.gif
 
 100k steps: 
-<img src="./docs/procedural_rl_1.png" width="100px"></img>
+<img src="./docs/procedural_rl_1.png" width="300px"></img>
 https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExcjYwZTE0aDl2NmlnMGU3ZHJ2eGo4YjJrcjJyaDQxeDg0ZnQ2NGN3MCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/cdQf6kaR1QwBjURmjU/giphy.gif
 
 
