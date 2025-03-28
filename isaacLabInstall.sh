@@ -21,6 +21,12 @@ apt-get install curl tar screen -y
 
 # python and requirements
 # alias python='/isaac-sim/python.sh'
+sudo apt-get install wget cmake g++ libgles2-mesa-dev libglew-dev libglfw3-dev libglm-dev zlib1g-dev -y
+sudo apt install libxkbcommon-x11-0 -y
+sudo add-apt-repository ppa:deadsnakes/ppa -y
+sudo apt update -y
+sudo apt install python3.10 python3.10-dev python3.10-venv -y
+sudo apt install python3.11 python3.11-dev python3.11-venv -y
 if [ "$SCRIPT_DIR" = "/isaac-sim/memoryPerceiver" ];
 then
     python_exe="/isaac-sim/kit/python/bin/python3"
@@ -49,11 +55,6 @@ cd $SCRIPT_DIR/IsaacLab/source/isaaclab_tasks
 $python_exe -m pip install -e .
 
 # Infinigen
-sudo apt-get install wget cmake g++ libgles2-mesa-dev libglew-dev libglfw3-dev libglm-dev zlib1g-dev -y
-sudo apt install libxkbcommon-x11-0 -y
-sudo apt install python3.11 -y
-sudo apt install python3.11-dev -y
-sudo apt install python3.11-venv -y
 cd $SCRIPT_DIR/..
 python3.11 -m venv infinigen
 source $SCRIPT_DIR/../infinigen/bin/activate
@@ -63,8 +64,8 @@ python -m pip install -e ".[terrain,vis]"
 # Set variables and update bashrc
 export ACCEPT_EULA=Y
 export ISAAC_JUPYTER_KERNEL=1
-echo "source isaaclab/bin/activate" >> /home/user/.bashrc
-echo "export LD_LIBRARY_PATH=$VIRTUAL_ENV/lib/python3.10/site-packages/torch/lib:$LD_LIBRARY_PATH" >> /home/user/.bashrc
+echo "source isaaclab/bin/activate" >> $HOME/.bashrc
+echo "export LD_LIBRARY_PATH=$VIRTUAL_ENV/lib/python3.10/site-packages/torch/lib:$LD_LIBRARY_PATH" >> $HOME/.bashrc
 
 # if nvidia icd config files are duplicated and not empty, truncate the first one (see memo.txt)
 if [[ -s /etc/vulkan/icd.d/nvidia_icd.json && -s /usr/share/vulkan/icd.d/nvidia_icd.json ]]
