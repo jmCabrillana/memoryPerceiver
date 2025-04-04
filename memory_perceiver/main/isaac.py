@@ -36,12 +36,12 @@ from memoryPerceiver.memory_perceiver.core.rtrl import  RTRL_partial, shuffle_sp
 def isaac_training(cf, rank, size):
 
     setup_distributed(rank, size)
-    rank_agents = list(range(1, size))
     rank_sim = 0
+    rank_agents = [0] if size == 1 else list(range(1, size))
     group_agents = dist.new_group(rank_agents)
     device = torch.device(rank)
 
-    cf.num_envs = cf.num_envs//(size-1) if rank in rank_agents else cf.num_envs
+    cf.num_envs = cf.num_envs // max(1, size-1) if rank in rank_agents else cf.num_envs
     
     if rank == rank_sim:
         # !!! Load isaac modules after the variables

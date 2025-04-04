@@ -26,6 +26,8 @@ def average_gradients(model, size, group, param_filter=''):
 
 def scatter_dummy_src(tensor, rank, size, swap_axis=False):
     #  split batch at rank 0 to ranks  1, ..., size-1
+    if size == 0:
+        return
     if swap_axis:
         tensor.swapaxes_(0, 1)
     if rank == 0:
@@ -44,6 +46,8 @@ def scatter_dummy_src(tensor, rank, size, swap_axis=False):
 
 def gather_dummy_src(tensor, rank, size, swap_axis=False):
     #  gather and batch ranks 1, ..., size-1 to 0
+    if size == 0:
+        return
     if swap_axis:
         tensor.swapaxes_(0, 1)
     if rank != 0 :
