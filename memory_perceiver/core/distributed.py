@@ -19,7 +19,7 @@ def average_gradients(model, size, group, param_filter=''):
     for name, param in model.named_parameters():
         if param.grad is not None and name.startswith(param_filter): # !!! Temporary, audio not linked to loss for now (modality/projection['audio']) !!!
             dist.all_reduce(param.grad.data, op=dist.ReduceOp.SUM, group=group)
-            param.grad.data /= size
+            param.grad.data /= max(1, size)
             if dist.get_rank() !=  param.get_device():
                 print(f"{dist.get_rank()} -> {param.device}")
                 # sys.exit()

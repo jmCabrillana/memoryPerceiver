@@ -2,18 +2,18 @@ from pathlib import Path
 
 class IsaacCfg:
 
-    experiment_name = "S_1.3_from_scratch"
+    experiment_name = "P_1.1_entropy:1e-4"
 
     # Task
     task =  "Isaac-Humanoid-Direct-v0" # Isaac-Cartpole-Cam-Direct-v0
-    agent_type = "Simple" # Simple Perceiver
+    agent_type = "Perceiver" # Simple Perceiver
     tutor_type = None # None Simple
     dim_observations = 75 # 75 4 5
     dim_actions = 21 # 21 1
-    num_envs = 64 # 1 54 128 864 2048
+    num_envs = 4096 # 1 54 128 864 2048
     sim_duration = 32 # 1028 516 260
     seed = 68
-    render = False
+    render = "rgb_array" # None human rgb_array
 
     # PPO
     frames = 4
@@ -21,15 +21,15 @@ class IsaacCfg:
     dim_actions_ppo = min(2, frames_future)*dim_actions
     training_mode = 'Backward' # Backward TBPTT RTRL
     learning_rate = 1e-5 # 3e-4 1e-4 1e-5
-    kl_threshold = 0.004 # 0.004 0.008 1e10
+    kl_threshold = 0.008 # 0.004 0.008 1e10
     scheduler = 'kl_div' # '' kl_div warm-up_100 warm-up_400
-    range_lr = [1e-5, 1e-2] # [1e-5, 1e-2] [1e-5, 5e-3] [1e-5, 5e-4]
+    range_lr = [1e-5, 1e-3] # [1e-5, 1e-2] [1e-5, 5e-3] [1e-5, 5e-4]
     reward_scale = 0.01
-    start_step = 20
-    c_entropy = 0.01 # 0.01 to 0.05
+    start_step = 2
+    c_entropy = 1e-4 # 0.01 to 0.05
     c_critic = 2   # 0.5 to 2 4
     c_kl_tutor = 0.0 # 0.2
-    accumulation_steps = 16 # 2 4 6 8
+    accumulation_steps = 4 # 2 4 6 8 16
     student_update_step = 1
     eps = 1e-9
     gamma = 0.99
@@ -44,10 +44,10 @@ class IsaacCfg:
     depth = 2
     critic_depth = 2
     depth_f_state = 0
-    query_dim = 512 # 32 128 512 832 # video > 136 , 
-    hidden_dim = 128 # for simple net
+    query_dim = 32 # 32 128 512 832 # video > 136 , 
+    hidden_dim = 32 # 32 128 for simple net
     latent_heads = 8 # 2 8
-    latent_dim_head =  64 #16  64
+    latent_dim_head =  16 # 16 64
     nb_latents_mem = 2
     nb_latents = 8
     shared=True

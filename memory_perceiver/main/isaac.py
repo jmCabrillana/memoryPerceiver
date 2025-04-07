@@ -55,10 +55,8 @@ def isaac_training(cf, rank, size):
         # from isaac.core.utils.stage import open_stage, save_stage
         from isaaclab_tasks.utils.parse_cfg import parse_env_cfg
         enable_extension("omni.isaac.sensor")
-        env_cfg = parse_env_cfg(
-            cf.task, device=str(device), num_envs=cf.num_envs, use_fabric=False, 
-        )
-        env = gym.make(cf.task, cfg=env_cfg)
+        env_cfg = parse_env_cfg(cf.task, device=str(device), num_envs=cf.num_envs, use_fabric=False)
+        env = gym.make(cf.task, cfg=env_cfg, render_mode=cf.render)
         print(f"[INFO]: Gym observation space: {env.observation_space}")
         print(f"[INFO]: Gym action space: {env.action_space}")
         seed_isaac = set_seed(cf.seed, torch_deterministic=False)
@@ -94,7 +92,7 @@ def isaac_training(cf, rank, size):
         scaler = GradScaler()
         if cf.training_mode == 'Backward':
             freeze_parameters(model_student, 'actor.state_')
-        if rank == 1:
+        if rank == rank_agents[0]:
             plotter = Plotter('tensorboard', titles=['loss_actor', 'loss_critic', 'loss_entropy', 'actions_gap', 'returns'],
                             path_plots=cf.path_experiment)
             
@@ -137,6 +135,7 @@ def isaac_training(cf, rank, size):
     if rank == rank_sim:
         sim_running.fill_(simulation_app.is_running())
     dist.broadcast(sim_running, src=rank_sim)    
+    full_video = []
     
     while sim_running:
         if rank == rank_sim:
@@ -149,7 +148,7 @@ def isaac_training(cf, rank, size):
 
                 ### Plots
 
-                if rank == 1 and sim_count % (cf.num_replay+1) == 1 :
+                if rank == rank_agents[0] and sim_count % (cf.num_replay+1) == 1 :
                     plotter.plot_all([('loss_actor', 64), ('loss_critic', 64), ('loss_entropy', 64), ('actions_gap', 64), 'returns'])
 
                 ### Initialization
@@ -161,8 +160,8 @@ def isaac_training(cf, rank, size):
                 group_agents = dist.new_group(rank_agents) # It is necessary to reset this group here to avoid duplicate gpu errors
                 
                 if rank == rank_sim:
-                    if sim_count % 200 == 0: # hard reset sometimes (to delete)
-                        env.unwrapped._reset_idx(env_ids=None, hard_reset=True)
+                    # if sim_count % 200 == 0: # hard reset sometimes (to delete)
+                    #     env.unwrapped._reset_idx(env_ids=None, hard_reset=True)
                     if len(history['rewards'])>0:
                         print(f"$$$ r{rank} CUMUL REWARD: {history['rewards'].sum().item()} $$$")
                     print(f"SEED: {seed}")
@@ -181,12 +180,17 @@ def isaac_training(cf, rank, size):
                             else:
                                 torch.save(memories, path_mem)
                         dist.barrier(group=group_agents)
-                        if rank == 1:
+                        if rank == rank_agents[0] :
                             torch.save({'model': model_student.state_dict(), 'optimizer': optimizer.state_dict()}, cf.path_model)
+                            if sim_count % 50 == 0:
+                                torch.save({'model': model_student.state_dict(), 'optimizer': optimizer.state_dict()}, cf.path_weights / f'model_{sim_count}.pt')
+
                         history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, cf.dim_observations, device)
                     if rank == rank_sim:
                         torch.save(value_scaler.state_dict(), cf.path_scaler)
-                    full_video = []
+                        if sim_count % 50 == 0:
+                            torch.save(value_scaler.state_dict(), cf.path_weights / f'scaler_{sim_count}.pt')
+                    # full_video = []
                     kl_list = []
                     buffer = torch.load(path_buffer_new, weights_only=True)
                     torch.save(buffer, path_buffer_old) # end of previous inference
@@ -225,7 +229,7 @@ def isaac_training(cf, rank, size):
                             memories = rearrange(memories, 'b l h -> (b l h)')
                         memories_student = memories.clone().detach().requires_grad_(True)
 
-                    if rank == 1:
+                    if rank == rank_agents[0]:
                         plotter.add('returns', history['returns'][0, :].mean().item(), sim_count)
                         plotter.add('action/mean', history['actions'][:, :, 0].mean().item(), sim_count)
                         plotter.add('action/std', history['actions'][:, :, 0].std().item(), sim_count)
@@ -260,8 +264,8 @@ def isaac_training(cf, rank, size):
                         video = all_obs['camera'].clone()  # (num_envs, 256, 456, 3)
                         # ts.save(video[0], '/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/live.jpg')
                         # video = torch.zeros(cf.num_envs, cf.frames, cf.height, cf.width, 3, device=device)
-                    if cf.render:
-                        full_video.append(env.render().cpu())
+                    if cf.render is not None:
+                        full_video.append(torch.tensor(env.render()))
                     
                     # dones
                     dones = env.unwrapped.last_dones.int().clone()
@@ -393,7 +397,7 @@ def isaac_training(cf, rank, size):
                             # Reinitialize
                             backward_count = 0
 
-                    if rank == 1 and perform_update :
+                    if rank == rank_agents[0] and perform_update :
                         actor_losses.append(loss_actor.item())
                         critic_losses.append(loss_critic.item())
                         entropy_losses.append(loss_entropy.item())
@@ -443,9 +447,10 @@ def isaac_training(cf, rank, size):
                         next_values = next_values.to(torch.float32)
 
                 # video
-                if sim_count % 100 == 0 and sim_step == cf.sim_duration-1 and rank == 0 and cf.render :
+                if sim_count % 50 == 0 and sim_step == cf.sim_duration-1 and rank == 0 and cf.render is not None :
                     torchvision.io.write_video( cf.path_monitor / ('test_'  + str(sim_count) + '_vid_.mp4'), 
                                                 torch.stack(full_video), 8*cf.frames)
+                    full_video = []
             else:
 
                 # Adjust the learning rate after each training
@@ -454,8 +459,8 @@ def isaac_training(cf, rank, size):
                     
                     kl = torch.tensor(kl_list, device=device).mean()
                     dist.all_reduce(kl, op=dist.ReduceOp.SUM, group=group_agents)
-                    kl /= (size-1)
-                    if rank == 1:
+                    kl /= max(1, size-1)
+                    if rank == rank_agents[0]:
                         plotter.add('loss/kl_divergence', kl.item(), sim_count)
                     if cf.scheduler == 'kl_div':
                         lr = tr.lr_kl_scheduler(lr, kl, kl_threshold=cf.kl_threshold, min_lr=cf.range_lr[0], max_lr=cf.range_lr[1])
@@ -467,7 +472,7 @@ def isaac_training(cf, rank, size):
 
                 # Plot losses
 
-                if rank == 1 and sim_step == cf.sim_duration-1:
+                if rank == rank_agents[0] and sim_step == cf.sim_duration-1:
                     plotter.add('loss/lr', lr, sim_count)
                     plotter.add('loss/actor', np.mean(actor_losses), sim_count)
                     plotter.add('loss/critic', np.mean(critic_losses), sim_count)
