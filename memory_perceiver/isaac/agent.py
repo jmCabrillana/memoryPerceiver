@@ -45,7 +45,7 @@ class ActorCriticSimple(nn.Module):
 
         # Act
         actions_mean  = torch.tanh(self.actor_mean(hidden))
-        actions_std = torch.clamp(self.actor_std, -20, 2).exp()
+        actions_std = torch.clamp(self.actor_std, -20, 0).exp()
         dist = Normal(actions_mean, actions_std)
         actions = dist.rsample() if old_actions is None else old_actions
         logprobs = dist.log_prob(actions).sum(dim=-1)
@@ -139,13 +139,13 @@ class ActorCriticPerceiver(nn.Module):
             values = rearrange(output['critic'], 'b t () -> b t').mean(dim=-1)
             # values = rearrange(output['critic'], 'b () d -> b d') # For test RTRL anbn
         else : 
-            values = self.critic(states['observations'][:,-1])
+            values = self.critic(states['obs'][:,-1])
             values = rearrange(values,  'b 1 -> b')
         if self.flattened_mem is not None:
             new_memories = rearrange(new_memories, 'b l h -> (b l h)')
 
         # Act
-        actions_std = torch.clamp(self.actor.out_std, -20, 2).exp() # [-20, 2]
+        actions_std = torch.clamp(self.actor.out_std, -20, 0).exp() # [-20, 2]
         dist = Normal(actions_mean, actions_std)
         actions = dist.rsample() if old_actions is None else old_actions
         logprobs = dist.log_prob(actions).sum(dim=-1)
