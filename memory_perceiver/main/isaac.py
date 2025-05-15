@@ -23,9 +23,9 @@ sys.path.append(os.getcwd())
 
 from isaaclab.app import AppLauncher
 from memoryPerceiver.memory_perceiver.main.configuration import isaac_cfg
-from memoryPerceiver.memory_perceiver.core.model_wrapper import create_memories, reset_memories, freeze_parameters
+from memoryPerceiver.memory_perceiver.core.model_net import create_memories, reset_memories
 from memoryPerceiver.memory_perceiver.core.distributed import setup_distributed, average_gradients, scatter_dummy_src, gather_dummy_src
-from memoryPerceiver.memory_perceiver.core.miscellaneous import custom_random, print_cuda_tensors
+from memoryPerceiver.memory_perceiver.core.miscellaneous import custom_random, print_cuda_tensors, freeze_parameters
 import memoryPerceiver.memory_perceiver.isaac.trainer as tr
 from memoryPerceiver.memory_perceiver.isaac.scaler import RunningStandardScaler
 from memoryPerceiver.memory_perceiver.isaac.plot import Plotter
@@ -139,6 +139,7 @@ def isaac_training(cf, rank, size):
     r_grpo_len = 1000
     r_grpo_max = 1000
     r_grpo = torch.zeros(3, r_grpo_len, dtype=torch.float, device=rank) # m0, m1, m2 count of rewards by time
+    c_entropy_bound = cf.c_entropy
     
     while sim_running:
         if rank == rank_sim:
@@ -214,7 +215,7 @@ def isaac_training(cf, rank, size):
                             history['values'] = value_scaler(unscaled_values, train=True) # != history['values'] because update
                             history['returns_targets'] = value_scaler(tmp_advantages + unscaled_values, train=True)
                             history['advantages'] = (tmp_advantages - tmp_advantages.mean()) / (tmp_advantages.std() + 1e-8)  #dim=1 keepdim=True
-                            tr.calculate_grpo(r_grpo, history['returns'], history['birth_time'], sim_count_total)
+                            # tr.calculate_grpo(r_grpo, history['returns'], history['birth_time'], sim_count_total)
 
                         for key in ['returns', 'values', 'returns_targets', 'advantages']:
                             scatter_dummy_src(history[key], rank, size-1, swap_axis=True)
@@ -233,7 +234,7 @@ def isaac_training(cf, rank, size):
                         plotter.add('returns', history['returns'][0, :].mean().item(), sim_count)
                         plotter.add('action/mean', history['actions'][:, :, 0].mean().item(), sim_count)
                         plotter.add('action/std', history['actions'][:, :, 0].std().item(), sim_count)
-                        plotter.add('loss/lr', lr, sim_count)
+                        plotter.add('coeff/lr', lr, sim_count)
                         # tr.print_detail_env(history)
 
                     buffer = torch.load(path_buffer_old, weights_only=True)
@@ -288,14 +289,15 @@ def isaac_training(cf, rank, size):
                     if isinstance(model, ActorCriticPerceiver):
                         dones_list = torch.nonzero(history['death_index'][sim_step].int()).flatten().tolist()
                         reset_memories(memories, indexes=dones_list, mem_dim=mem_dim)
-                    states=tr.mask_states(tr.stack_buffer(buffer), sim_count_total, cf, history['birth_time'][sim_step], device)
+                    mask = tr.create_mask(history['birth_time'][sim_step], sim_count_total, frames=cf.frames)
+                    states=tr.batch_and_mask_states(tr.stack_buffer(buffer), cf, mask, device)
                     with autocast(device_type='cuda', dtype=torch.float16):
-                        model_outputs = model(states, memories)
+                        model_outputs = model(states, memories, mask=mask)
                         actions, logprobs, values, new_memories = [model_outputs[key] for key in ['actions', 'logprobs', 'values', 'memories']]
                         if cf.training_mode != 'Backward':
                             memories = new_memories
                         if cf.tutor_type is not None:
-                            model_tutor_outputs = model_tutor(states, None)
+                            model_tutor_outputs = model_tutor(states, None, mask=mask)
                             history['actions_mean'][sim_step] = model_tutor_outputs['actions_mean'].detach()
                             history['actions_std'][sim_step] = model_tutor_outputs['actions_std'].detach()
                     history['actions'][sim_step] = actions.detach()
@@ -318,18 +320,20 @@ def isaac_training(cf, rank, size):
                     for key in ['birth_time'] + cf.inputs:
                         last_state[key] = history[key][sim_step]
                     tr.buffers_update(buffer, last_state, frames=cf.frames)  
-                    states=tr.mask_states(tr.stack_buffer(buffer), sim_count_total, cf, birth_time, device)
+                    mask = tr.create_mask(birth_time, sim_count_total, frames=cf.frames)
+                    states=tr.batch_and_mask_states(tr.stack_buffer(buffer), cf, mask, device)
 
-                    perform_update = ( custom_random(sim_count, sim_step_rand) <= cf.update_probability and \
-                                        sim_step_rand <= cf.sim_duration-1 ) or cf.training_mode == 'TBPTT'
-                    perform_update = perform_update and seed >= cf.start_step
+                    # perform_update = ( custom_random(sim_count, sim_step_rand) <= cf.update_probability and \
+                    #                     sim_step_rand <= cf.sim_duration-1 ) or cf.training_mode == 'TBPTT'
+                    # perform_update = perform_update and seed >= cf.start_step
+                    perform_update = seed >= cf.start_step
                     with autocast(device_type='cuda', dtype=torch.float16):
                         if perform_update:
                             returns_targets = history['returns_targets'][sim_step_rand].to(device)
                             advantages = history['advantages'][sim_step_rand].to(device)
                             if cf.training_mode in ['Backward', 'RTRL'] and isinstance(model, ActorCriticPerceiver):
                                 memories_student = memories.clone().detach().requires_grad_(True)
-                            model_student_outputs = model_student(states, memories_student, actions)
+                            model_student_outputs = model_student(states, memories_student, actions, mask)
                             new_actions_mean, new_actions_std, new_logprobs, new_values, entropies, new_memories_student = \
                                 [model_student_outputs[key] for key in ['actions_mean', 'actions_std', 'logprobs', 'values', 'entropies', 'memories']]
                             if cf.training_mode == 'TBPTT':
@@ -339,21 +343,24 @@ def isaac_training(cf, rank, size):
                             ratios = torch.exp(new_logprobs - logprobs)
                             surr1 = ratios * advantages
                             surr2 = torch.clamp(ratios, 1-cf.eps_clip, 1+cf.eps_clip) * advantages
-                            loss_actor = -(torch.min(surr1, surr2)).mean()
-                            loss_entropy = cf.c_entropy * entropies.mean()
+                            loss_actor = -(torch.min(surr1, surr2))
+                            loss_entropy = c_entropy_bound * entropies # cf.c_entropy * entropies.mean()
                             clipped_values = values + torch.clamp(new_values-values, -cf.value_clip, cf.value_clip)
-                            loss_critic = cf.c_critic * F.mse_loss(clipped_values, returns_targets)
+                            loss_critic = cf.c_critic * F.mse_loss(clipped_values, returns_targets, reduction='none')
                             loss_kl_tutor = torch.tensor(0.0, device=device)
                             if cf.tutor_type is not None:
                                 # loss_kl_tutor = F.mse_loss(new_actions_mean, actions_mean)
                                 mu1, mu2, sig1, sig2 = new_actions_mean, actions_mean, new_actions_std, actions_std
                                 loss_kl_tutor = cf.c_kl_tutor*0.5*( ( (mu2-mu1)/sig2 )**2 + (sig1/sig2)**2 - 2*torch.log(sig1) + 2*torch.log(sig2) - 1 ).mean(dim=1).mean()
                             loss = (loss_actor + loss_critic - loss_entropy + loss_kl_tutor) / cf.accumulation_steps
+                            loss *= torch.bernoulli(torch.full((cf.num_envs,), cf.update_probability, device=device))
+                            loss = loss.mean()
                             loss_cumul += loss
                             with torch.no_grad():
                                 kl_divergence = ((ratios - 1) - (new_logprobs - logprobs)).mean()
                                 kl_list.append(kl_divergence.item())
                             if kl_divergence > 3*cf.kl_threshold:
+                                print("WARNING: kl_divergence > 3 * kl_threshold")
                                 loss *= 0
                                 loss_cumul *= 0
                         if cf.training_mode != 'Backward':
@@ -363,12 +370,14 @@ def isaac_training(cf, rank, size):
 
                         # Step optimizer
                         if cf.training_mode == 'Backward':
-                            scaler.scale(loss).backward()
+                            scaler.scale(loss/(cf.sim_duration*cf.update_probability)).backward()
                         if cf.training_mode == 'RTRL':
                             loss = scaler.scale(loss)
                             rtrl_grad.step(model_student, states, memories_student, loss, old_actions=actions)
                         backward_count += 1
-                        if backward_count % cf.accumulation_steps == 0 and backward_count != 0:
+                        # if backward_count % cf.accumulation_steps == 0 and backward_count != 0:
+                        if backward_count > 0 and sim_step == cf.sim_duration-1:
+                        # if backward_count % cf.accumulation_steps == 0 and backward_count != 0:
                             if cf.training_mode == 'TBPTT':
                                 scaler.scale(loss_cumul).backward()
                                 loss_cumul = torch.tensor(0.0, device=device, requires_grad=True)
@@ -388,10 +397,10 @@ def isaac_training(cf, rank, size):
                             backward_count = 0
 
                     if rank == rank_agents[0] and perform_update :
-                        actor_losses.append(loss_actor.item())
-                        critic_losses.append(loss_critic.item())
-                        entropy_losses.append(loss_entropy.item())
-                        kl_tutor_losses.append(loss_kl_tutor.item())
+                        actor_losses.append(loss_actor.mean().item())
+                        critic_losses.append(loss_critic.mean().item())
+                        entropy_losses.append(loss_entropy.mean().item())
+                        kl_tutor_losses.append(loss_kl_tutor.mean().item())
 
             ### Step env,  close episode
             if is_inference:
@@ -405,7 +414,7 @@ def isaac_training(cf, rank, size):
                     history['rewards'][sim_step] = cf.reward_scale*env.unwrapped._get_rewards()
                     history['returns'][sim_step] = (1 - dones) *  buffer['returns'][-1] + cf.gamma * history['rewards'][sim_step]
                     tr.buffer_update(buffer, 'returns', history['returns'][sim_step], frames=cf.frames)
-                    r_grpo = tr.update_grpo(r_grpo, history['returns'][sim_step], sim_count_total, history['birth_time'][sim_step])
+                    # r_grpo = tr.update_grpo(r_grpo, history['returns'][sim_step], sim_count_total, history['birth_time'][sim_step])
                     
                 # Get next values at the last iteration
                 
@@ -436,9 +445,10 @@ def isaac_training(cf, rank, size):
                     next_buffer = deepcopy(buffer)
                     tr.buffers_update(next_buffer, last_state, frames=cf.frames)
                     if rank in rank_agents:
-                        states=tr.mask_states(tr.stack_buffer(next_buffer), sim_count*cf.sim_duration+next_sim_step, cf, next_state['birth_time'], device)
+                        mask = tr.create_mask(next_state['birth_time'], sim_count*cf.sim_duration+next_sim_step, frames=cf.frames)
+                        states=tr.batch_and_mask_states(tr.stack_buffer(buffer), cf, mask, device)
                         with autocast(device_type='cuda', dtype=torch.float16):
-                            next_values = model(states, memories)['values']
+                            next_values = model(states, memories, mask=mask)['values']
                         next_values = next_values.to(torch.float32)
 
                 # video
@@ -450,7 +460,8 @@ def isaac_training(cf, rank, size):
 
                 # Adjust the learning rate after each training
 
-                if sim_step == cf.sim_duration-1 and rank in rank_agents and seed >= cf.start_step :
+                if sim_step == cf.sim_duration-1 and rank in rank_agents and seed >= cf.start_step \
+                    and sim_count % (cf.num_replay + 1) == cf.num_replay:
                     
                     kl = torch.tensor(kl_list, device=device).mean()
                     dist.all_reduce(kl, op=dist.ReduceOp.SUM, group=group_agents)
@@ -468,7 +479,18 @@ def isaac_training(cf, rank, size):
                     for param_group in optimizer.param_groups:
                         param_group['lr'] = lr
 
-                # Plot losses
+                    # entropy lower bound
+
+                    entropy = torch.tensor(entropy_losses, device=device).mean() / c_entropy_bound
+                    dist.all_reduce(entropy, op=dist.ReduceOp.SUM, group=group_agents)
+                    entropy /= max(1, size-1)
+                    target_gap = max(0, min(cf.c_entropy, cf.dim_actions_ppo - entropy)) 
+                    c_entropy_bound = 0.9 * c_entropy_bound + 0.1 * target_gap
+                    print("entropy", entropy)
+                    print("c_entropy_bound",  c_entropy_bound)
+                    plotter.add('coeff/c_entropy', c_entropy_bound, sim_count)
+
+                    # Plot losses
 
                 if rank == rank_agents[0] and sim_step == cf.sim_duration-1:
                     plotter.add('loss/lr', lr, sim_count)
@@ -495,14 +517,6 @@ if __name__ == "__main__":
     isaac_cfg.path_experiment = tr.setup_run(isaac_cfg.path_main / 'configuration.py', isaac_cfg.path_experiment)
     os.makedirs(isaac_cfg.path_experiment)
     os.makedirs(isaac_cfg.path_weights, exist_ok=True)
-    
-    # logging.basicConfig(filename=cf.path_logs, level=logging.INFO)
-    # log_handler = logging.FileHandler(cf.path_logs, mode='a')
-    # log_handler.setLevel(logging.INFO)
-    # sys.stdout = log_handler.stream
-    # sys.stderr = log_handler.stream
-    # file_logs = open(cf.path_logs, 'w') 
-    # sys.stdout = file_logs
 
     num_gpus=torch.cuda.device_count()
     torch.use_deterministic_algorithms(False)
@@ -514,7 +528,8 @@ if __name__ == "__main__":
     os.environ["TORCH_CPP_LOG_LEVEL"]="FATAL" # INFO WARNING FATAL
     os.environ["NCCL_DEBUG"]="WARN" # WARN INFO DEBUG TRACE
     os.environ["TORCH_DISTRIBUTED_DEBUG"]="OFF" # OFF INFO DETAIL
-    os.environ["TORCH_NCCL_ENABLE_MONITORING"]="1"
+    os.environ["TORCH_NCCL_ENABLE_MONITORING"]="0" # 0 1
+    os.environ["CUDA_LAUNCH_BLOCKING"]="0" # 0 1 
     
     size = num_gpus
     processes = []

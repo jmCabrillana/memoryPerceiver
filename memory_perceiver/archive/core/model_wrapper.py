@@ -51,35 +51,14 @@ def create_multimodal_perceiver(cf, device):
     model.queries=torch.cat(queries)
 
     # Position embedding
+    model.pos_decoding = compute_fourier_encoding(cf.body_parts, device=device, query_dim=cf.query_dim, frames=cf.frames, 
+                                                  height=cf.height, width=cf.width, audio=cf.sample_audio_frame,
+                                                  patch_height=cf.patch_height,patch_width=cf.patch_width, patch_audio=cf.patch_audio)
     model.pos_encoding = compute_fourier_encoding(cf.body_parts, device=device, query_dim=cf.query_dim, frames=cf.frames, 
                                                   height=cf.height, width=cf.width, audio=cf.sample_audio_frame,
                                                   patch_height=cf.patch_height,patch_width=cf.patch_width, patch_audio=cf.patch_audio)
 
     return model
-
-def input_embedding(data, embedding, query_dim, device='cpu', 
-                    height=8, width=8, patch_audio=16):
-    b = len(next(iter(data.values())))
-
-    fourier_encoding = compute_fourier_encoding(data, query_dim, device=device,
-                                                height=height, width=width, patch_audio=patch_audio)
-    multi_mod = torch.tensor([], device=device)
-    for key, value in data.items():
-        if key == 'video':
-            video = rearrange(value, "b c t (h h1) (w w1) -> b (t h w) (h1 w1 c)", h1=height, w1=width)
-            video_encodding = repeat(fourier_encoding['video'], '... -> b ...', b=b)
-            x = embedding['video'](video) + video_encodding
-            multi_mod = torch.cat([multi_mod, x], dim=1)
-        elif key == 'audio':
-            audio = rearrange(audio, "b (t t1) -> b t t1", t1=patch_audio)
-            audio_encoding = repeat(fourier_encoding['audio'], '... -> b ...', b=b)
-            x = embedding['audio'](audio) + audio_encoding
-            multi_mod = torch.cat([multi_mod, x], dim=1)
-        else:
-            value_encoding = repeat(fourier_encoding[key], '... -> b ...', b=b)
-            x = embedding[key](value) + value_encoding
-            multi_mod = torch.cat([multi_mod, x], dim=1)
-    return multi_mod
 
 
 
@@ -108,7 +87,6 @@ def reset_memories(memories, indexes=None, mem_dim=None):
                 b, l, h = mem_dim
                 indexes = sum((list(range(bi*l*h, (bi+1)*l*h)) for bi in indexes), [])
             memories[indexes] *= 0
-
 
 def copy_memories(layers_mem):
     device = layers_mem.device

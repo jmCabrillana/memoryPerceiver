@@ -2,7 +2,7 @@ from pathlib import Path
 
 class IsaacCfg:
 
-    experiment_name = "P_1.1_entropy:1e-4"
+    experiment_name = "P_2.7_encoding"
 
     # Task
     task =  "Isaac-Humanoid-Direct-v0" # Isaac-Cartpole-Cam-Direct-v0
@@ -10,54 +10,50 @@ class IsaacCfg:
     tutor_type = None # None Simple
     dim_observations = 75 # 75 4 5
     dim_actions = 21 # 21 1
-    num_envs = 4096 # 1 54 128 864 2048
+    num_envs = 2048 # 1 54 128 864 2048 4096
     sim_duration = 32 # 1028 516 260
     seed = 68
     render = "rgb_array" # None human rgb_array
 
     # PPO
-    frames = 4
+    frames = 1
     frames_future = 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
     training_mode = 'Backward' # Backward TBPTT RTRL
     learning_rate = 1e-5 # 3e-4 1e-4 1e-5
     kl_threshold = 0.008 # 0.004 0.008 1e10
-    scheduler = 'kl_div' # '' kl_div warm-up_100 warm-up_400
+    scheduler = 'kl_div' # '' kl_div kl-warm-up_400 warm-up_100 warm-up_400
     range_lr = [1e-5, 1e-3] # [1e-5, 1e-2] [1e-5, 5e-3] [1e-5, 5e-4]
     reward_scale = 0.01
-    start_step = 2
-    c_entropy = 1e-4 # 0.01 to 0.05
-    c_critic = 2   # 0.5 to 2 4
+    start_step = 4
+    c_entropy = 0.0 #5e-5 1e-4 # 0.01 to 0.05
+    c_critic = 2.0   # 0.5 to 2 4
     c_kl_tutor = 0.0 # 0.2
-    accumulation_steps = 4 # 2 4 6 8 16
+    accumulation_steps = 32 # 2 4 6 8 16
     student_update_step = 1
     eps = 1e-9
     gamma = 0.99
     c_lambda = 0.95
-    grad_norm = 1.0  # 0.1 to 1.0
+    grad_norm = 0.5  # 0.1 to 1.0
     eps_clip = 0.2
-    value_clip = 0.2 #float('inf')
-    num_replay = 1
-    update_probability = 1.0 #0.33 0.5
+    value_clip = 0.1 #float('inf')
+    num_replay = 4
+    update_probability = 0.5 #0.33 0.5 1
 
     # Model parameters
-    depth = 2
-    critic_depth = 2
+    depth = 1
+    critic_depth = 1
     depth_f_state = 0
-    query_dim = 32 # 32 128 512 832 # video > 136 , 
-    hidden_dim = 32 # 32 128 for simple net
-    latent_heads = 8 # 2 8
-    latent_dim_head =  16 # 16 64
-    nb_latents_mem = 2
+    query_dim = 256 # 32 128 256 512 832 # video > 136 , 
+    hidden_dim = 256 # 32 128 256 for simple net
+    latent_heads = 4 # 2 4 8
+    latent_dim_head =  64 # 16 32 64
+    nb_latents_mem = 0
     nb_latents = 8
     shared=True
     batch_size = num_envs
-    body_parts =  {'obs_' + str(i): 1 for i in range(dim_observations)}
-    body_parts.update({'action_star_' + str(i): 1 for i in range(dim_observations)})
-    body_outputs = {'action_' + str(i): 1 for i in range(dim_actions)}
     # actions_variance = {'action_variance_' + str(i): 1 for i in range(dim_actions)}
     # body_outputs.update(actions_variance)
-    body_outputs.update({'critic':1})
 
     # Model inputs and outputs
     inputs = ['obs', 'actions_star'] # obs audio video actions_star

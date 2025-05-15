@@ -146,12 +146,12 @@ def create_mask(birth_time, sim_step, frames=32):
     device = birth_time.device
     num_envs = birth_time.size()[0]
     past_horizon=frames - (sim_step-birth_time+1)
-    mask = repeat(torch.arange(frames, device=device), '... -> b ...', b=num_envs) < repeat(past_horizon, '... -> ... t', t=frames)
+    mask = repeat(torch.arange(frames, device=device), '... -> b ...', b=num_envs) >= repeat(past_horizon, '... -> ... t', t=frames)
     return mask
 
-def mask_states(buffer, sim_step, cf, birth_time, device):
+def batch_and_mask_states(buffer, cf, mask, device):
     states={}
-    mask = create_mask(birth_time, sim_step, frames=cf.frames)
+    mask = mask.logical_not()
     states['obs'] = buffer_padding(buffer['obs'], [cf.dim_observations], num_envs=cf.num_envs, frames=cf.frames)
     states['obs'][mask] *= 0
     if 'actions_star' in cf.inputs:
@@ -233,13 +233,9 @@ def setup_run(path_config, path_experiment):
 
 def print_detail_env(history):
     for key, value in history.items():
-        if key not in ['actions', 'actions_star', 'logprobs', 'generator', 'obs', 'rewards']:
+        if key not in ['actions', 'actions_star', 'actions_mean', 'actions_std', 'logprobs', 'generator', 'obs', 'rewards']:
             print(f"{key}: {value[:,0]}")
-        if key == 'actions':
-            print(f"{key}: {value[:,0, 0]}")
-        if key == 'actions_star':
-            print(f"{key}: {value[:,0, 0]}")
-        if key == 'obs':
+        if key in ['actions', 'actions_star', 'actions_mean', 'actions_std', 'obs']:
             print(f"{key}: {value[:,0, 0]}")
 
 def print_detail_returns(history, unscaled_values, tmp_advantages, value_scaler):
