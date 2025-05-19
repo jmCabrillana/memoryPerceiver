@@ -265,7 +265,7 @@ def isaac_training(cf, rank, size):
                     if 'video' in cf.inputs:
                         history['video'][sim_step] = all_obs['camera'].clone()  # (num_envs, 256, 456, 3)
                         # history['video'][sim_step] = torch.zeros(cf.num_envs, cf.height, cf.width, cf.channels, device=device)
-                        # ts.save(history['video'][sim_step][0], '/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/live.jpg')
+                        ts.save(history['video'][sim_step][0], cf.path_monitor / 'live.jpg')
                     if cf.render is not None:
                         full_video.append(torch.tensor(env.render()))
                     
@@ -497,14 +497,11 @@ def isaac_training(cf, rank, size):
                     entropy /= max(1, size-1)
                     target_gap = max(0, min(cf.c_entropy, cf.dim_actions_ppo - entropy)) 
                     c_entropy_bound = 0.9 * c_entropy_bound + 0.1 * target_gap
-                    print("entropy", entropy)
-                    print("c_entropy_bound",  c_entropy_bound)
                     plotter.add('coeff/c_entropy', c_entropy_bound, sim_count)
 
                     # Plot losses
 
                 if rank == rank_agents[0] and sim_step == cf.sim_duration-1:
-                    plotter.add('loss/lr', lr, sim_count)
                     plotter.add('loss/actor', np.mean(actor_losses), sim_count)
                     plotter.add('loss/critic', np.mean(critic_losses), sim_count)
                     plotter.add('loss/entropy', np.mean(entropy_losses), sim_count)
