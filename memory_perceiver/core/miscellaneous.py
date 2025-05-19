@@ -48,3 +48,9 @@ def print_cuda_tensors():
     for obj in objects[:5]:
         print(obj)
 
+def freeze_parameters(model, filter):
+    for name, p in model.named_parameters():
+        if name.startswith(filter):
+            p.requires_grad = False
+        else:
+            p.requires_grad = True

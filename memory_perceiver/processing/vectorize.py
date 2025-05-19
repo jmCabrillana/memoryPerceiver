@@ -24,7 +24,7 @@ def fourier_encode_vector(x, max_freq, num_bands = 4):
 def patchify(data, height=8, width=8, patch_audio=16):
     for key, value in data.items():
         if key == 'video':
-            data['video'] = rearrange(value, "b c t (h h1) (w w1) -> b t h w (h1 w1 c)", h1=height, w1=width)
+            data['video'] = rearrange(value, "b t (h h1) (w w1) c -> b t h w (h1 w1 c)", h1=height, w1=width)
         elif key == 'audio':
             data['audio'] = rearrange(value, "b (t t1) -> b t t1", t1=patch_audio)
 

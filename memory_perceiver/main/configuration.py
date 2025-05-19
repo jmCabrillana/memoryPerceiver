@@ -2,15 +2,15 @@ from pathlib import Path
 
 class IsaacCfg:
 
-    experiment_name = "P_2.7_encoding"
+    experiment_name = "P_1.0_test"
 
     # Task
-    task =  "Isaac-Humanoid-Direct-v0" # Isaac-Cartpole-Cam-Direct-v0
+    task = "Isaac-Humanoid-Cam-Direct-v0" # Isaac-Humanoid-Direct-v0 Isaac-Cartpole-Cam-Direct-v0
     agent_type = "Perceiver" # Simple Perceiver
     tutor_type = None # None Simple
     dim_observations = 75 # 75 4 5
     dim_actions = 21 # 21 1
-    num_envs = 2048 # 1 54 128 864 2048 4096
+    num_envs = 128 # 1 54 128 864 2048 4096
     sim_duration = 32 # 1028 516 260
     seed = 68
     render = "rgb_array" # None human rgb_array
@@ -26,7 +26,7 @@ class IsaacCfg:
     range_lr = [1e-5, 1e-3] # [1e-5, 1e-2] [1e-5, 5e-3] [1e-5, 5e-4]
     reward_scale = 0.01
     start_step = 4
-    c_entropy = 0.0 #5e-5 1e-4 # 0.01 to 0.05
+    c_entropy = 0.01 #5e-5 1e-4 # 0.01 to 0.05
     c_critic = 2.0   # 0.5 to 2 4
     c_kl_tutor = 0.0 # 0.2
     accumulation_steps = 32 # 2 4 6 8 16
@@ -44,7 +44,7 @@ class IsaacCfg:
     depth = 1
     critic_depth = 1
     depth_f_state = 0
-    query_dim = 256 # 32 128 256 512 832 # video > 136 , 
+    query_dim = 512 # 32 128 256 512 832 # video > 136 , 
     hidden_dim = 256 # 32 128 256 for simple net
     latent_heads = 4 # 2 4 8
     latent_dim_head =  64 # 16 32 64
@@ -56,9 +56,9 @@ class IsaacCfg:
     # body_outputs.update(actions_variance)
 
     # Model inputs and outputs
-    inputs = ['obs', 'actions_star'] # obs audio video actions_star
+    inputs = ['obs', 'actions_star', 'video'] # obs audio video actions_star
     output_audio = False
-    sample_audio_frame = 1920
+    audio_samples = 1920
     width = 448
     height = 256
     patch_audio = 16
@@ -68,12 +68,12 @@ class IsaacCfg:
     bands_video = 32
     bands_video_t = 4
     channels = 3
-    len_video_frame = 448 # 836 = 456*264/(12*12) # 1824 456*256/(8*8) # 448 448*256/(16*16)
-    len_audio_frame = 120   # 1920/16
-    sample_rate = frames * sample_audio_frame
+    len_video_frame = width * height / (patch_width * patch_height) # 836 = 456*264/(12*12) # 1824 = 456*256/(8*8) # 448 = 448*256/(16*16)
+    len_audio_frame = audio_samples / patch_audio   # 120=1920/16
+    sample_rate = frames * audio_samples
     len_video = frames*len_video_frame
     len_audio = frames*len_audio_frame
-    len_audio_raw = frames*sample_audio_frame
+    len_audio_raw = frames*audio_samples
     video_future = frames_future*len_video_frame
     audio_future = frames_future*len_audio_frame 
 

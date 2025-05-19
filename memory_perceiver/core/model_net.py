@@ -31,7 +31,6 @@ def fourier_encode_vector(x, max_freq, num_bands):
 
     scales = torch.linspace(1., max_freq / 2, num_bands, device = device, dtype = dtype)
     scales = scales[(*((None,) * (len(x.shape) - 1)), Ellipsis)]
-
     x = x * scales * torch.pi
     x = torch.cat([x.sin(), x.cos()], dim = -1)
     x = torch.cat((x, orig_x), dim = -1)
@@ -110,6 +109,12 @@ class MultiEmbedding(nn.Module):
             layer_init(self.out_vector_embedding[part])
         self.scalar_pos = None
         self.vector_pos = {}
+
+    def add_inputs(self, input_vectors):
+        device = self.out_scalar_embeddings_bias.device
+        for part, params in input_vectors.items():
+            self.out_vector_embedding[part] = nn.Linear(params, self.dim, device=device)
+            layer_init(self.out_vector_embedding[part])
 
     def forward(self, x):
         scalar_embedding = torch.einsum('b t n, n d -> b t n d', x['scalars'], self.out_scalar_embeddings_weight) + self.out_scalar_embeddings_bias
@@ -297,7 +302,6 @@ class PerceiverIO(nn.Module):
             x = attn + x
             x = self.out_ff_layers[i](x) + x
 
-        # print(x[0].mean().item(),x[1].mean().item())
         ## cross-attend query and project outputs
         seq_len = 1
         queries = repeat(self.out_query(seq_len), 'n d -> b n d', b = b)

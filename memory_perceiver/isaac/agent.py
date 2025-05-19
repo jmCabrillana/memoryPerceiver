@@ -33,22 +33,22 @@ class ActorCriticSimple(nn.Module):
                                             [layer_init(nn.Linear(self.hidden_dim, self.hidden_dim)), nn.ELU()]*(cf.critic_depth-1) +
                                             [layer_init(nn.Linear(self.hidden_dim, 1), std=1)]  ) ).to(device)
             
-        self.embedding = nn.Linear(self.state_dim, self.hidden_dim, device=device)
-        self.latents = nn.Parameter(torch.randn(2, self.hidden_dim, device=device))
-        self.att = PreNormContext(self.hidden_dim, 
-                        Attention(self.hidden_dim, self.hidden_dim, heads=cf.latent_heads, dim_head=cf.latent_dim_head)).to(device)
-        self.ff = PreNormContext(self.hidden_dim, FeedForward(self.hidden_dim)).to(device)
+        # self.embedding = nn.Linear(self.state_dim, self.hidden_dim, device=device)
+        # self.latents = nn.Parameter(torch.randn(2, self.hidden_dim, device=device))
+        # self.att = PreNormContext(self.hidden_dim, 
+        #                 Attention(self.hidden_dim, self.hidden_dim, heads=cf.latent_heads, dim_head=cf.latent_dim_head)).to(device)
+        # self.ff = PreNormContext(self.hidden_dim, FeedForward(self.hidden_dim)).to(device)
         
     def forward(self, states, memories, old_actions=None, mask=None):
         state = states['obs'][:,-1] # last time
-        # hidden = self.actor(state)
-        b = len(state)
-        query = rearrange(self.embedding(state), 'b d -> b 1 d')
-        x = repeat(self.latents, 'n d -> b n d', b = b)
-        attn = self.att(x, context = query)
-        x = attn + x
-        x = self.ff(x) + x
-        hidden = x.mean(dim=1)
+        hidden = self.actor(state)
+        # b = len(state)
+        # query = rearrange(self.embedding(state), 'b d -> b 1 d')
+        # x = repeat(self.latents, 'n d -> b n d', b = b)
+        # attn = self.att(x, context = query)
+        # x = attn + x
+        # x = self.ff(x) + x
+        # hidden = x.mean(dim=1)
 
         # Critic
         if self.shared:
@@ -102,11 +102,14 @@ class ActorCriticPerceiver(nn.Module):
         self.inputs = cf.inputs
         self.flattened_mem = None
         input_scalars = cf.dim_observations + ('actions_star' in cf.inputs) * cf.dim_actions
+        input_vectors = {}
+        if 'video' in cf.inputs:
+            input_vectors['video'] = cf.patch_width * cf.patch_height * cf.channels
         output_scalars = cf.dim_actions_ppo + cf.shared
         self.actor = PerceiverIO(
             cf.depth,
             input_scalars = input_scalars,
-            input_vectors = {},
+            input_vectors = input_vectors,
             output_scalars = output_scalars,
             output_vectors = {},
             depth_f_state=cf.depth_f_state,

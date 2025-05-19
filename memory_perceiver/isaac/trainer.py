@@ -7,11 +7,13 @@ import re
 import shutil
 from datetime import datetime
 
-def init_history(history_keys, sim_duration, num_envs, actions_dim, obs_dim, device):
+def init_history(history_keys, sim_duration, num_envs, actions_dim, obs_dim, height, width, channels, device):
     history = {}
     for key in history_keys:
         if key == 'obs':
             history[key] = torch.zeros(sim_duration, num_envs, obs_dim, device=device)
+        elif key == 'video':
+            history[key] = torch.zeros(sim_duration, num_envs, height, width, channels, device=device)
         elif key.startswith('actions'):
             history[key] = torch.zeros(sim_duration, num_envs, actions_dim, device=device)
         elif key == 'generator':
@@ -161,7 +163,6 @@ def batch_and_mask_states(buffer, cf, mask, device):
         states['video'] = torch.zeros(cf.num_envs, cf.frames, cf.height, cf.width, 3, device=device)
         # states['video'] = tr.buffer_padding(torch.stack(buffer['video']), [cf.height, cf.width, 3], num_envs=cf.num_envs, frames=cf.frames)
         states['video'][mask] *= 0
-        states['video'] = rearrange(states['video'], 'b t h w c -> b c t h w')
     if 'audio' in cf.inputs:
         states['audio'] = torch.zeros(cf.num_envs, cf.len_audio_raw, device=device)
         # states['audio'] = tr.buffer_padding(torch.stack(buffer['video']), [cf.sample_audio_frame], num_envs=cf.num_envs, frames=cf.frames)

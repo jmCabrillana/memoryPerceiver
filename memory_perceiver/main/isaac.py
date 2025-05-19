@@ -118,9 +118,10 @@ def isaac_training(cf, rank, size):
             rtrl_grad = RTRL_partial(model_student, param_state_filter='actor.state_', num_parameters=70000,
                         chunk_size=128, slice_indexes=slice_indexes.tolist())        
 
-    history_keys = ['obs', 'actions', 'actions_mean', 'actions_std', 'actions_star', 'values', 'logprobs', 'rewards', 'returns', 'returns_targets', 
+    history_keys = cf.inputs + ['actions', 'actions_mean', 'actions_std', 'values', 'logprobs', 'rewards', 'returns', 'returns_targets', 
                     'advantages', 'birth_time', 'death_index']
-    history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, cf.dim_observations, device)
+    history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, cf.dim_observations, \
+                              cf.height, cf.width, cf.channels, device)
     buffer = {'obs':[], 'video':[], 'audio':[], 'birth_time': [], 'returns': [torch.zeros(cf.num_envs, device=device)],
               'actions_star':[torch.zeros(cf.num_envs, cf.dim_actions, device=device)], }
     path_buffer_old = str(cf.path_buffer)+'_old'+str(rank)+'.pt'
@@ -140,6 +141,8 @@ def isaac_training(cf, rank, size):
     r_grpo_max = 1000
     r_grpo = torch.zeros(3, r_grpo_len, dtype=torch.float, device=rank) # m0, m1, m2 count of rewards by time
     c_entropy_bound = cf.c_entropy
+    is_inference = True
+    start_time = time.time()
     
     while sim_running:
         if rank == rank_sim:
@@ -170,6 +173,12 @@ def isaac_training(cf, rank, size):
                         print(f"$$$ r{rank} CUMUL REWARD: {history['rewards'].sum().item()} $$$")
                     print(f"SEED: {seed}")
                     print(f"SIM_COUNT: {sim_count}")
+                    is_inference_old = (sim_count-1) % (cf.num_replay+1) == 0
+                    if is_inference_old: # end of inference, now training
+                        print(f"Inference: {time.time() - start_time:.2f}")
+                    else:
+                        print(f"Training: {time.time() - start_time:.2f}")
+                    start_time = time.time()
 
                 if is_inference:
                     if rank in rank_agents:
@@ -186,10 +195,11 @@ def isaac_training(cf, rank, size):
                         dist.barrier(group=group_agents)
                         if rank == rank_agents[0] :
                             torch.save({'model': model_student.state_dict(), 'optimizer': optimizer.state_dict()}, cf.path_model)
-                            if sim_count % 50 == 0:
+                            if sim_count % 100 == 0:
                                 torch.save({'model': model_student.state_dict(), 'optimizer': optimizer.state_dict()}, cf.path_weights / f'model_{sim_count}.pt')
 
-                        history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, cf.dim_observations, device)
+                        history = tr.init_history(history_keys, cf.sim_duration, cf.num_envs, cf.dim_actions_ppo, cf.dim_observations, \
+                                                  cf.height, cf.width, cf.channels, device)
                     if rank == rank_sim:
                         torch.save(value_scaler.state_dict(), cf.path_scaler)
                         if sim_count % 50 == 0:
@@ -253,9 +263,9 @@ def isaac_training(cf, rank, size):
                     all_obs = env.unwrapped._get_observations()
                     history['obs'][sim_step] = all_obs['policy'].clone()    # (num_envs, d)
                     if 'video' in cf.inputs:
-                        video = all_obs['camera'].clone()  # (num_envs, 256, 456, 3)
-                        # ts.save(video[0], '/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/live.jpg')
-                        # video = torch.zeros(cf.num_envs, cf.frames, cf.height, cf.width, 3, device=device)
+                        history['video'][sim_step] = all_obs['camera'].clone()  # (num_envs, 256, 456, 3)
+                        # history['video'][sim_step] = torch.zeros(cf.num_envs, cf.height, cf.width, cf.channels, device=device)
+                        # ts.save(history['video'][sim_step][0], '/isaac-sim/memoryPerceiver/memory_perceiver/main/monitor/live.jpg')
                     if cf.render is not None:
                         full_video.append(torch.tensor(env.render()))
                     
@@ -426,7 +436,7 @@ def isaac_training(cf, rank, size):
                     if 'actions_star' in cf.inputs:
                         next_state['actions_star'] = buffer['actions_star'][-1].clone()
                     if 'video' in cf.inputs:
-                        next_state['video'] = torch.zeros(cf.num_envs, cf.frames, cf.height, cf.width, 3, device=device)
+                        next_state['video'] = torch.zeros(cf.num_envs, cf.frames, cf.height, cf.width, cf.channels, device=device)
                     if 'audio' in cf.inputs:
                         next_state['audio'] = torch.zeros(cf.num_envs, cf.len_audio, device=device)
                     
@@ -435,6 +445,7 @@ def isaac_training(cf, rank, size):
                         next_state['obs'] = all_obs['policy'].clone()    # (num_envs, d)
                         if 'video' in cf.inputs:
                             next_state['video'] = all_obs['camera'].clone()  # (num_envs, 256, 456, 3)
+                            # next_state['video'] = torch.zeros(cf.num_envs, cf.frames, cf.height, cf.width, cf.channels, device=device)
                         dones = env.unwrapped.last_dones.int().clone()
                         next_state['birth_time'] = buffer['birth_time'][-1].clone()
                         next_state['birth_time'][dones==1] = sim_count*cf.sim_duration+next_sim_step
@@ -452,7 +463,7 @@ def isaac_training(cf, rank, size):
                         next_values = next_values.to(torch.float32)
 
                 # video
-                if sim_count % 50 == 0 and sim_step == cf.sim_duration-1 and rank == 0 and cf.render is not None :
+                if sim_count % 100 == 0 and sim_step == cf.sim_duration-1 and rank == 0 and cf.render is not None :
                     torchvision.io.write_video( cf.path_monitor / ('test_'  + str(sim_count) + '_vid_.mp4'), 
                                                 torch.stack(full_video), 8*cf.frames)
                     full_video = []
