@@ -5,15 +5,15 @@ class IsaacCfg:
     experiment_name = "P_1.0_test"
 
     # Task
-    task = "Isaac-Humanoid-Cam-Direct-v0" # Isaac-Humanoid-Direct-v0 Isaac-Cartpole-Cam-Direct-v0
+    task = "Isaac-Humanoid-Direct-v0" # Isaac-Humanoid-Direct-v0 Isaac-Humanoid-Cam-Direct-v0 Isaac-Cartpole-Cam-Direct-v0
     agent_type = "Perceiver" # Simple Perceiver
     tutor_type = None # None Simple
     dim_observations = 75 # 75 4 5
     dim_actions = 21 # 21 1
-    num_envs = 128 # 1 54 128 864 2048 4096
+    num_envs = 8192 # 1 54 128 864 2048 4096 8192
     sim_duration = 32 # 1028 516 260
     seed = 68
-    render = "rgb_array" # None human rgb_array
+    render = "human" # None human rgb_array
 
     # PPO
     frames = 1
@@ -26,7 +26,7 @@ class IsaacCfg:
     range_lr = [1e-5, 1e-3] # [1e-5, 1e-2] [1e-5, 5e-3] [1e-5, 5e-4]
     reward_scale = 0.01
     start_step = 4
-    c_entropy = 0.01 #5e-5 1e-4 # 0.01 to 0.05
+    c_entropy = 0.0 #5e-5 1e-4 # 0.01 to 0.05
     c_critic = 2.0   # 0.5 to 2 4
     c_kl_tutor = 0.0 # 0.2
     accumulation_steps = 32 # 2 4 6 8 16
@@ -56,7 +56,7 @@ class IsaacCfg:
     # body_outputs.update(actions_variance)
 
     # Model inputs and outputs
-    inputs = ['obs', 'actions_star', 'video'] # obs audio video actions_star
+    inputs = ['obs', 'actions_star'] # obs audio video actions_star
     output_audio = False
     audio_samples = 1920
     width = 448
