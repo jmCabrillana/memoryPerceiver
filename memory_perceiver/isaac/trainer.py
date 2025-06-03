@@ -22,6 +22,25 @@ def init_history(history_keys, sim_duration, num_envs, actions_dim, obs_dim, hei
             history[key] = torch.zeros(sim_duration, num_envs, device=device)
     return history
 
+def init_next_state(history_keys, num_envs, actions_dim, obs_dim, height, width, channels, device):
+    next_state = {}
+    for key in history_keys:
+        if key == 'obs':
+            next_state[key] = torch.zeros(num_envs, obs_dim, device=device)
+        elif key == 'video':
+            next_state[key] = torch.zeros(num_envs, height, width, channels, device=device)
+        elif key.startswith('actions'):
+            next_state[key] = torch.zeros(num_envs, actions_dim, device=device)
+        elif key == 'generator':
+            next_state[key] = torch.zeros(torch.cuda.device_count(), 16, dtype=torch.uint8) # must be on cpu
+        else:
+            next_state[key] = torch.zeros(num_envs, device=device)
+    return next_state
+
+def get_or_none(d, i):
+    return None if d is None else d[i]
+
+
 def buffer_padding(buffer, dim, default_value=None, frames=32, num_envs=1):
     
     # zero padding then transform: t b (d) -> b t (d)
@@ -151,21 +170,21 @@ def create_mask(birth_time, sim_step, frames=32):
     mask = repeat(torch.arange(frames, device=device), '... -> b ...', b=num_envs) >= repeat(past_horizon, '... -> ... t', t=frames)
     return mask
 
-def batch_and_mask_states(buffer, cf, mask, device):
+def batch_and_mask_states(buffer, num_envs, cf, mask, device):
     states={}
     mask = mask.logical_not()
-    states['obs'] = buffer_padding(buffer['obs'], [cf.dim_observations], num_envs=cf.num_envs, frames=cf.frames)
+    states['obs'] = buffer_padding(buffer['obs'], [cf.dim_observations], num_envs=num_envs, frames=cf.frames)
     states['obs'][mask] *= 0
     if 'actions_star' in cf.inputs:
-        states['actions_star'] = buffer_padding(buffer['actions_star'], [cf.dim_actions], num_envs=cf.num_envs, frames=cf.frames)
+        states['actions_star'] = buffer_padding(buffer['actions_star'], [cf.dim_actions], num_envs=num_envs, frames=cf.frames)
         states['actions_star'][mask] *= 0
     if 'video' in cf.inputs:
-        states['video'] = torch.zeros(cf.num_envs, cf.frames, cf.height, cf.width, 3, device=device)
-        # states['video'] = tr.buffer_padding(torch.stack(buffer['video']), [cf.height, cf.width, 3], num_envs=cf.num_envs, frames=cf.frames)
+        # states['video'] = torch.zeros(num_envs, cf.frames, cf.height, cf.width, cf.channels, device=device)
+        states['video'] = buffer_padding(torch.stack(buffer['video']), [cf.height, cf.width, cf.channels], num_envs=num_envs, frames=cf.frames)
         states['video'][mask] *= 0
     if 'audio' in cf.inputs:
-        states['audio'] = torch.zeros(cf.num_envs, cf.len_audio_raw, device=device)
-        # states['audio'] = tr.buffer_padding(torch.stack(buffer['video']), [cf.sample_audio_frame], num_envs=cf.num_envs, frames=cf.frames)
+        # states['audio'] = torch.zeros(num_envs, cf.len_audio_raw, device=device)
+        states['audio'] = buffer_padding(torch.stack(buffer['audio']), [cf.sample_audio_frame], num_envs=num_envs, frames=cf.frames)
         states['audio'][mask] *= 0
     return states
 
