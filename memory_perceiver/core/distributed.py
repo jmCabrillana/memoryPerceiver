@@ -33,18 +33,18 @@ def scatter_dummy_src(src_tensor, dst_tensor, rank, rank_agents, swap_axis=False
     if swap_axis:
         swap_eventually(src_tensor)
         swap_eventually(dst_tensor)
+    if rank in rank_agents:
+        dst = dst_tensor.contiguous()
+        tensor_list = None
     if rank == 0:
         tensor_list = list(torch.split(src_tensor.contiguous(), len(src_tensor)//len(rank_agents)))
         if 0 not in rank_agents:
             tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
-            dst_tensor = torch.zeros_like(tensor_list[0], device=0)
-    if rank != 0:
-        tensor_list = None
+            dst = torch.zeros_like(tensor_list[0], device=0).contiguous()
     dist.barrier()
-    dist.scatter(dst_tensor, tensor_list, src=0)
+    dist.scatter(dst, tensor_list, src=0)
     if rank in rank_agents:
-        pass
-        # dst_tensor.copy_(dst)
+        dst_tensor.copy_(dst)
     if swap_axis:
         swap_eventually(src_tensor)
         swap_eventually(dst_tensor)
@@ -66,7 +66,7 @@ def gather_dummy_src(src_tensor, dst_tensor, rank, rank_agents, swap_axis=False)
         tensor_list = list(torch.split(dst_tensor.contiguous(), len(dst_tensor)//len(rank_agents)))
         if 0 not in rank_agents:
             tensor_list.insert(0, torch.zeros_like(tensor_list[0], device=0))
-            src = torch.zeros_like(tensor_list[0], device=0)
+            src = torch.zeros_like(tensor_list[0], device=0).contiguous()
     dist.barrier()
     dist.gather(src, tensor_list, dst=0)
     if rank == 0:

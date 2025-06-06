@@ -38,7 +38,7 @@ def isaac_training(cf, rank, size):
     setup_distributed(rank, size)
     rank_sim = 0
     # rank_agents = [0] if size == 1 else list(range(1, size))
-    rank_agents = list(range(1, size))
+    rank_agents = list(range(0, size))
     group_agents = dist.new_group(rank_agents)
     device = torch.device(rank)
     nb_agents = len(rank_agents)
@@ -247,6 +247,8 @@ def isaac_training(cf, rank, size):
                             history_sim['advantages'] = (tmp_advantages - tmp_advantages.mean()) / (tmp_advantages.std() + 1e-8)  #dim=1 keepdim=True
                             # tr.calculate_grpo(r_grpo, history_sim['returns'], history_sim['birth_time'], sim_count_total)
                             # tr.print_detail_returns(history_sim, unscaled_values, tmp_advantages, value_scaler)
+                            # print("$$$  SIM  $$$ ")
+                            # tr.print_detail_env( history_sim)
 
                         for key in ['returns', 'values', 'returns_targets', 'advantages']:
                             scatter_dummy_src(history_sim[key], history[key], rank, rank_agents, swap_axis=True)
@@ -423,7 +425,7 @@ def isaac_training(cf, rank, size):
                             # Reinitialize
                             backward_count = 0
 
-                    if rank == rank_agents[0] and perform_update :
+                    if rank in rank_agents and perform_update :
                         actor_losses.append(loss_actor.mean().item())
                         critic_losses.append(loss_critic.mean().item())
                         entropy_losses.append(loss_entropy.mean().item())

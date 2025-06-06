@@ -29,25 +29,26 @@ def train(rank, size):
     # dist.init_process_group(backend='nccl', init_method='env://', device_id=torch.device(f'cuda:{rank}'))
     setup(rank, size)
     
-    rank_agents = [1]
-
-    if rank == 0:
-        src = None
-        dst = torch.zeros(2,2, device=rank)
-    if rank == 1:
-        src = torch.ones(2,2, device=rank)
-        dst = None
-    dis.gather_dummy_src(src, dst, rank, rank_agents)
+    rank_agents = [0,1]
 
     # if rank == 0:
-    #     src = torch.ones(2,2, device=rank)
-    #     dst = None
-    # if rank == 1:
     #     src = None
-    #     dst = torch.zeros(2,2, device=rank)
-    # dis.scatter_dummy_src(src, dst, rank, rank_agents)
+    #     dst = torch.zeros(3,2, device=rank)
+    # if rank == 1:
+    #     src = torch.ones(3,2, device=rank)
+    #     dst = None
+    # dis.gather_dummy_src(src, dst, rank, rank_agents, swap_axis=True)
 
-    print(f'{rank}: {src} ---- {dst}')
+    if rank == 0:
+        # src = torch.ones(3,2, device=rank)
+        src = torch.tensor([[2,3], [4,5], [6,7]], device=rank, dtype=torch.float32)
+        dst = torch.zeros(3,1, device=rank, dtype=torch.float32)
+    if rank == 1:
+        src = None
+        dst = torch.zeros(3,1, device=rank, dtype=torch.float32)
+    dis.scatter_dummy_src(src, dst, rank, rank_agents, swap_axis=True)
+
+    print(f'4-{rank}: {src} ---- {dst}')
 
     # group1 = dist.new_group([1])
     # tensor_dst = torch.zeros(2, device=rank, dtype=float)     

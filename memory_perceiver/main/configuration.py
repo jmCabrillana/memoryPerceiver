@@ -2,7 +2,7 @@ from pathlib import Path
 
 class IsaacCfg:
 
-    experiment_name = "S_1.3_no_limit"
+    experiment_name = "S_1.8_tt"
 
     # Task
     task = "Isaac-Humanoid-Direct-v0" # Isaac-Humanoid-Direct-v0 Isaac-Humanoid-Cam-Direct-v0 Isaac-Cartpole-Cam-Direct-v0
@@ -10,7 +10,7 @@ class IsaacCfg:
     tutor_type = None # None Simple
     dim_observations = 75 # 75 4 5
     dim_actions = 21 # 21 1
-    num_envs = 8192 # 1 54 128 864 2048 4096 8192 16384
+    num_envs = 16000 # 1 54 128 864 2048 4096 8192 16384
     sim_duration = 32 # 1028 516 260
     seed = 68
     render = "rgb_array" # None human rgb_array
@@ -25,7 +25,7 @@ class IsaacCfg:
     scheduler = 'kl_div' # '' kl_div kl-warm-up_400 warm-up_100 warm-up_400
     range_lr = [1e-5, 1e-3] # [1e-5, 1e-2] [1e-5, 5e-3] [1e-5, 5e-4]
     reward_scale = 0.01
-    start_step = 6
+    start_step = 0
     c_entropy = 0.01 #5e-5 1e-4 # 0.01 to 0.05
     c_critic = 2.0   # 0.5 to 2 4
     c_kl_tutor = 0.0 # 0.2

@@ -253,7 +253,7 @@ def setup_run(path_config, path_experiment):
 
 def print_detail_env(history):
     for key, value in history.items():
-        if key not in ['actions', 'actions_star', 'actions_mean', 'actions_std', 'logprobs', 'generator', 'obs', 'rewards']:
+        if key not in ['actions', 'actions_star', 'actions_mean', 'actions_std', 'logprobs', 'generator', 'obs']:
             print(f"{key}: {value[:,0]}")
         if key in ['actions', 'actions_star', 'actions_mean', 'actions_std', 'obs']:
             print(f"{key}: {value[:,0, 0]}")
