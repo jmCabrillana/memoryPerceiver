@@ -311,23 +311,23 @@ class RTRL_partial():
         chunks = int(np.ceil(len_state/self.chunk_size))
         for i in range(chunks):
 
-                def fmodel(params, old_s): #functional version of 
-                    state_old_clone = state_old.clone().detach()
-                    state_old_clone[self.slice_indexes] = old_s
-                    _, _, _, state_new = functional_call(model, params, (x, state_old_clone), kwargs)
-                    return state_new[self.slice_indexes][i*self.chunk_size:(i+1)*self.chunk_size]
-                def jacobian(argnum):
-                    return jacrev(fmodel, argnums=(argnum))(dict_param_state, state_old_detached)
-                
-                ## ds/dtheta: dim (S/C) T
-                d_state_new_d_theta_tmp = jacobian(0)
-                torch.cuda.empty_cache() 
-                d_state_new_d_theta_list.append( self.nn_param_state.merge_matrix(list(d_state_new_d_theta_tmp.values()), 
-                                                                            device=device).to_sparse_csr() )
+            def fmodel(params, old_s): #functional version of 
+                state_old_clone = state_old.clone().detach()
+                state_old_clone[self.slice_indexes] = old_s
+                _, _, _, state_new = functional_call(model, params, (x, state_old_clone), kwargs)
+                return state_new[self.slice_indexes][i*self.chunk_size:(i+1)*self.chunk_size]
+            def jacobian(argnum):
+                return jacrev(fmodel, argnums=(argnum))(dict_param_state, state_old_detached)
+            
+            ## ds/dtheta: dim (S/C) T
+            d_state_new_d_theta_tmp = jacobian(0)
+            torch.cuda.empty_cache() 
+            d_state_new_d_theta_list.append( self.nn_param_state.merge_matrix(list(d_state_new_d_theta_tmp.values()), 
+                                                                        device=device).to_sparse_csr() )
 
-                ## ds_new/ds_old: dim (S/C) S
-                d_state_new_d_state_old_list.append( jacobian(1).to_sparse_csr() )
-                torch.cuda.empty_cache() 
+            ## ds_new/ds_old: dim (S/C) S
+            d_state_new_d_state_old_list.append( jacobian(1).to_sparse_csr() )
+            torch.cuda.empty_cache() 
 
         d_state_new_d_theta = cat_CSR_rows(d_state_new_d_theta_list)
         d_state_new_d_state_old = cat_CSR_rows(d_state_new_d_state_old_list)

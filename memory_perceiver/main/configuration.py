@@ -2,15 +2,15 @@ from pathlib import Path
 
 class IsaacCfg:
 
-    experiment_name = "S_1.8_tt"
+    experiment_name = "P_1.4_flat"
 
     # Task
-    task = "Isaac-Humanoid-Direct-v0" # Isaac-Humanoid-Direct-v0 Isaac-Humanoid-Cam-Direct-v0 Isaac-Cartpole-Cam-Direct-v0
-    agent_type = "Simple" # Simple Perceiver
+    task = "Isaac-Humanoid-Cam-Direct-v0" # Isaac-Humanoid-Direct-v0 Isaac-Humanoid-Cam-Direct-v0 Isaac-Cartpole-Cam-Direct-v0
+    agent_type = "Perceiver" # Simple Perceiver
     tutor_type = None # None Simple
     dim_observations = 75 # 75 4 5
     dim_actions = 21 # 21 1
-    num_envs = 16000 # 1 54 128 864 2048 4096 8192 16384
+    num_envs = 64 # 1 54 128 864 2048 4096 8192 16384
     sim_duration = 32 # 1028 516 260
     seed = 68
     render = "rgb_array" # None human rgb_array
@@ -20,13 +20,13 @@ class IsaacCfg:
     frames_future = 1
     dim_actions_ppo = min(2, frames_future)*dim_actions
     training_mode = 'Backward' # Backward TBPTT RTRL
-    learning_rate = 1e-4 # 3e-4 1e-4 1e-5
+    learning_rate = 1e-5 # 3e-4 1e-4 1e-5
     kl_threshold = 0.008 # 0.004 0.008 1e10
     scheduler = 'kl_div' # '' kl_div kl-warm-up_400 warm-up_100 warm-up_400
     range_lr = [1e-5, 1e-3] # [1e-5, 1e-2] [1e-5, 5e-3] [1e-5, 5e-4]
     reward_scale = 0.01
-    start_step = 0
-    c_entropy = 0.01 #5e-5 1e-4 # 0.01 to 0.05
+    start_step = 5
+    c_entropy = 0.0 #5e-5 1e-4 # 0.01 to 0.05
     c_critic = 2.0   # 0.5 to 2 4
     c_kl_tutor = 0.0 # 0.2
     accumulation_steps = 32 # 2 4 6 8 16
@@ -56,7 +56,7 @@ class IsaacCfg:
     # body_outputs.update(actions_variance)
 
     # Model inputs and outputs
-    inputs = ['obs', 'actions_star'] # obs audio video actions_star
+    inputs = ['obs', 'actions_star', 'video'] # obs audio video actions_star
     output_audio = False
     audio_samples = 1920
     width = 448
@@ -76,6 +76,7 @@ class IsaacCfg:
     len_audio_raw = frames*audio_samples
     video_future = frames_future*len_video_frame
     audio_future = frames_future*len_audio_frame 
+    gates = [(96, 544)]
 
     # Directories
 

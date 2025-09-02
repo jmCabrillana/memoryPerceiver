@@ -120,6 +120,10 @@ class ActorCriticPerceiver(nn.Module):
             latent_heads = cf.latent_heads,
             latent_dim_head = cf.latent_dim_head
         ).to(device)
+        if hasattr(cf, 'gates'):
+            for gate in cf.gates:
+                self.actor.state_cross_attn.fn.add_gate(gate[0], gate[1])
+                self.actor.out_cross_attn.fn.add_gate(gate[0], gate[1])
         self.out_std = nn.Parameter(torch.zeros(self.dim_actions, device=device))
         if not self.shared:
             self.critic = nn.Sequential( *( [layer_init(nn.Linear(self.dim_observations, self.hidden_dim)), nn.ELU()] +

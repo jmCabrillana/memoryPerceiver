@@ -187,8 +187,8 @@ def isaac_training(cf, rank, size):
                 group_agents = dist.new_group(rank_agents) # It is necessary to reset this group here to avoid duplicate gpu errors
                 
                 if rank == rank_sim:
-                    # if sim_count % 200 == 0: # hard reset sometimes (to delete)
-                    #     env.unwrapped._reset_idx(env_ids=None, hard_reset=True)
+                    if sim_count % 250 == 0: # hard reset sometimes (to delete)
+                        env.unwrapped._reset_idx(env_ids=None, hard_reset=True)
                     print(f"$$$ r{rank} MEAN REWARD: {history_sim['rewards'].mean().item()} $$$")
                     print(f"SEED: {seed}")
                     print(f"SIM_COUNT: {sim_count}")
@@ -214,7 +214,7 @@ def isaac_training(cf, rank, size):
                         dist.barrier(group=group_agents)
                         if rank == rank_agents[0] :
                             torch.save({'model': model_student.state_dict(), 'optimizer': optimizer.state_dict()}, cf.path_model)
-                            if sim_count % 100 == 0:
+                            if sim_count % 500 == 0:
                                 torch.save({'model': model_student.state_dict(), 'optimizer': optimizer.state_dict()}, cf.path_weights / f'model_{sim_count}.pt')
 
                         history = tr.init_history(history_keys, cf.sim_duration, agent_envs, cf.dim_actions_ppo, cf.dim_observations, \
@@ -223,7 +223,7 @@ def isaac_training(cf, rank, size):
                         torch.save(buffer, path_buffer_old) # end of previous inference
                     if rank == rank_sim:
                         torch.save(value_scaler.state_dict(), cf.path_scaler)
-                        if sim_count % 100 == 0:
+                        if sim_count % 500 == 0:
                             torch.save(value_scaler.state_dict(), cf.path_weights / f'scaler_{sim_count}.pt')
                     kl_list = []
                     
@@ -286,7 +286,7 @@ def isaac_training(cf, rank, size):
                     all_obs = env.unwrapped._get_observations()
                     history_sim['obs'][sim_step] = all_obs['policy'].clone()    # (num_envs, d)
                     if 'video' in cf.inputs:
-                        history_sim['video'][sim_step] = all_obs['camera'].clone()  # (num_envs, 256, 456, 3)
+                        history_sim['video'][sim_step] = all_obs['camera'].clone().to(torch.float32)  # (num_envs, 256, 456, 3)
                         # history_sim['video'][sim_step] = torch.zeros(num_envs, cf.height, cf.width, cf.channels, device=device)
                         # ts.save(history_sim['video'][sim_step][0], cf.path_monitor / 'live.jpg')
                     if cf.render is not None:
@@ -454,7 +454,7 @@ def isaac_training(cf, rank, size):
                         all_obs = env.unwrapped._get_observations()
                         next_state_sim['obs'] = all_obs['policy'].clone()    # (num_envs, d)
                         if 'video' in cf.inputs:
-                            history['video'] = all_obs['camera'].clone()  # (num_envs, 256, 456, 3)
+                            next_state_sim['video'] = all_obs['camera'].clone().to(torch.float32)  # (num_envs, 256, 456, 3)
                             # next_state['video'] = torch.zeros(num_envs, cf.frames, cf.height, cf.width, cf.channels, device=device)
                         dones = env.unwrapped.last_dones.int().clone()
                         next_state_sim['birth_time'] = birth_time_sim.clone()
@@ -476,7 +476,7 @@ def isaac_training(cf, rank, size):
                         del(next_buffer)
 
                 # video
-                if sim_count % 100 == 0 and sim_step == cf.sim_duration-1 and rank == 0 and cf.render is not None :
+                if sim_count % 50 == 0 and sim_step == cf.sim_duration-1 and rank == 0 and cf.render is not None :
                     torchvision.io.write_video( cf.path_monitor / ('test_'  + str(sim_count) + '_vid_.mp4'), 
                                                 torch.stack(full_video), 8*cf.frames)
                     full_video = []

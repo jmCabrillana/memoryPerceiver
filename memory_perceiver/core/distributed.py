@@ -13,7 +13,7 @@ def swap_unswap_arguments(f, *args, **kwargs):
 def setup_distributed(rank, size):
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] = '12355'
-    os.environ['NCCL_P2P_DISABLE'] = '1'
+    os.environ['NCCL_P2P_DISABLE'] = '0'
     dist.init_process_group("nccl", rank=rank, world_size=size)
 
 def average_gradients(model, size, group, param_filter=''):

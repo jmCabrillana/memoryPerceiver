@@ -180,11 +180,11 @@ def batch_and_mask_states(buffer, num_envs, cf, mask, device):
         states['actions_star'][mask] *= 0
     if 'video' in cf.inputs:
         # states['video'] = torch.zeros(num_envs, cf.frames, cf.height, cf.width, cf.channels, device=device)
-        states['video'] = buffer_padding(torch.stack(buffer['video']), [cf.height, cf.width, cf.channels], num_envs=num_envs, frames=cf.frames)
+        states['video'] = buffer_padding(buffer['video'], [cf.height, cf.width, cf.channels], num_envs=num_envs, frames=cf.frames)
         states['video'][mask] *= 0
     if 'audio' in cf.inputs:
         # states['audio'] = torch.zeros(num_envs, cf.len_audio_raw, device=device)
-        states['audio'] = buffer_padding(torch.stack(buffer['audio']), [cf.sample_audio_frame], num_envs=num_envs, frames=cf.frames)
+        states['audio'] = buffer_padding(buffer['audio'], [cf.sample_audio_frame], num_envs=num_envs, frames=cf.frames)
         states['audio'][mask] *= 0
     return states
 
@@ -253,10 +253,11 @@ def setup_run(path_config, path_experiment):
 
 def print_detail_env(history):
     for key, value in history.items():
-        if key not in ['actions', 'actions_star', 'actions_mean', 'actions_std', 'logprobs', 'generator', 'obs']:
-            print(f"{key}: {value[:,0]}")
-        if key in ['actions', 'actions_star', 'actions_mean', 'actions_std', 'obs']:
-            print(f"{key}: {value[:,0, 0]}")
+        if key not in ['video']:
+            if key not in ['actions', 'actions_star', 'actions_mean', 'actions_std', 'logprobs', 'generator', 'obs']:
+                print(f"{key}: {value[:,0]}")
+            if key in ['actions', 'actions_star', 'actions_mean', 'actions_std', 'obs']:
+                print(f"{key}: {value[:,0, 0]}")
 
 def print_detail_returns(history, unscaled_values, tmp_advantages, value_scaler):
     print('returns ', history['returns'][:,0])

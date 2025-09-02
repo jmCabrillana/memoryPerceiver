@@ -114,7 +114,9 @@ class MultiEmbedding(nn.Module):
         device = self.out_scalar_embeddings_bias.device
         for part, params in input_vectors.items():
             self.out_vector_embedding[part] = nn.Linear(params, self.dim, device=device)
-            layer_init(self.out_vector_embedding[part])
+            nn.init.zeros_(self.out_vector_embedding[part].weight)
+            nn.init.zeros_(self.out_vector_embedding[part].bias)
+            # layer_init(self.out_vector_embedding[part])
 
     def forward(self, x):
         scalar_embedding = torch.einsum('b t n, n d -> b t n d', x['scalars'], self.out_scalar_embeddings_weight) + self.out_scalar_embeddings_bias
@@ -184,6 +186,11 @@ class Attention(nn.Module):
             nn.init.eye_(self.to_v.weight)
             nn.init.eye_(self.to_out.weight)
 
+    def add_gate(self, start, end):
+        if not hasattr(self, 'gates'):
+            self.gates = nn.ParameterDict()
+        self.gates[f'{start}, {end}'] = nn.Parameter(torch.tensor(0.0, device=self.to_q.weight.device))
+
 
     def forward(self, x, context = None, mask = None, use_x=False):
         h = self.heads
@@ -200,8 +207,14 @@ class Attention(nn.Module):
         k = self.to_k(full_input)
         v = self.to_v(full_input)
 
+        if hasattr(self, 'gates'):
+            for interval, gate in self.gates.items():
+                start, end = map(int, interval.split(", "))
+                k[:, start : end, :] *=  gate
+
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> (b h) n d', h = h), (q, k, v))
 
+        # # scaled_dot_product_attention with einsum:
         # if exists(mask):
         #     mask = repeat(mask, 'b j -> (b h) () j', h = h)
         #     max_neg_value = -torch.finfo(sim.dtype).max
@@ -258,7 +271,6 @@ class PerceiverIO(nn.Module):
 
         # F_state
 
-        self.state_embedding = MultiEmbedding(input_scalars, input_vectors, query_dim, device=device)
         self.state_latents = nn.Parameter(torch.randn(nb_latents_mem, query_dim, device=device))
         self.state_cross_attn = PreNormContext(query_dim, Attention(query_dim, query_dim, heads = latent_heads, dim_head = latent_dim_head, init=True), query_dim)
         self.state_cross_ff = PreNormContext(query_dim, FeedForward(query_dim))
@@ -318,13 +330,11 @@ class PerceiverIO(nn.Module):
         # Compute next state
 
         # Modality and position embedding
-        state_context = self.state_embedding(data)
 
         ## Cross attention on input 
-        # context = context.cpu() # to save gpu memory
-        # x = repeat(self.state_latents, 'n d -> b n d', b = b)
+        # out_context = out_context.cpu() # to save gpu memory
         x = mem
-        attn = self.state_cross_attn(x, context = state_context, mask = mask)
+        attn = self.state_cross_attn(x, context = out_context, mask = mask)
         x = attn + x
         x = self.state_cross_ff(x) + x
 
