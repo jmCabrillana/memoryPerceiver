@@ -2,7 +2,7 @@ from pathlib import Path
 
 class IsaacCfg:
 
-    experiment_name = "P_1.4_flat"
+    experiment_name = "P_1.5_tt"
 
     # Task
     task = "Isaac-Humanoid-Cam-Direct-v0" # Isaac-Humanoid-Direct-v0 Isaac-Humanoid-Cam-Direct-v0 Isaac-Cartpole-Cam-Direct-v0
@@ -76,7 +76,7 @@ class IsaacCfg:
     len_audio_raw = frames*audio_samples
     video_future = frames_future*len_video_frame
     audio_future = frames_future*len_audio_frame 
-    gates = [(96, 544)]
+    # gates = [(96, 544)]
 
     # Directories
 
