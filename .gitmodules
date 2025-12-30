@@ -1,9 +1,8 @@
 [submodule "OmniIsaacGymEnvs"]
 	path = OmniIsaacGymEnvs
-	url = git@github.com:jmCabrillana/OmniIsaacGymEnvs.git
 [submodule "IsaacLab"]
 	path = IsaacLab
-	url = git@github.com:jmCabrillana/IsaacLab.git
+	url = https://github.com/jmCabrillana/IsaacLab.git
 [submodule "infinigen"]
 	path = infinigen
-	url = git@github.com:jmCabrillana/infinigen.git
+	url = https://github.com/jmCabrillana/infinigen.git
